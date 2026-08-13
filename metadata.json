@@ -1,0 +1,6 @@
+{
+  "name": "The Tiebreaker",
+  "description": "An AI-powered decision-support platform that turns complex decisions into structured insights, trade-offs, and personalized analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
