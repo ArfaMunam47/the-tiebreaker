@@ -383,25 +383,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you have questions, feedback, or need help:
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/the-tiebreaker/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/the-tiebreaker/discussions)
-- **Email**: support@thetiebreaker.app
+- **Email**: arfamunam01@gmail.com
 
 ---
 
-## Related Projects
-
-- [Google AI Studio](https://ai.google.dev/) - Build AI-powered applications
-- [Gemini API Documentation](https://ai.google.dev/gemini-api/docs) - Official API docs
-- [React Documentation](https://react.dev/) - Learn React
-
----
-
-<div align="center">
-  <p>Built with ❤️ using React, TypeScript, and Google Gemini AI</p>
-  <p>
-    <a href="https://github.com/yourusername/the-tiebreaker">Star on GitHub</a> •
-    <a href="https://github.com/yourusername/the-tiebreaker/issues">Report Bug</a> •
-    <a href="https://github.com/yourusername/the-tiebreaker/issues">Request Feature</a>
-  </p>
-</div>
