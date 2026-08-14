@@ -1,6 +1,4 @@
-<div align="center">
-  <img width="1200" height="475" alt="The Tiebreaker Banner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+
 
 # The Tiebreaker
 
@@ -129,9 +127,39 @@ MIT License
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/ArfaMunam47/the-tiebreaker/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/ArfaMunam47/the-tiebreaker/discussions)
-- **Email:** support@thetiebreaker.app
+If you have questions, feedback, or need help:
+
+<<<<<<< HEAD
+- **Issues**: [GitHub Issues](https://github.com/ArfaMunam47/the-tiebreaker/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ArfaMunam47/the-tiebreaker/discussions)
+- **Email**: support@thetiebreaker.app
+
+---
+
+## Related Projects
+
+- [Google AI Studio](https://ai.google.dev/) - Build AI-powered applications
+- [Gemini API Documentation](https://ai.google.dev/gemini-api/docs) - Official API docs
+- [React Documentation](https://react.dev/) - Learn React
+
+---
+
+## Key Design Principles
+
+### Decision Integrity
+- **User options are sacred**: AI never silently adds options to your main list
+- **AI suggestions are separate**: Creative alternatives are flagged as AI-suggested
+- **Transparent confidence**: AI reports confidence levels and explains uncertainty
+
+### Evidence-Based Analysis
+- **Clear classification**: Every claim is labeled as fact, assumption, interpretation, or unknown
+- **Assumption tracking**: Monitor and confirm/reject assumptions over time
+- **Source attribution**: Track whether insights come from user or AI
+
+### Actionable Insights
+- **Reversal conditions**: Explicit triggers that would change the recommendation
+- **Opportunity costs**: Clear statement of what each option sacrifices
+- **Why-not explanations**: Understand why runner-up options lost
 
 ---
 
@@ -143,3 +171,9 @@ MIT License
     <a href="https://github.com/ArfaMunam47/the-tiebreaker/issues">Request Feature</a>
   </p>
 </div>
+=======
+- **Email**: arfamunam01@gmail.com
+
+---
+
+>>>>>>> 67749bac8102886d5d82d5a3de920178cf4bddc6
