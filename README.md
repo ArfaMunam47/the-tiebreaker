@@ -346,14 +346,14 @@ the-tiebreaker/
 │   ├── App.tsx             # Main application component
 │   ├── main.tsx            # Application entry point
 │   └── index.css           # Global styles
-│   ├── assets/                 # Static assets
-│   ├── server.ts               # Express backend server
-│   ├── package.json            # Dependencies and scripts
-│   ├── tsconfig.json           # TypeScript configuration
-│   ├── vite.config.ts          # Vite configuration
-│   ├── index.html              # HTML entry point
-│   ├── metadata.json           # App metadata
-│   └── README.md              # This file
+├── assets/                 # Static assets
+├── server.ts               # Express backend server
+├── package.json            # Dependencies and scripts
+├── tsconfig.json           # TypeScript configuration
+├── vite.config.ts          # Vite configuration
+├── index.html              # HTML entry point
+├── metadata.json           # App metadata
+└── README.md              # This file
 ```
 
 ---
@@ -464,4 +464,3 @@ If you have questions, feedback, or need help:
 - Icons by [Lucide](https://lucide.dev/)
 
 ---
-
