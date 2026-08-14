@@ -463,51 +463,52 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   return (
     <div className="w-full space-y-8 animate-fadeIn print:px-0 print:py-0">
       {/* HEADER BANNER */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-lg print:border-none print:shadow-none">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 blur-[100px] pointer-events-none rounded-full" />
+      <div className="bg-[#FAF8F5] border border-[#E8E5DF] rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-xs print:border-none print:shadow-none">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-100/50 blur-[100px] pointer-events-none rounded-full" />
+        <div className="absolute top-0 left-0 w-full h-[3px] bg-[#B88E3D]" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest bg-slate-800 text-amber-400 border border-amber-500/30 rounded-md">
+              <span className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest bg-amber-100 text-amber-950 border border-amber-300 rounded-md">
                 Decision Analysis
               </span>
-              <span className="text-xs text-slate-400 font-mono">
+              <span className="text-xs text-stone-500 font-mono">
                 {decision.options.length} Options Evaluated • Updated{' '}
                 {new Date(decision.updatedAt).toLocaleDateString()}
               </span>
             </div>
 
-            <h1 className="font-serif italic text-2xl sm:text-3xl font-normal text-white leading-snug">
+            <h1 className="font-serif italic text-2xl sm:text-3xl font-normal text-[#2C221E] leading-snug">
               {decision.title}
             </h1>
 
             {/* Recommendation Highlight Pill */}
             {recommendedOpt && (
               <div className="space-y-2">
-                <div className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-lg bg-slate-800/90 border border-amber-500/30 text-slate-200 text-xs font-medium shadow-xs">
-                  <Award className="w-4 h-4 text-amber-400" />
+                <div className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white border border-[#E8E5DF] text-stone-800 text-xs font-medium shadow-2xs">
+                  <Award className="w-4 h-4 text-[#B88E3D]" />
                   <span>
                     Recommended:{' '}
-                    <strong className="font-bold text-amber-300">{recommendedOpt.title}</strong>
+                    <strong className="font-bold text-[#B88E3D]">{recommendedOpt.title}</strong>
                   </span>
-                  <span className="ml-1 text-[11px] font-mono text-amber-400 font-bold">
+                  <span className="ml-1 text-[11px] font-mono text-[#B88E3D] font-bold">
                     ({decision.recommendation?.confidenceLevel || 'High'} Confidence)
                   </span>
                   {decision.reversibility && (
-                    <span className="px-2 py-0.5 rounded bg-slate-900 text-[10px] text-slate-300 border border-slate-700">
+                    <span className="px-2 py-0.5 rounded bg-[#FAF7F2] text-[10px] text-stone-700 border border-[#E8E5DF]">
                       ↺ {decision.reversibility}
                     </span>
                   )}
                   {decision.timeHorizon && (
-                    <span className="px-2 py-0.5 rounded bg-slate-900 text-[10px] text-slate-300 border border-slate-700">
+                    <span className="px-2 py-0.5 rounded bg-[#FAF7F2] text-[10px] text-stone-700 border border-[#E8E5DF]">
                       ⏱ {decision.timeHorizon} horizon
                     </span>
                   )}
                 </div>
 
                 {decision.recommendation?.confidenceReason && (
-                  <p className="text-xs text-slate-300 bg-slate-800/60 p-2.5 rounded-lg border border-slate-700/60 italic">
+                  <p className="text-xs text-stone-700 bg-white/90 p-2.5 rounded-lg border border-[#E8E5DF] italic">
                     💡 <strong>Confidence Rationale:</strong> {decision.recommendation.confidenceReason}
                   </p>
                 )}
@@ -519,31 +520,31 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           <div className="flex flex-wrap items-center gap-2.5 print:hidden">
             <button
               onClick={handleSaveClick}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border transition-all cursor-pointer ${
                 savedSuccess
-                  ? 'bg-emerald-900/40 text-emerald-300 border-emerald-500/50'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700 shadow-xs'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                  : 'bg-white hover:bg-[#FAF7F2] text-stone-800 border-[#E8E5DF] hover:border-[#B88E3D] shadow-2xs'
               }`}
             >
-              <Save className="w-4 h-4 text-amber-400" />
+              <Save className="w-4 h-4 text-[#B88E3D]" />
               <span>{savedSuccess ? 'Saved to History!' : 'Save Decision'}</span>
             </button>
 
             <button
               onClick={handlePrintReport}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition-all shadow-xs"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider bg-white hover:bg-[#FAF7F2] text-stone-800 border border-[#E8E5DF] hover:border-[#B88E3D] rounded-lg transition-all shadow-2xs cursor-pointer"
               title="Print or Export PDF"
             >
-              <Printer className="w-4 h-4 text-slate-400" />
+              <Printer className="w-4 h-4 text-stone-500" />
               <span className="hidden sm:inline">Export Report</span>
             </button>
 
             <button
               onClick={onNewDecision}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-extrabold uppercase tracking-wider text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 rounded-lg shadow-md transition-all"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-extrabold uppercase tracking-wider text-white bg-[#2C221E] hover:bg-[#3D312B] rounded-lg shadow-xs transition-all cursor-pointer border border-[#2C221E]"
             >
-              <Plus className="w-4 h-4 text-slate-950 stroke-[3]" />
-              <span>New Decision</span>
+              <Plus className="w-4 h-4 text-[#D4A338] stroke-[3]" />
+              <span className="text-[#D4A338]">New Decision</span>
             </button>
           </div>
         </div>
@@ -551,27 +552,27 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
       {/* CLARIFYING QUESTIONS BANNER (if available) */}
       {decision.clarifyingQuestions && decision.clarifyingQuestions.length > 0 && (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3 shadow-xs">
-          <div className="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
-            <HelpCircle className="w-4 h-4 text-amber-400" />
+        <div className="bg-[#FAF7F2] border border-[#E8E5DF] rounded-xl p-5 space-y-3 shadow-2xs">
+          <div className="flex items-center gap-2 text-[#B88E3D] text-xs font-bold uppercase tracking-wider">
+            <HelpCircle className="w-4 h-4 text-[#B88E3D]" />
             <span>Clarifying Context Identified By AI</span>
           </div>
-          <p className="text-xs text-slate-300">
+          <p className="text-xs text-stone-600">
             Key questions that sharpen the decision framework:
           </p>
           <div className="grid sm:grid-cols-2 gap-3 pt-1">
             {decision.clarifyingQuestions.map((q) => (
               <div
                 key={q.id}
-                className="p-3.5 rounded-lg bg-slate-800/80 border border-slate-700 text-xs space-y-2"
+                className="p-3.5 rounded-lg bg-white border border-[#E8E5DF] text-xs space-y-2"
               >
-                <p className="font-semibold text-white">{q.question}</p>
+                <p className="font-semibold text-stone-900">{q.question}</p>
                 {q.suggestedAnswers && q.suggestedAnswers.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {q.suggestedAnswers.map((ans, idx) => (
                       <span
                         key={idx}
-                        className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-[11px] text-slate-300"
+                        className="px-2 py-0.5 rounded bg-[#FAF7F2] border border-[#E8E5DF] text-[11px] text-stone-700"
                       >
                         {ans}
                       </span>
@@ -584,18 +585,18 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         </div>
       )}
 
-      {/* NAVIGATION TABS (Mobile Dropdown + Fully Responsive Horizontal Tab Strip with Generous Bottom Margin) */}
-      <div className="sticky top-[65px] z-20 bg-slate-950/90 backdrop-blur-md pt-2.5 pb-4 mb-8 sm:mb-10 border-b border-slate-800 shadow-md print:hidden space-y-2.5 max-w-full min-w-0">
+      {/* NAVIGATION TABS (Mobile Dropdown + Fully Responsive Horizontal Tab Strip) */}
+      <div className="sticky top-[65px] z-20 bg-white/95 backdrop-blur-md pt-2.5 pb-4 mb-8 sm:mb-10 border-b border-[#E8E5DF] shadow-xs print:hidden space-y-2.5 max-w-full min-w-0">
         {/* Mobile Dropdown Selector (visible on small mobile screens < 640px) */}
         <div className="sm:hidden px-1">
-          <label htmlFor="mobile-tab-select" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+          <label htmlFor="mobile-tab-select" className="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1">
             Select Analysis Section
           </label>
           <select
             id="mobile-tab-select"
             value={activeTab}
             onChange={(e) => setActiveTab(e.target.value as TabType)}
-            className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-amber-400 shadow-xs cursor-pointer"
+            className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-stone-900 focus:outline-none focus:border-[#B88E3D] shadow-2xs cursor-pointer"
           >
             {tabList.map((tab) => (
               <option key={tab.id} value={tab.id}>
@@ -609,7 +610,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         <div className="relative w-full max-w-full min-w-0 flex items-center gap-1.5">
           <button
             onClick={() => scrollTabs('left')}
-            className="hidden sm:flex p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 shadow-2xs transition-colors shrink-0 cursor-pointer"
+            className="hidden sm:flex p-1.5 rounded-lg bg-white border border-[#E8E5DF] text-stone-700 hover:text-stone-950 hover:bg-[#FAF7F2] shadow-2xs transition-colors shrink-0 cursor-pointer"
             aria-label="Scroll tabs left"
             title="Scroll left"
           >
@@ -618,7 +619,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
           <div
             ref={tabStripRef}
-            className="flex items-center gap-1.5 overflow-x-auto scroll-smooth py-1.5 px-1.5 max-w-full w-full touch-pan-x border border-slate-800 bg-slate-900/90 rounded-xl shadow-2xs [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            className="flex items-center gap-1.5 overflow-x-auto scroll-smooth py-1.5 px-1.5 max-w-full w-full touch-pan-x border border-[#E8E5DF] bg-[#FAF7F2] rounded-xl shadow-2xs [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           >
             {tabList.map((tab) => {
               const Icon = tab.icon;
@@ -629,11 +630,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-amber-500 text-slate-950 shadow-sm font-extrabold'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/80 border border-transparent'
+                      ? 'bg-[#2C221E] text-white shadow-2xs font-extrabold border border-[#2C221E]'
+                      : 'text-stone-700 hover:text-stone-950 hover:bg-white border border-transparent'
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-slate-950' : 'text-amber-400/80'}`} />
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-[#D4A338]' : 'text-[#B88E3D]'}`} />
                   <span className="whitespace-nowrap">{tab.label}</span>
                 </button>
               );
@@ -642,7 +643,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
           <button
             onClick={() => scrollTabs('right')}
-            className="hidden sm:flex p-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 shadow-2xs transition-colors shrink-0 cursor-pointer"
+            className="hidden sm:flex p-1.5 rounded-lg bg-white border border-[#E8E5DF] text-stone-700 hover:text-stone-950 hover:bg-[#FAF7F2] shadow-2xs transition-colors shrink-0 cursor-pointer"
             aria-label="Scroll tabs right"
             title="Scroll right"
           >
@@ -658,26 +659,26 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         <div className="space-y-8 animate-fadeIn">
           {/* Executive Summary & Top Recommendation Box */}
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-md">
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-amber-400" />
+            <div className="md:col-span-2 bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs">
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#B88E3D] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#B88E3D]" />
                 Executive Synthesis
               </h3>
-              <p className="text-sm text-slate-200 leading-relaxed font-sans">
+              <p className="text-sm text-stone-800 leading-relaxed font-sans">
                 {decision.recommendation?.mainReasons?.join(' ') ||
                   `Analyzing ${decision.options.length} options for "${decision.title}".`}
               </p>
 
               {/* Priorities Tags */}
-              <div className="pt-2 border-t border-slate-800">
-                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 block mb-2">
+              <div className="pt-2 border-t border-[#E8E5DF]">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 block mb-2">
                   Priorities Evaluated:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {decision.userPriorities?.map((p, idx) => (
                     <span
                       key={idx}
-                      className="px-2.5 py-1 rounded-full bg-slate-950 text-slate-200 text-xs font-medium border border-slate-800"
+                      className="px-2.5 py-1 rounded-full bg-[#FAF7F2] text-stone-800 text-xs font-medium border border-[#E8E5DF]"
                     >
                       {p}
                     </span>
@@ -687,28 +688,28 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             </div>
 
             {/* Recommendation Score Meter Box */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 relative overflow-hidden shadow-md">
+            <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 relative overflow-hidden shadow-2xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#B88E3D]">
                   Primary Direction
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">
                   {decision.recommendation?.confidenceLevel || 'High'} Confidence
                 </span>
               </div>
 
               <div>
-                <h4 className="font-serif italic text-xl text-white font-bold">
+                <h4 className="font-serif italic text-xl text-stone-900 font-bold">
                   {recommendedOpt?.title}
                 </h4>
-                <p className="text-xs text-slate-300 mt-1.5 leading-relaxed line-clamp-3">
+                <p className="text-xs text-stone-600 mt-1.5 leading-relaxed line-clamp-3">
                   {recommendedOpt?.description}
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-slate-800 space-y-1.5 text-xs">
-                <span className="text-slate-400 font-medium">Primary Operational Risk:</span>
-                <p className="text-amber-300 font-semibold">
+              <div className="pt-3 border-t border-[#E8E5DF] space-y-1.5 text-xs">
+                <span className="text-stone-500 font-medium">Primary Operational Risk:</span>
+                <p className="text-[#B88E3D] font-semibold">
                   {decision.recommendation?.biggestConcern || 'Managing short-term transition.'}
                 </p>
               </div>
@@ -720,20 +721,20 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             <div className="grid md:grid-cols-2 gap-6">
               {/* Why Other Options Lost */}
               {decision.recommendation?.whyNotOptions && (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-md">
-                  <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-                    <Scale className="w-4 h-4 text-amber-400" />
+                <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-3 shadow-2xs">
+                  <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-stone-500 flex items-center gap-2">
+                    <Scale className="w-4 h-4 text-[#B88E3D]" />
                     Why Other Options Lost
                   </h4>
                   <div className="space-y-2 text-xs">
                     {Object.entries(decision.recommendation.whyNotOptions).map(([optId, reason]) => {
                       const opt = decision.options.find((o) => o.id === optId);
                       return (
-                        <div key={optId} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                          <span className="font-serif italic text-white font-bold block">
+                        <div key={optId} className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
+                          <span className="font-serif italic text-stone-900 font-bold block">
                             {opt?.title || optId}
                           </span>
-                          <p className="text-slate-300 leading-relaxed">{reason}</p>
+                          <p className="text-stone-700 leading-relaxed">{reason}</p>
                         </div>
                       );
                     })}
@@ -743,15 +744,15 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
               {/* Conditions that would change the recommendation */}
               {decision.recommendation?.reversalConditions && decision.recommendation.reversalConditions.length > 0 && (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3 shadow-md">
-                  <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-rose-400" />
+                <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-3 shadow-2xs">
+                  <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-stone-500 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600" />
                     Conditions That Would Flip Recommendation
                   </h4>
                   <ul className="space-y-2 text-xs">
                     {decision.recommendation.reversalConditions.map((cond, idx) => (
-                      <li key={idx} className="p-3.5 rounded-xl bg-rose-950/30 border border-rose-900/40 text-slate-200 flex items-start gap-2">
-                        <span className="text-rose-400 font-bold">•</span>
+                      <li key={idx} className="p-3.5 rounded-xl bg-rose-50/50 border border-rose-200 text-stone-800 flex items-start gap-2">
+                        <span className="text-rose-600 font-bold">•</span>
                         <span>{cond}</span>
                       </li>
                     ))}
@@ -763,25 +764,25 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
           {/* Evidence Items Breakdown (Facts vs Assumptions) */}
           {decision.evidenceItems && decision.evidenceItems.length > 0 && (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-md">
-              <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-amber-400" />
+            <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs">
+              <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-stone-500 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#B88E3D]" />
                 Evidence & Information Integrity Breakdown
               </h4>
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {decision.evidenceItems.map((item) => {
                   const categoryColors = {
-                    FACT: 'bg-emerald-950/80 text-emerald-300 border-emerald-800',
-                    ASSUMPTION: 'bg-amber-950/80 text-amber-300 border-amber-800',
-                    INTERPRETATION: 'bg-indigo-950/80 text-indigo-300 border-indigo-800',
-                    UNKNOWN: 'bg-slate-950 text-slate-300 border-slate-800',
+                    FACT: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                    ASSUMPTION: 'bg-amber-50 text-amber-800 border-amber-200',
+                    INTERPRETATION: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+                    UNKNOWN: 'bg-[#FAF7F2] text-stone-700 border-[#E8E5DF]',
                   };
                   return (
-                    <div key={item.id} className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
+                    <div key={item.id} className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2 text-xs">
                       <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${categoryColors[item.category]}`}>
                         {item.category}
                       </span>
-                      <p className="text-slate-200 font-medium leading-relaxed">{item.text}</p>
+                      <p className="text-stone-800 font-medium leading-relaxed">{item.text}</p>
                     </div>
                   );
                 })}
@@ -789,7 +790,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             </div>
           )}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-stone-500">
               Evaluated Options & Scores
             </h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -801,38 +802,38 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 return (
                   <div
                     key={opt.id}
-                    className={`p-6 rounded-2xl border transition-all space-y-4 relative bg-slate-900 ${
+                    className={`p-6 rounded-2xl border transition-all space-y-4 relative bg-white ${
                       isRecommended || isLeader
-                        ? 'border-amber-500/80 shadow-md shadow-amber-500/10'
-                        : 'border-slate-800 shadow-sm'
+                        ? 'border-[#B88E3D] shadow-xs'
+                        : 'border-[#E8E5DF] shadow-2xs'
                     }`}
                   >
                     {(isRecommended || isLeader) && (
-                      <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-slate-950 rounded-full shadow-xs">
+                      <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-[#2C221E] text-white rounded-full shadow-2xs border border-[#2C221E]">
                         {isRecommended ? 'Recommended' : 'Top Matrix Score'}
                       </span>
                     )}
 
                     <div>
-                      <h4 className="font-serif italic text-lg text-white font-bold">
+                      <h4 className="font-serif italic text-lg text-stone-900 font-bold">
                         {opt.title}
                       </h4>
-                      <p className="text-xs text-slate-300 mt-1 leading-relaxed line-clamp-2">
+                      <p className="text-xs text-stone-600 mt-1 leading-relaxed line-clamp-2">
                         {opt.description}
                       </p>
                     </div>
 
                     {/* Score Bar */}
-                    <div className="space-y-1.5 pt-3 border-t border-slate-800">
+                    <div className="space-y-1.5 pt-3 border-t border-[#E8E5DF]">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-400 font-semibold">Weighted Total</span>
-                        <span className="font-mono font-bold text-amber-400 text-sm">
+                        <span className="text-stone-500 font-semibold">Weighted Total</span>
+                        <span className="font-mono font-bold text-[#B88E3D] text-sm">
                           {weightedScore} / 10
                         </span>
                       </div>
-                      <div className="w-full bg-slate-950 border border-slate-800 h-2 rounded-full overflow-hidden">
+                      <div className="w-full bg-[#FAF7F2] border border-[#E8E5DF] h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full transition-all duration-500"
+                          className="bg-[#B88E3D] h-full rounded-full transition-all duration-500"
                           style={{ width: `${(weightedScore / 10) * 100}%` }}
                         />
                       </div>
@@ -849,10 +850,10 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {activeTab === 'prosCons' && (
         <div className="space-y-6 animate-fadeIn">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-stone-500">
               Advantages & Disadvantages
             </h3>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-stone-500">
               Custom items can be added dynamically
             </span>
           </div>
@@ -868,50 +869,50 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={opt.id}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-md"
+                  className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-5 shadow-2xs"
                 >
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h4 className="font-serif italic text-lg text-white font-bold">
+                  <div className="flex items-center justify-between border-b border-[#E8E5DF] pb-3">
+                    <h4 className="font-serif italic text-lg text-stone-900 font-bold">
                       {opt.title}
                     </h4>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleAddProCon(opt.id, 'pro')}
-                        className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-slate-950 text-slate-200 hover:bg-slate-800 hover:text-amber-300 border border-slate-800 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#FAF7F2] text-stone-800 hover:bg-white hover:text-[#B88E3D] border border-[#E8E5DF] rounded transition-colors flex items-center gap-1 cursor-pointer"
                       >
-                        <Plus className="w-3 h-3 text-amber-400" /> Pro
+                        <Plus className="w-3 h-3 text-[#B88E3D]" /> Pro
                       </button>
                       <button
                         onClick={() => handleAddProCon(opt.id, 'con')}
-                        className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-slate-950 text-slate-200 hover:bg-slate-800 hover:text-amber-300 border border-slate-800 rounded transition-colors flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#FAF7F2] text-stone-800 hover:bg-white hover:text-[#B88E3D] border border-[#E8E5DF] rounded transition-colors flex items-center gap-1 cursor-pointer"
                       >
-                        <Plus className="w-3 h-3 text-slate-400" /> Con
+                        <Plus className="w-3 h-3 text-stone-500" /> Con
                       </button>
                     </div>
                   </div>
 
                   {/* PROS LIST */}
                   <div className="space-y-2">
-                    <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
                       <Check className="w-3.5 h-3.5" /> Advantages ({pc.pros.length})
                     </span>
                     <ul className="space-y-2">
                       {pc.pros.map((item, idx) => (
                         <li
                           key={idx}
-                          className="p-3.5 rounded-xl bg-slate-950 border-l-2 border-amber-500 border-y border-r border-slate-800 text-xs flex items-start justify-between gap-3"
+                          className="p-3.5 rounded-xl bg-[#FAF7F2] border-l-2 border-[#B88E3D] border-y border-r border-[#E8E5DF] text-xs flex items-start justify-between gap-3"
                         >
                           <div>
-                            <p className="font-semibold text-slate-100">{item.text}</p>
+                            <p className="font-semibold text-stone-900">{item.text}</p>
                             {item.details && (
-                              <p className="text-[11px] text-slate-400 mt-1">{item.details}</p>
+                              <p className="text-[11px] text-stone-500 mt-1">{item.details}</p>
                             )}
                           </div>
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold shrink-0 ${
                               item.weight === 'high'
-                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                : 'bg-transparent text-slate-400'
+                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                : 'bg-transparent text-stone-500'
                             }`}
                           >
                             {item.weight}
@@ -922,27 +923,27 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                   </div>
 
                   {/* CONS LIST */}
-                  <div className="space-y-2 pt-2 border-t border-slate-800">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> Disadvantages ({pc.cons.length})
+                  <div className="space-y-2 pt-2 border-t border-[#E8E5DF]">
+                    <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Disadvantages ({pc.cons.length})
                     </span>
                     <ul className="space-y-2">
                       {pc.cons.map((item, idx) => (
                         <li
                           key={idx}
-                          className="p-3.5 rounded-xl bg-slate-950 border-l-2 border-rose-500 border-y border-r border-slate-800 text-xs flex items-start justify-between gap-3"
+                          className="p-3.5 rounded-xl bg-[#FAF7F2] border-l-2 border-rose-500 border-y border-r border-[#E8E5DF] text-xs flex items-start justify-between gap-3"
                         >
                           <div>
-                            <p className="font-semibold text-slate-100">{item.text}</p>
+                            <p className="font-semibold text-stone-900">{item.text}</p>
                             {item.details && (
-                              <p className="text-[11px] text-slate-400 mt-1">{item.details}</p>
+                              <p className="text-[11px] text-stone-500 mt-1">{item.details}</p>
                             )}
                           </div>
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold shrink-0 ${
                               item.weight === 'high'
-                                ? 'bg-rose-950/40 text-rose-300 border border-rose-800/40'
-                                : 'bg-transparent text-slate-400'
+                                ? 'bg-rose-100 text-rose-900 border border-rose-300'
+                                : 'bg-transparent text-stone-500'
                             }`}
                           >
                             {item.weight}
@@ -960,16 +961,16 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
       {/* 3. COMPARE TAB */}
       {activeTab === 'compare' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-7 space-y-6 animate-fadeIn shadow-md">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="bg-white border border-[#E8E5DF] rounded-2xl p-5 sm:p-7 space-y-6 animate-fadeIn shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E5DF] pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <Table className="w-4 h-4 text-amber-400" />
-                <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-amber-400">
+                <Table className="w-4 h-4 text-[#B88E3D]" />
+                <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-[#B88E3D]">
                   Side-by-Side Decision Comparison Matrix
                 </h3>
               </div>
-              <p className="text-xs text-slate-300 mt-0.5">
+              <p className="text-xs text-stone-600 mt-0.5">
                 Comprehensive evaluation of all options across qualitative parameters and weighted priorities.
               </p>
             </div>
@@ -980,56 +981,56 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 onClick={handleCopyMatrixMarkdown}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
                   copiedMatrix
-                    ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                    : 'bg-slate-950 hover:bg-slate-800 text-slate-200 border-slate-800'
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                    : 'bg-[#FAF7F2] hover:bg-white text-stone-800 border-[#E8E5DF]'
                 }`}
               >
-                <Check className={`w-3.5 h-3.5 ${copiedMatrix ? 'text-emerald-400' : 'text-slate-400'}`} />
+                <Check className={`w-3.5 h-3.5 ${copiedMatrix ? 'text-emerald-600' : 'text-stone-500'}`} />
                 <span>{copiedMatrix ? 'Copied Markdown!' : 'Copy Table'}</span>
               </button>
             </div>
           </div>
 
           {/* ADD CUSTOM COMPARISON CRITERION INPUT */}
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row items-center gap-2.5">
+          <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] flex flex-col sm:flex-row items-center gap-2.5">
             <input
               type="text"
               value={newCompareCriterion}
               onChange={(e) => setNewCompareCriterion(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddCompareCriterion()}
               placeholder="Add custom evaluation criterion (e.g., Work-Life Balance, Time-to-ROI, Stress Impact)..."
-              className="flex-1 w-full px-3.5 py-2 text-xs bg-slate-900 border border-slate-800 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+              className="flex-1 w-full px-3.5 py-2 text-xs bg-white border border-[#E8E5DF] rounded-lg text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B88E3D]"
             />
             <button
               type="button"
               onClick={handleAddCompareCriterion}
               disabled={!newCompareCriterion.trim()}
-              className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 disabled:opacity-40 rounded-lg transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
+              className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-white bg-[#2C221E] hover:bg-[#3D312B] disabled:opacity-40 rounded-lg transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-1.5 border border-[#2C221E]"
             >
-              <Plus className="w-3.5 h-3.5 text-slate-950 stroke-[3]" />
-              <span>Add Criterion</span>
+              <Plus className="w-3.5 h-3.5 text-[#D4A338] stroke-[3]" />
+              <span className="text-[#D4A338]">Add Criterion</span>
             </button>
           </div>
 
           {/* MAIN MATRIX TABLE */}
-          <div className="overflow-x-auto rounded-xl border border-slate-800">
+          <div className="overflow-x-auto rounded-xl border border-[#E8E5DF]">
             <table className="w-full text-left border-collapse min-w-[680px]">
               <thead>
-                <tr className="bg-slate-950 border-b border-slate-800 text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                <tr className="bg-[#FAF7F2] border-b border-[#E8E5DF] text-[10px] uppercase font-bold text-stone-600 tracking-wider">
                   <th className="py-3.5 px-4 min-w-[180px]">Evaluation Criterion</th>
-                  {decision.options.map((opt, idx) => {
+                  {decision.options.map((opt) => {
                     const isRecommended = opt.id === decision.recommendation?.recommendedOptionId;
                     const isTopScore = opt.id === topScoringOptionId;
                     return (
                       <th key={opt.id} className="py-3.5 px-4 min-w-[180px]">
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-serif italic text-xs text-white font-bold">
+                            <span className="font-serif italic text-xs text-stone-900 font-bold">
                               {opt.title}
                             </span>
                           </div>
                           {(isRecommended || isTopScore) && (
-                            <span className="inline-block px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase bg-amber-500 text-slate-950 rounded">
+                            <span className="inline-block px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase bg-[#2C221E] text-white rounded">
                               {isRecommended ? '★ Recommended' : 'Top Matrix Score'}
                             </span>
                           )}
@@ -1040,11 +1041,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                   <th className="py-3.5 px-4 min-w-[200px]">Trade-Off & Guidance Note</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 text-xs text-slate-200">
+              <tbody className="divide-y divide-[#E8E5DF] text-xs text-stone-800">
                 {effectiveComparisonRows.map((row, rowIdx) => {
                   return (
-                    <tr key={rowIdx} className="hover:bg-slate-950/60 transition-colors">
-                      <td className="py-3.5 px-4 font-serif italic text-amber-300 font-semibold border-r border-slate-800 bg-slate-950/40">
+                    <tr key={rowIdx} className="hover:bg-[#FAF7F2]/80 transition-colors">
+                      <td className="py-3.5 px-4 font-serif italic text-[#B88E3D] font-semibold border-r border-[#E8E5DF] bg-[#FAF7F2]">
                         {row.criterion}
                       </td>
                       {decision.options.map((opt, optIdx) => {
@@ -1052,22 +1053,22 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                         return (
                           <td
                             key={opt.id}
-                            className={`py-3.5 px-4 border-r border-slate-800 ${
-                              cellInfo.isLeader ? 'bg-amber-500/10' : ''
+                            className={`py-3.5 px-4 border-r border-[#E8E5DF] ${
+                              cellInfo.isLeader ? 'bg-amber-50/70' : ''
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <span
                                 className={`font-medium ${
                                   cellInfo.isLeader
-                                    ? 'font-bold text-amber-300'
-                                    : 'text-slate-300'
+                                    ? 'font-bold text-[#B88E3D]'
+                                    : 'text-stone-700'
                                 }`}
                               >
                                 {cellInfo.val}
                               </span>
                               {cellInfo.isLeader && (
-                                <span className="px-1.5 py-0.5 text-[9px] font-bold font-mono uppercase bg-amber-500 text-slate-950 rounded shrink-0 shadow-2xs">
+                                <span className="px-1.5 py-0.5 text-[9px] font-bold font-mono uppercase bg-[#2C221E] text-white rounded shrink-0 shadow-2xs">
                                   Leader
                                 </span>
                               )}
@@ -1075,7 +1076,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                           </td>
                         );
                       })}
-                      <td className="py-3.5 px-4 text-slate-400 text-[11px] leading-relaxed italic bg-slate-950/20">
+                      <td className="py-3.5 px-4 text-stone-500 text-[11px] leading-relaxed italic bg-[#FAF7F2]/50">
                         {row.note || 'Balanced evaluation across options.'}
                       </td>
                     </tr>
@@ -1086,9 +1087,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
 
           {/* FOOTER SUMMARY */}
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-slate-300">
-              <Award className="w-4 h-4 text-amber-400 shrink-0" />
+          <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-stone-700">
+              <Award className="w-4 h-4 text-[#B88E3D] shrink-0" />
               <span>
                 Compare matrix integrates both qualitative AI synthesis and user-customized matrix weights.
               </span>
@@ -1096,7 +1097,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('matrix')}
-              className="px-3 py-1.5 text-xs font-semibold text-amber-300 hover:text-white bg-slate-900 border border-slate-800 rounded-lg shadow-2xs transition-colors shrink-0 cursor-pointer"
+              className="px-3 py-1.5 text-xs font-semibold text-[#B88E3D] hover:text-stone-900 bg-white border border-[#E8E5DF] rounded-lg shadow-2xs transition-colors shrink-0 cursor-pointer"
             >
               Adjust Weighted Matrix →
             </button>

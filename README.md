@@ -26,13 +26,16 @@ The Tiebreaker helps users make better decisions through systematic, AI-driven a
 - AI-generated clarifying questions with suggested answers
 - Evidence classification (FACT, ASSUMPTION, INTERPRETATION, UNKNOWN)
 - Comprehensive pros/cons analysis with weighted factors
+- Clarification state tracking to monitor decision understanding
 
 ### Advanced Analytics
 - SWOT analysis (Strengths, Weaknesses, Opportunities, Threats)
 - Risk assessment with probability, impact, and mitigation strategies
-- Scenario modeling (best case, expected case, worst case)
-- Long-term impact assessment (financial, career, time, learning)
-- Sensitivity analysis with weighted scoring
+- Scenario modeling (short-term and long-term projections)
+- Case scenarios (best case, expected case, worst case)
+- Long-term impact assessment (financial, career, time, learning, opportunity cost)
+- Sensitivity analysis to identify crucial decision factors
+- Weighted scoring with deterministic calculations
 
 ### Deep Thinking Tools
 - Cognitive bias detection and assumption tracking
@@ -40,13 +43,17 @@ The Tiebreaker helps users make better decisions through systematic, AI-driven a
 - Think Deeper Chat for follow-up exploration
 - Blindspot identification and research recommendations
 - Questions to ask mentors and trusted advisors
+- Confidence level evaluation based on information completeness
 
 ### Decision Management
 - Local storage with persistent history
 - Journal entries and outcome tracking
+- Version history for decision iterations
 - Export/Import JSON backup
 - Status tracking (draft, clarifying, analyzed, decided)
+- Decision pattern analysis across saved decisions
 - Sample decision library for learning
+- Favorite decisions and custom notes
 
 ---
 
@@ -67,9 +74,9 @@ The Tiebreaker helps users make better decisions through systematic, AI-driven a
 │                    │ Navigation    │                   │
 │                    └───────────────┘                   │
 └─────────────────────────────────────────────────────────┘
-                            │
-                            │ HTTP/REST API
-                            ▼
+                             │
+                             │ HTTP/REST API
+                             ▼
 ┌─────────────────────────────────────────────────────────┐
 │              Backend (Express + TypeScript)              │
 │  ┌────────────────┐  ┌──────────────────────────┐      │
@@ -162,11 +169,12 @@ npm run clean    # Clean build directory
    - Describe the decision you're facing
    - Add the options you're considering
    - Specify your priorities and values
+   - Set decision metadata (category, time horizon, reversibility)
 
 2. **Answer Clarifying Questions**
    - AI generates targeted questions to gather context
    - Provide answers to improve analysis quality
-   - Set decision metadata (category, time horizon, reversibility)
+   - Review clarification state to ensure understanding
 
 3. **Review Comprehensive Analysis**
    - Executive summary and recommendation
@@ -175,25 +183,30 @@ npm run clean    # Clean build directory
    - Risk assessment with mitigation strategies
    - Scenario modeling (best/expected/worst case)
    - Long-term impact projections
+   - Sensitivity analysis to identify key factors
+   - Evidence classification and assumption tracking
 
 4. **Explore Deeper Insights**
    - Use Think Deeper Chat for follow-up questions
    - Review identified cognitive biases
    - Examine assumptions and missing information
    - Get research recommendations
+   - Review AI-suggested alternatives
 
 5. **Track and Iterate**
    - Save decisions to local history
+   - Add journal entries and track outcomes
    - Export/import decisions as JSON
    - Update outcomes and lessons learned
-   - Review past decisions for patterns
+   - Review decision patterns across your history
+   - Version control for decision iterations
 
 ### Sample Decisions
 
 The application includes pre-built sample analyses to help you understand the platform:
 
-- **Startup Offer vs. CS Degree** - Career path evaluation
-- **Buy Home vs. Rent & Invest** - Financial decision analysis
+- **Remote Startup Offer vs. University Degree** - Career path evaluation with 3 options
+- **Buy Home vs. Rent & Invest** - Financial decision analysis with long-term impact modeling
 - **More samples available in the app**
 
 ---
@@ -225,17 +238,31 @@ Performs comprehensive AI-powered decision analysis.
   "id": "dec_1234567890_abc123",
   "title": "Career Path Decision",
   "summary": "Executive summary...",
+  "originalPrompt": "Should I accept...",
+  "category": "Career",
+  "reversibility": "Somewhat reversible",
+  "timeHorizon": "1 year",
+  "userPriorities": ["Career Growth", "Financial Stability"],
   "options": [...],
+  "clarificationState": {...},
+  "clarifyingQuestions": [...],
   "prosCons": [...],
   "comparison": [...],
   "swot": [...],
   "criteria": [...],
   "weightedScores": {...},
+  "evidenceItems": [...],
+  "assumptionsList": [...],
+  "aiSuggestedAlternatives": [...],
   "risks": [...],
   "scenarios": [...],
+  "caseScenarios": [...],
+  "longTermImpacts": [...],
   "thinkDeeper": {...},
+  "sensitivityAnalysis": [...],
   "recommendation": {...},
   "createdAt": "2025-01-15T10:30:00.000Z",
+  "updatedAt": "2025-01-15T10:30:00.000Z",
   "status": "analyzed"
 }
 ```
@@ -291,6 +318,7 @@ Health check endpoint.
 - **Opportunity costs**: Clear statement of what each option sacrifices
 - **Why-not explanations**: Understand why runner-up options lost
 - **Mitigation strategies**: Practical steps to reduce identified risks
+- **Sensitivity analysis**: Identify which criteria most influence the decision
 
 ---
 
@@ -306,23 +334,26 @@ the-tiebreaker/
 │   │   ├── ResultsDashboard.tsx
 │   │   ├── DecisionHistory.tsx
 │   │   ├── HowItWorksModal.tsx
-│   │   └── Sidebar.tsx
+│   │   ├── Sidebar.tsx
+│   │   └── Footer.tsx
 │   ├── data/               # Sample data and constants
-│   │   └── sampleDecisions.ts
+│   │   ├── sampleDecisions.ts
+│   │   └── decisionTemplates.ts
 │   ├── utils/              # Utility functions
-│   │   └── storage.ts      # Local storage management
+│   │   ├── storage.ts      # Local storage management
+│   │   └── decisionEngine.ts # Scoring, sensitivity, confidence calculations
 │   ├── types.ts            # TypeScript type definitions
 │   ├── App.tsx             # Main application component
 │   ├── main.tsx            # Application entry point
 │   └── index.css           # Global styles
-├── assets/                 # Static assets
-├── server.ts               # Express backend server
-├── package.json            # Dependencies and scripts
-├── tsconfig.json           # TypeScript configuration
-├── vite.config.ts          # Vite configuration
-├── index.html              # HTML entry point
-├── metadata.json           # App metadata
-└── README.md              # This file
+│   ├── assets/                 # Static assets
+│   ├── server.ts               # Express backend server
+│   ├── package.json            # Dependencies and scripts
+│   ├── tsconfig.json           # TypeScript configuration
+│   ├── vite.config.ts          # Vite configuration
+│   ├── index.html              # HTML entry point
+│   ├── metadata.json           # App metadata
+│   └── README.md              # This file
 ```
 
 ---
@@ -352,12 +383,17 @@ We welcome contributions! Please follow these steps:
 ### Manual Testing Checklist
 
 - [ ] Create a new decision with custom options
+- [ ] Set decision metadata (category, reversibility, time horizon)
 - [ ] Answer clarifying questions
-- [ ] Review analysis dashboard
+- [ ] Review analysis dashboard with all tabs
 - [ ] Test Think Deeper Chat
+- [ ] Review evidence classification and assumptions
+- [ ] Check AI-suggested alternatives
 - [ ] Save and load decisions from history
+- [ ] Add journal entries and track outcomes
 - [ ] Export decisions to JSON
 - [ ] Import decisions from JSON
+- [ ] Test sensitivity analysis
 - [ ] Test on mobile viewport
 - [ ] Verify fallback analysis when API is unavailable
 
@@ -390,6 +426,7 @@ We welcome contributions! Please follow these steps:
 - [ ] Mobile native apps (iOS/Android)
 - [ ] Team decision workflows
 - [ ] Historical outcome tracking and learning
+- [ ] Decision pattern insights and recommendations
 
 ---
 
@@ -428,11 +465,3 @@ If you have questions, feedback, or need help:
 
 ---
 
-<div align="center">
-  <p>Built with ❤️ using React, TypeScript, and Google Gemini AI</p>
-  <p>
-    <a href="https://github.com/ArfaMunam47/the-tiebreaker">⭐ Star on GitHub</a> •
-    <a href="https://github.com/ArfaMunam47/the-tiebreaker/issues">🐛 Report Bug</a> •
-    <a href="https://github.com/ArfaMunam47/the-tiebreaker/issues">💡 Request Feature</a>
-  </p>
-</div>
