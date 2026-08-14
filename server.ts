@@ -51,35 +51,16 @@ CRITICAL DECISION INTEGRITY RULE:
 1. ONLY include the options specified by the user in the main "options" array. Never silently add a new third option into "options".
 2. If you conceive of an alternative creative/hybrid option (e.g. Option C), place it strictly in "aiSuggestedAlternatives" (array of { id, title, description, reasoning }) as an AI-SUGGESTED ALTERNATIVE. It MUST NOT be in the main options array or scoring system until explicitly added by the user.
 
-CONFIDENCE RULE:
-If important information is missing or scores are close, set confidenceLevel to "Moderate" or "Low" with a clear confidenceReason explaining why. Do not claim "High" confidence when data is incomplete.
+CRITICAL COMPARISON MATRIX RULE:
+For the "comparison" array, ensure every option in the options array is explicitly evaluated across each criterion.
+Each item in "comparison" MUST contain:
+- criterion: string name (e.g. "Growth Potential", "Immediate Income", "Work-Life Balance", "Risk Profile")
+- scores: an object mapping EXACT option "id" (e.g., "opt1", "opt2") or "title" to a clear descriptive rating string (e.g., "High (8/10)", "Moderate", "Low Risk", "3-6 months")
+- winnerOptionId: the EXACT id of the option that leads for this criterion.
+- note: a concise 1-sentence trade-off summary for this criterion.
 
-Break the decision down systematically into:
-- Category (e.g., Job Offer, Career, Education, Business, Technology, Finance, Relocation, etc.)
-- Reversibility (Easy to reverse, Somewhat reversible, Difficult to reverse, Nearly irreversible)
-- Time Horizon (Immediate, 3 months, 1 year, 3 years, 5+ years)
-- Clarification State (decision summary, options understood, key constraints, assumptions identified, missing information)
-- Pros & Cons (with source strictly 'USER PROVIDED' or 'AI SUGGESTED')
-- Side-by-side Comparison across criteria
-- SWOT analysis
-- Weighted Decision Matrix (criteria with weights summing to 100%, and scores 1-10 for options)
-- Evidence Classification (items labeled FACT, ASSUMPTION, INTERPRETATION, or UNKNOWN)
-- Assumption Audit List (items with status 'confirmed')
-- Risk Analysis (risk, probability, impact, mitigation)
-- Case Scenarios (bestCase, expectedCase, worstCase per option)
-- Long-term Impacts (financial, career, time, learning, opportunity cost)
-- Deep Thinking Insights (assumptions, missing info, biases, blindspots, questions to ask others, research)
-- AI Suggested Alternatives (separate hybrid/creative options)
-- Objective Recommendation containing:
-  - recommendedOptionId and recommendedOptionTitle
-  - mainReasons
-  - biggestConcern
-  - missingInformation
-  - confidenceLevel ('High' | 'Moderate' | 'Low')
-  - confidenceReason
-  - whyNotOptions (map of optionId -> why that runner-up lost)
-  - reversalConditions (array of conditions that would change mind e.g. "If income drops below $X")
-  - opportunityCosts (map of optionId -> what is explicitly sacrificed)`;
+CONFIDENCE RULE:
+If important information is missing or scores are close, set confidenceLevel to "Moderate" or "Low" with a clear confidenceReason explaining why. Do not claim "High" confidence when data is incomplete.`;
 
     const userContextPrompt = `
 Decision Problem: "${prompt.trim()}"

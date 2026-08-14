@@ -252,7 +252,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#18191C] font-sans selection:bg-[#C59B27]/20 selection:text-[#18191C] flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-[#0B0F17] text-slate-100 font-sans selection:bg-amber-500/30 selection:text-amber-200 flex flex-col overflow-x-hidden">
       {/* HEADER */}
       <Header
         onNewDecision={handleNewDecision}
@@ -267,46 +267,47 @@ export default function App() {
       />
 
       {/* MOBILE OVERLAY SIDEBAR DRAWER */}
-      <Sidebar
-        currentDecision={currentDecision}
-        savedDecisions={savedDecisions}
-        activeTab={activeTab}
-        onSelectTab={(tab) => setActiveTab(tab)}
-        onSelectDecision={handleSelectDecision}
-        onNewDecision={handleNewDecision}
-        onOpenHistory={() => setShowHistory(true)}
-        onOpenHowItWorks={() => setShowHowItWorks(true)}
-        onSelectSample={() => handleSelectSample()}
-        savedCount={savedDecisions.length}
-        onExport={handleExport}
-        onImport={handleImport}
-        isOpenMobile={isMobileSidebarOpen}
-        onCloseMobile={() => setIsMobileSidebarOpen(false)}
-      />
+      {isMobileSidebarOpen && (
+        <Sidebar
+          currentDecision={currentDecision}
+          savedDecisions={savedDecisions}
+          activeTab={activeTab}
+          onSelectTab={(tab) => setActiveTab(tab)}
+          onSelectDecision={handleSelectDecision}
+          onNewDecision={handleNewDecision}
+          onOpenHistory={() => setShowHistory(true)}
+          onOpenHowItWorks={() => setShowHowItWorks(true)}
+          onSelectSample={() => handleSelectSample()}
+          savedCount={savedDecisions.length}
+          onExport={handleExport}
+          onImport={handleImport}
+          isOpenMobile={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
 
-      {/* MAIN CONTENT AREA WITH OPTIONAL SIDEBAR INTEGRATION */}
-      <div className="flex-1 flex max-w-full overflow-x-hidden">
-        {/* Persistent desktop sidebar when viewing active dashboard */}
-        {currentDecision && (
-          <div className="hidden lg:block w-64 lg:w-72 shrink-0 border-r border-[#E8E5DF]/60 bg-white min-h-screen">
-            <Sidebar
-              currentDecision={currentDecision}
-              savedDecisions={savedDecisions}
-              activeTab={activeTab}
-              onSelectTab={(tab) => setActiveTab(tab)}
-              onSelectDecision={handleSelectDecision}
-              onNewDecision={handleNewDecision}
-              onOpenHistory={() => setShowHistory(true)}
-              onOpenHowItWorks={() => setShowHowItWorks(true)}
-              onSelectSample={() => handleSelectSample()}
-              savedCount={savedDecisions.length}
-              onExport={handleExport}
-              onImport={handleImport}
-            />
-          </div>
-        )}
+      {/* MAIN CONTENT AREA WITH PERSISTENT APPLICATION SIDEBAR SHELL */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[300px_1fr] w-full max-w-[1536px] mx-auto min-h-[calc(100vh-65px)]">
+        {/* Persistent Desktop Sidebar Shell */}
+        <aside className="hidden lg:block border-r border-slate-800 bg-slate-900 sticky top-[65px] h-[calc(100vh-65px)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0">
+          <Sidebar
+            currentDecision={currentDecision}
+            savedDecisions={savedDecisions}
+            activeTab={activeTab}
+            onSelectTab={(tab) => setActiveTab(tab)}
+            onSelectDecision={handleSelectDecision}
+            onNewDecision={handleNewDecision}
+            onOpenHistory={() => setShowHistory(true)}
+            onOpenHowItWorks={() => setShowHowItWorks(true)}
+            onSelectSample={() => handleSelectSample()}
+            savedCount={savedDecisions.length}
+            onExport={handleExport}
+            onImport={handleImport}
+          />
+        </aside>
 
-        <main className="flex-1 min-w-0 max-w-full overflow-x-hidden">
+        {/* Main Application Workspace */}
+        <main className="flex-1 min-w-0 max-w-full overflow-x-hidden bg-[#0B0F17] p-4 sm:p-6 lg:p-7">
           {currentDecision ? (
             /* RESULTS DASHBOARD VIEW */
             <ResultsDashboard
@@ -321,22 +322,17 @@ export default function App() {
             />
           ) : (
             /* HOMEPAGE & DECISION WORKSPACE VIEW */
-            <div className="space-y-4">
-              <Hero
-                onStartAnalysis={() => {
-                  const el = document.getElementById('workspace');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                onOpenHowItWorks={() => setShowHowItWorks(true)}
-                onSelectSample={handleSelectSample}
-              />
-
-              <DecisionWorkspace
-                onRunAnalysis={handleRunAnalysis}
-                isAnalyzing={isAnalyzing}
-                loadingStep={loadingStep}
-              />
-            </div>
+            <DecisionWorkspace
+              onRunAnalysis={handleRunAnalysis}
+              isAnalyzing={isAnalyzing}
+              loadingStep={loadingStep}
+              onOpenHowItWorks={() => setShowHowItWorks(true)}
+              onSelectSample={handleSelectSample}
+              savedDecisions={savedDecisions}
+              onSelectDecision={handleSelectDecision}
+              onDeleteDecision={handleDeleteDecision}
+              onOpenHistory={() => setShowHistory(true)}
+            />
           )}
         </main>
       </div>
@@ -367,18 +363,18 @@ export default function App() {
 
       {/* SAMPLE DECISION PICKER MODAL */}
       {showSamplePicker && (
-        <div className="fixed inset-0 z-50 bg-[#18191C]/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white border border-[#E8E5DF] rounded-2xl max-w-2xl w-full p-5 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-[#E8E5DF]/60 pb-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-5 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] flex flex-col text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div className="flex items-center gap-2.5">
-                <Sparkles className="w-5 h-5 text-[#B88E3D]" />
-                <h3 className="font-serif italic text-lg sm:text-xl font-semibold text-[#18191C]">
+                <Sparkles className="w-5 h-5 text-amber-400" />
+                <h3 className="font-serif italic text-lg sm:text-xl font-bold text-white">
                   Select a Pre-Built Sample Analysis
                 </h3>
               </div>
               <button
                 onClick={() => setShowSamplePicker(false)}
-                className="p-1.5 text-[#8C909A] hover:text-[#18191C] rounded-lg hover:bg-[#FAF7F2]"
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -389,22 +385,22 @@ export default function App() {
                 <div
                   key={sample.id}
                   onClick={() => handleSelectSample(sample.id)}
-                  className="p-4 sm:p-5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF]/70 hover:border-[#C59B27] cursor-pointer transition-all space-y-2 group shadow-xs"
+                  className="p-4 sm:p-5 rounded-xl bg-slate-950/80 border border-slate-800 hover:border-amber-500/70 cursor-pointer transition-all space-y-2 group shadow-sm"
                 >
                   <div className="flex items-center justify-between">
-                    <h4 className="font-serif italic text-base font-semibold text-[#18191C] group-hover:text-[#B88E3D] transition-colors">
+                    <h4 className="font-serif italic text-base font-bold text-white group-hover:text-amber-300 transition-colors">
                       {sample.title}
                     </h4>
-                    <span className="text-[#B88E3D] text-xs font-semibold uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-amber-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       Load Analysis <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
 
-                  <p className="text-xs text-[#595E68] line-clamp-2">
+                  <p className="text-xs text-slate-300 line-clamp-2">
                     {sample.originalPrompt}
                   </p>
 
-                  <div className="flex items-center gap-2 text-[11px] font-mono text-[#8C909A] pt-1">
+                  <div className="flex items-center gap-2 text-[11px] font-mono text-slate-400 pt-1">
                     <span>{sample.options.length} Options</span>
                     <span>•</span>
                     <span>{sample.criteria.length} Matrix Criteria</span>

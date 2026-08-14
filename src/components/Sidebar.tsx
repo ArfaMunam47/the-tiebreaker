@@ -75,31 +75,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const content = (
-    <div className="h-full flex flex-col justify-between p-5 text-sm bg-white border-r border-[#E8E5DF]/60 select-none overflow-y-auto">
-      <div className="space-y-6">
+    <div className="min-h-full flex flex-col justify-between p-5 text-sm bg-slate-900 text-slate-100 select-none space-y-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden border-r border-slate-800">
+      {/* TOP CONTAINER */}
+      <div className="space-y-5">
         {/* Brand & Identity */}
-        <div className="pb-4 border-b border-[#E8E5DF]/50">
+        <div className="pb-3 border-b border-slate-800">
           <div className="flex items-center justify-between">
             <button
               onClick={() => {
                 onNewDecision();
                 if (onCloseMobile) onCloseMobile();
               }}
-              className="flex items-center gap-3 text-left group focus:outline-none"
+              className="flex items-center gap-3 text-left group focus:outline-none cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-lg bg-[#18191C] text-[#C59B27] flex items-center justify-center shrink-0 shadow-xs group-hover:bg-[#C59B27] group-hover:text-white transition-colors">
-                <span className="font-serif italic font-bold text-lg leading-none">T</span>
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-all">
+                <span className="font-serif italic font-extrabold text-xl leading-none">T</span>
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="font-serif italic font-semibold text-lg text-[#18191C] tracking-tight group-hover:text-[#C59B27] transition-colors">
+                  <span className="font-serif italic font-bold text-lg text-white tracking-tight group-hover:text-amber-300 transition-colors">
                     Tie Breaker
                   </span>
-                  <span className="text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#FAF7F2] text-[#B88E3D] border border-[#E8E5DF]/60">
+                  <span className="text-[9px] font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
                     Studio
                   </span>
                 </div>
-                <p className="text-[11px] text-[#646974] font-medium tracking-wide">
+                <p className="text-[11px] text-slate-400 font-medium tracking-wide">
                   Decision Intelligence Studio
                 </p>
               </div>
@@ -109,7 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {isOpenMobile && onCloseMobile && (
               <button
                 onClick={onCloseMobile}
-                className="p-1.5 text-[#646974] hover:text-[#18191C] rounded-lg hover:bg-[#FAF7F2] lg:hidden transition-colors"
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 lg:hidden transition-colors cursor-pointer"
                 aria-label="Close sidebar"
               >
                 <X className="w-5 h-5" />
@@ -125,33 +126,35 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onNewDecision();
               if (onCloseMobile) onCloseMobile();
             }}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#18191C] hover:bg-[#2A2D34] text-white font-semibold text-xs tracking-wider uppercase transition-all shadow-xs active:scale-[0.99] group"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-extrabold text-xs tracking-wider uppercase transition-all shadow-md active:scale-[0.99] group cursor-pointer"
           >
-            <Plus className="w-4 h-4 text-[#C59B27] group-hover:rotate-90 transition-transform duration-300" />
+            <Plus className="w-4 h-4 text-slate-950 stroke-[3] group-hover:rotate-90 transition-transform duration-300" />
             <span>New Decision</span>
           </button>
         </div>
 
         {/* Active Decision Navigation (If active) */}
         {currentDecision && (
-          <div className="space-y-1.5 pt-1">
-            <div className="px-1 pb-1 flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8C909A]">
+          <div className="space-y-2">
+            <div className="px-1 flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
                 Active Analysis
               </span>
-              <span className="text-[10px] font-mono text-[#B88E3D] font-semibold truncate max-w-[90px]">
+              <span className="text-[10px] font-mono text-amber-400 font-bold">
                 {currentDecision.options.length} Options
               </span>
             </div>
 
-            <div className="px-2.5 py-2 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF]/60 mb-3">
-              <div className="flex items-center gap-1.5 text-[#18191C] text-xs font-serif italic truncate font-medium">
-                <FileText className="w-3.5 h-3.5 text-[#B88E3D] shrink-0" />
-                <span className="truncate">{currentDecision.title}</span>
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-amber-500/30 shadow-2xs">
+              <div className="flex items-center gap-2 text-white text-xs font-serif italic font-bold leading-snug">
+                <FileText className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span className="line-clamp-2" title={currentDecision.title}>
+                  {currentDecision.title}
+                </span>
               </div>
             </div>
 
-            <nav className="space-y-0.5">
+            <nav className="space-y-1 pt-1">
               {analysisTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isSelected = activeTab === tab.id;
@@ -162,21 +165,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       if (onSelectTab) onSelectTab(tab.id);
                       if (onCloseMobile) onCloseMobile();
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                    className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-[#18191C] text-white font-semibold shadow-xs'
-                        : 'text-[#595E68] hover:text-[#18191C] hover:bg-[#FAF7F2]'
+                        ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 truncate">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <Icon
                         className={`w-4 h-4 shrink-0 ${
-                          isSelected ? 'text-[#C59B27]' : 'text-[#8C909A]'
+                          isSelected ? 'text-slate-950' : 'text-amber-400/80'
                         }`}
                       />
                       <span className="truncate">{tab.label}</span>
                     </div>
-                    {isSelected && <ChevronRight className="w-3 h-3 text-[#C59B27]" />}
+                    {isSelected && <ChevronRight className="w-3.5 h-3.5 text-slate-950 shrink-0 stroke-[3]" />}
                   </button>
                 );
               })}
@@ -184,14 +187,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
-        {/* Saved Decisions List in Sidebar if available */}
+        {/* Saved Decisions List in Sidebar */}
         {savedDecisions.length > 0 && onSelectDecision && (
-          <div className="space-y-1.5 pt-3 border-t border-[#E8E5DF]/50">
-            <span className="px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8C909A] block mb-1">
-              Recent History
-            </span>
-            <div className="space-y-1 max-h-40 overflow-y-auto pr-1 text-xs">
-              {savedDecisions.slice(0, 5).map((dec) => {
+          <div className="space-y-2 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                Recent Decisions
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">
+                {savedDecisions.length}
+              </span>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              {savedDecisions.slice(0, 6).map((dec) => {
                 const isActive = currentDecision?.id === dec.id;
                 return (
                   <button
@@ -200,13 +208,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       onSelectDecision(dec);
                       if (onCloseMobile) onCloseMobile();
                     }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-md truncate transition-colors ${
+                    title={dec.title}
+                    className={`w-full text-left p-2.5 rounded-xl transition-all cursor-pointer border ${
                       isActive
-                        ? 'bg-[#FAF7F2] font-semibold text-[#18191C] border border-[#E8E5DF]/60'
-                        : 'text-[#595E68] hover:text-[#18191C] hover:bg-[#FAF7F2]'
+                        ? 'bg-slate-800 font-bold text-amber-300 border-amber-500/80 shadow-2xs'
+                        : 'bg-slate-950/70 text-slate-300 hover:text-white hover:bg-slate-800/80 border-slate-800'
                     }`}
                   >
-                    <span className="truncate block font-serif italic">{dec.title}</span>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+                      <span className="font-mono uppercase font-bold text-amber-400">
+                        {dec.category || 'Decision'}
+                      </span>
+                      <span>{new Date(dec.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <span className="line-clamp-2 block font-serif italic text-xs leading-snug">
+                      {dec.title}
+                    </span>
                   </button>
                 );
               })}
@@ -215,8 +232,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         {/* Studio Navigation & Tools */}
-        <div className="space-y-1 pt-3 border-t border-[#E8E5DF]/50">
-          <span className="px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8C909A] block mb-1">
+        <div className="space-y-1 pt-3 border-t border-slate-800">
+          <span className="px-1 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400 block mb-1.5">
             Decision Studio
           </span>
 
@@ -225,14 +242,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onOpenHistory();
               if (onCloseMobile) onCloseMobile();
             }}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-[#595E68] hover:text-[#18191C] hover:bg-[#FAF7F2] transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2.5">
-              <History className="w-4 h-4 text-[#8C909A]" />
+              <History className="w-4 h-4 text-amber-400" />
               <span>Saved Library</span>
             </div>
             {savedCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FAF7F2] text-[#B88E3D] border border-[#E8E5DF]/60">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                 {savedCount}
               </span>
             )}
@@ -243,11 +260,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onSelectSample();
               if (onCloseMobile) onCloseMobile();
             }}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-[#595E68] hover:text-[#18191C] hover:bg-[#FAF7F2] transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2.5">
-              <Sparkles className="w-4 h-4 text-[#B88E3D]" />
-              <span>Sample Analyses</span>
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Sample Scenarios</span>
             </div>
           </button>
 
@@ -256,40 +273,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onOpenHowItWorks();
               if (onCloseMobile) onCloseMobile();
             }}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium text-[#595E68] hover:text-[#18191C] hover:bg-[#FAF7F2] transition-colors"
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2.5">
-              <HelpCircle className="w-4 h-4 text-[#8C909A]" />
+              <HelpCircle className="w-4 h-4 text-slate-400" />
               <span>Methodology</span>
             </div>
           </button>
         </div>
       </div>
 
-      {/* Footer & Import/Export */}
-      <div className="pt-4 mt-6 border-t border-[#E8E5DF]/50 space-y-3">
+      {/* BOTTOM CONTAINER */}
+      <div className="pt-4 border-t border-slate-800 space-y-3">
         <div className="flex items-center justify-between px-1">
-          <span className="text-[11px] font-medium text-[#8C909A]">Backup & Data</span>
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Backup & Data</span>
           <div className="flex items-center gap-1">
             <button
               onClick={onExport}
               title="Export Decisions JSON"
-              className="p-1.5 text-[#595E68] hover:text-[#18191C] hover:bg-[#FAF7F2] rounded-lg transition-colors"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer border border-slate-800"
             >
               <Download className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={onImport}
               title="Import Decisions JSON"
-              className="p-1.5 text-[#595E68] hover:text-[#18191C] hover:bg-[#FAF7F2] rounded-lg transition-colors"
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer border border-slate-800"
             >
               <Upload className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
 
-        <div className="px-2.5 py-2 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF]/60">
-          <p className="text-[10px] text-[#646974] leading-relaxed italic font-serif">
+        <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+          <p className="text-[11px] text-slate-400 leading-relaxed italic font-serif">
             "Don't decide for me. Help me decide better."
           </p>
         </div>
@@ -297,26 +314,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </div>
   );
 
-  return (
-    <>
-      {/* Desktop Persistent Sidebar */}
-      <aside className="hidden lg:block w-64 lg:w-72 shrink-0 h-full">
-        {content}
-      </aside>
-
-      {/* Mobile Slide-over Drawer */}
-      {isOpenMobile && (
-        <div className="fixed inset-0 z-50 lg:hidden flex">
-          <div
-            className="fixed inset-0 bg-[#18191C]/40 backdrop-blur-xs transition-opacity animate-fadeIn"
-            onClick={onCloseMobile}
-          />
-          <div className="relative w-72 max-w-[85vw] bg-white h-full shadow-2xl z-10 animate-slideRight">
-            {content}
-          </div>
+  if (isOpenMobile) {
+    return (
+      <div className="fixed inset-0 z-50 lg:hidden flex">
+        <div
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs transition-opacity animate-fadeIn"
+          onClick={onCloseMobile}
+        />
+        <div className="relative w-72 max-w-[85vw] bg-slate-900 h-full shadow-2xl z-10 animate-slideRight">
+          {content}
         </div>
-      )}
-    </>
-  );
+      </div>
+    );
+  }
+
+  return content;
 };
 
