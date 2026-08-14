@@ -437,6 +437,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you have questions, feedback, or need help:
 
+<<<<<<< HEAD
 - **Issues**: [GitHub Issues](https://github.com/ArfaMunam47/the-tiebreaker/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/ArfaMunam47/the-tiebreaker/discussions)
 - **Email**: support@thetiebreaker.app
@@ -478,3 +479,9 @@ If you have questions, feedback, or need help:
     <a href="https://github.com/ArfaMunam47/the-tiebreaker/issues">Request Feature</a>
   </p>
 </div>
+=======
+- **Email**: arfamunam01@gmail.com
+
+---
+
+>>>>>>> 67749bac8102886d5d82d5a3de920178cf4bddc6
