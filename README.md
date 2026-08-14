@@ -440,17 +440,11 @@ If you have questions, feedback, or need help:
 <<<<<<< HEAD
 - **Issues**: [GitHub Issues](https://github.com/ArfaMunam47/the-tiebreaker/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/ArfaMunam47/the-tiebreaker/discussions)
-- **Email**: support@thetiebreaker.app
+- **Email**: arfamunam01@gmail.com
 
 ---
 
-## Related Projects
 
-- [Google AI Studio](https://ai.google.dev/) - Build AI-powered applications
-- [Gemini API Documentation](https://ai.google.dev/gemini-api/docs) - Official API docs
-- [React Documentation](https://react.dev/) - Learn React
-
----
 
 ## Key Design Principles
 
@@ -468,20 +462,3 @@ If you have questions, feedback, or need help:
 - **Reversal conditions**: Explicit triggers that would change the recommendation
 - **Opportunity costs**: Clear statement of what each option sacrifices
 - **Why-not explanations**: Understand why runner-up options lost
-
----
-
-<div align="center">
-  <p>Built with ❤️ using React, TypeScript, and Google Gemini AI</p>
-  <p>
-    <a href="https://github.com/ArfaMunam47/the-tiebreaker">Star on GitHub</a> •
-    <a href="https://github.com/ArfaMunam47/the-tiebreaker/issues">Report Bug</a> •
-    <a href="https://github.com/ArfaMunam47/the-tiebreaker/issues">Request Feature</a>
-  </p>
-</div>
-=======
-- **Email**: arfamunam01@gmail.com
-
----
-
->>>>>>> 67749bac8102886d5d82d5a3de920178cf4bddc6
