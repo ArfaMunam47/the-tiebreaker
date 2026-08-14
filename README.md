@@ -427,12 +427,3 @@ If you have questions, feedback, or need help:
 - Icons by [Lucide](https://lucide.dev/)
 
 ---
-
-<div align="center">
-  <p>Built with ❤️ using React, TypeScript, and Google Gemini AI</p>
-  <p>
-    <a href="https://github.com/ArfaMunam47/the-tiebreaker">⭐ Star on GitHub</a> •
-    <a href="https://github.com/ArfaMunam47/the-tiebreaker/issues">🐛 Report Bug</a> •
-    <a href="https://github.com/ArfaMunam47/the-tiebreaker/issues">💡 Request Feature</a>
-  </p>
-</div>
