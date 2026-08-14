@@ -1,0 +1,148 @@
+import { DecisionCategory, ReversibilityLevel, TimeHorizon } from '../types';
+
+export interface DecisionTemplate {
+  id: string;
+  category: DecisionCategory;
+  title: string;
+  description: string;
+  prompt: string;
+  reversibility: ReversibilityLevel;
+  timeHorizon: TimeHorizon;
+  options: string[];
+  priorities: string[];
+}
+
+export const DECISION_TEMPLATES: DecisionTemplate[] = [
+  {
+    id: 'tmpl_job_offer',
+    category: 'Job Offer',
+    title: 'Comparing Job Offers vs Current Role',
+    description: 'Structure trade-offs between a high-growth startup offer, corporate position, or current role.',
+    prompt: 'I have a job offer from an early-stage remote startup paying $90k/yr with stock options versus staying in my current stable corporate role paying $80k/yr.',
+    reversibility: 'Somewhat reversible',
+    timeHorizon: '1 year',
+    options: ['Accept Startup Offer', 'Stay in Current Corporate Role', 'Negotiate Counter-Offer'],
+    priorities: ['Career Growth', 'Money & Income', 'Long-term Stability', 'Time Flexibility'],
+  },
+  {
+    id: 'tmpl_career_upskill',
+    category: 'Career',
+    title: 'Accept Low-Paid Job vs 6-Month Intensive Upskilling',
+    description: 'Decide whether to take an immediate lower-paying job or spend 6 months gaining high-value skills for global opportunities.',
+    prompt: 'I have two options: accept a remote junior full-stack developer job paying $900/month, or spend six months improving my MERN and AI skills before applying for higher-paying international opportunities.',
+    reversibility: 'Somewhat reversible',
+    timeHorizon: '1 year',
+    options: ['Accept $900/mo Junior Developer Job', 'Spend 6 Months Upskilling MERN & AI'],
+    priorities: ['Career Growth', 'Money & Income', 'Learning & Mastery', 'Time Flexibility', 'Long-term Stability'],
+  },
+  {
+    id: 'tmpl_education',
+    category: 'Education',
+    title: 'Master’s Degree vs Self-Taught Industry Work',
+    description: 'Evaluate university graduate school investment versus gaining direct industry work experience.',
+    prompt: 'Should I enroll in a 2-year Master’s degree program in Computer Science costing $30,000, or build real-world software products and apply directly to engineering roles?',
+    reversibility: 'Difficult to reverse',
+    timeHorizon: '3 years',
+    options: ['Enroll in Master’s Degree', 'Self-Taught & Direct Product Building'],
+    priorities: ['Learning & Mastery', 'Money & Income', 'Career Growth', 'Risk Tolerance'],
+  },
+  {
+    id: 'tmpl_startup',
+    category: 'Startup',
+    title: 'Bootstrap vs Seek Venture Capital Funding',
+    description: 'Compare full ownership bootstrapping against VC backing for product speed and scale.',
+    prompt: 'We built a working SaaS MVP with 100 paying users. Should we bootstrap through revenue or pitch venture capital investors for a $500k seed round?',
+    reversibility: 'Difficult to reverse',
+    timeHorizon: '3 years',
+    options: ['Bootstrap with Revenue Growth', 'Raise $500k Venture Capital Seed Round'],
+    priorities: ['Freedom & Autonomy', 'Money & Income', 'Long-term Stability', 'Career Growth'],
+  },
+  {
+    id: 'tmpl_finance_house',
+    category: 'Finance',
+    title: 'Buy a House vs Rent & Invest the Surplus',
+    description: 'Weigh real estate homeownership against renting flexibility and stock portfolio growth.',
+    prompt: 'Should I buy a $400k suburban home requiring a $80k down payment, or continue renting in the city and invest the down payment into index funds?',
+    reversibility: 'Difficult to reverse',
+    timeHorizon: '5+ years',
+    options: ['Buy $400k Suburban Home', 'Rent & Invest Surplus into Index Funds'],
+    priorities: ['Long-term Stability', 'Money & Income', 'Time Flexibility', 'Risk Tolerance'],
+  },
+  {
+    id: 'tmpl_relocation',
+    category: 'Relocation',
+    title: 'Relocate Abroad vs Stay in Hometown',
+    description: 'Assess international relocation for career and lifestyle versus staying close to family networks.',
+    prompt: 'Should I relocate to London for a senior engineering role, or stay in my home country close to family and friends while working remotely?',
+    reversibility: 'Somewhat reversible',
+    timeHorizon: '3 years',
+    options: ['Relocate to London', 'Stay in Hometown (Remote Work)'],
+    priorities: ['Career Growth', 'Family & Relationships', 'Health & Wellbeing', 'Freedom & Autonomy'],
+  },
+  {
+    id: 'tmpl_tech_stack',
+    category: 'Technology',
+    title: 'Re-Architect App to Microservices vs Monolith',
+    description: 'Decide whether to refactor a growing application or maintain a modular monolith.',
+    prompt: 'Should we re-architect our core backend into microservices or refine our existing Node.js modular monolith to improve developer velocity and scale?',
+    reversibility: 'Somewhat reversible',
+    timeHorizon: '1 year',
+    options: ['Re-architect to Microservices', 'Refine Modular Monolith'],
+    priorities: ['Time Flexibility', 'Risk Tolerance', 'Learning & Mastery'],
+  },
+  {
+    id: 'tmpl_business_pivot',
+    category: 'Business',
+    title: 'B2B Enterprise Pivot vs B2C Self-Serve SaaS',
+    description: 'Structure strategic focus between high-touch B2B contracts vs high-volume B2C scale.',
+    prompt: 'Should our company focus exclusively on high-touch enterprise contracts ($20k ARR) or build a self-serve B2C product tier ($30/month)?',
+    reversibility: 'Somewhat reversible',
+    timeHorizon: '1 year',
+    options: ['B2B Enterprise Focus', 'B2C Self-Serve Focus', 'Hybrid Freemium Strategy'],
+    priorities: ['Money & Income', 'Long-term Stability', 'Freedom & Autonomy'],
+  },
+  {
+    id: 'tmpl_purchase',
+    category: 'Purchase',
+    title: 'Buy Electric Vehicle vs Keep Gasoline Vehicle',
+    description: 'Evaluate upfront EV investment against long-term fuel and maintenance savings.',
+    prompt: 'Should I buy a new $45,000 Electric Vehicle now, or keep driving my paid-off gasoline sedan for another 3 years?',
+    reversibility: 'Easy to reverse',
+    timeHorizon: '3 years',
+    options: ['Buy New $45k Electric Vehicle', 'Keep Gasoline Sedan for 3 Years'],
+    priorities: ['Money & Income', 'Health & Wellbeing', 'Risk Tolerance'],
+  },
+  {
+    id: 'tmpl_travel',
+    category: 'Travel',
+    title: '1-Year Digital Nomad Sabbatical vs Career Acceleration',
+    description: 'Compare taking a remote travel sabbatical against staying focused on rapid corporate promotion.',
+    prompt: 'Should I take a 1-year remote digital nomad sabbatical traveling SE Asia while freelancing, or stay dedicated in the office for promotion to Staff Engineer?',
+    reversibility: 'Easy to reverse',
+    timeHorizon: '1 year',
+    options: ['1-Year Digital Nomad Sabbatical', 'Stay Focused on Promotion in Office'],
+    priorities: ['Freedom & Autonomy', 'Career Growth', 'Health & Wellbeing', 'Money & Income'],
+  },
+  {
+    id: 'tmpl_relationships',
+    category: 'Relationships',
+    title: 'Co-Founder Partnership vs Solo Ownership',
+    description: 'Decide whether to bring on a technical co-founder for equity share or build solo.',
+    prompt: 'Should I bring on a technical co-founder and split equity 50/50, or hire freelance developers and retain 100% equity ownership?',
+    reversibility: 'Nearly irreversible',
+    timeHorizon: '3 years',
+    options: ['Bring On Technical Co-Founder (50/50)', 'Build Solo & Hire Freelancers'],
+    priorities: ['Freedom & Autonomy', 'Risk Tolerance', 'Career Growth'],
+  },
+  {
+    id: 'tmpl_project',
+    category: 'Project',
+    title: 'In-House AI Engine vs Third-Party API Integration',
+    description: 'Assess building proprietary machine learning pipelines versus leveraging external AI APIs.',
+    prompt: 'Should our engineering team train and host custom open-source models in-house, or integrate managed Gemini AI APIs for fast time-to-market?',
+    reversibility: 'Somewhat reversible',
+    timeHorizon: '1 year',
+    options: ['Integrate Managed Gemini APIs', 'Build In-House Custom ML Pipelines'],
+    priorities: ['Time Flexibility', 'Money & Income', 'Learning & Mastery'],
+  },
+];

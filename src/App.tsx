@@ -11,17 +11,22 @@ import {
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { DecisionWorkspace } from './components/DecisionWorkspace';
-import { ResultsDashboard } from './components/ResultsDashboard';
+import { ResultsDashboard, TabType } from './components/ResultsDashboard';
 import { DecisionHistory } from './components/DecisionHistory';
 import { HowItWorksModal } from './components/HowItWorksModal';
 import { Footer } from './components/Footer';
+import { Sidebar } from './components/Sidebar';
 import { Sparkles, ArrowRight, X } from 'lucide-react';
 
 export default function App() {
   const [savedDecisions, setSavedDecisions] = useState<DecisionAnalysis[]>([]);
   const [currentDecision, setCurrentDecision] = useState<DecisionAnalysis | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+
+  // Mobile sidebar drawer state
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Modals & Drawers
   const [showHistory, setShowHistory] = useState(false);
@@ -39,12 +44,15 @@ export default function App() {
     prompt: string,
     options: string[],
     priorities: string[],
-    clarifyingAnswers: Record<string, string>
+    clarifyingAnswers: Record<string, string>,
+    category?: any,
+    reversibility?: any,
+    timeHorizon?: any,
+    clarificationState?: any
   ) => {
     setIsAnalyzing(true);
     setLoadingStep(0);
 
-    // Step progression intervals
     const stepTimer1 = setTimeout(() => setLoadingStep(1), 1400);
     const stepTimer2 = setTimeout(() => setLoadingStep(2), 2800);
 
@@ -57,6 +65,10 @@ export default function App() {
           options,
           priorities,
           clarifyingAnswers,
+          category,
+          reversibility,
+          timeHorizon,
+          clarificationState,
         }),
       });
 
@@ -66,25 +78,27 @@ export default function App() {
 
       const analysisResult: DecisionAnalysis = await response.json();
 
-      // Save to storage
       saveDecision(analysisResult);
       setSavedDecisions(getSavedDecisions());
       setCurrentDecision(analysisResult);
+      setActiveTab('overview');
 
-      // Scroll to top of results
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Analysis failed, using resilient fallback analysis:', error);
-      // Construct fallback analysis so user never sees a broken experience
       const fallbackResult: DecisionAnalysis = {
         id: 'dec_' + Date.now(),
         title: prompt.length > 50 ? prompt.slice(0, 47) + '...' : prompt,
         originalPrompt: prompt,
+        category: category || 'Career',
+        reversibility: reversibility || 'Somewhat reversible',
+        timeHorizon: timeHorizon || '1 year',
         userPriorities: priorities.length > 0 ? priorities : ['Career Growth', 'Financial Outcome'],
         options: options.length >= 2 ? options.map((o, idx) => ({ id: `opt${idx + 1}`, title: o, description: `Option path: ${o}` })) : [
           { id: 'opt1', title: options[0] || 'Option 1: Change Path', description: 'Pursue proactive change with potential higher upside.' },
           { id: 'opt2', title: options[1] || 'Option 2: Status Quo', description: 'Maintain current path for predictability.' },
         ],
+        clarificationState,
         clarifyingQuestions: [
           { id: 'q1', question: 'What is your non-negotiable factor in this decision?', suggestedAnswers: ['Income level', 'Work-life balance', 'Growth potential'] }
         ],
@@ -147,6 +161,7 @@ export default function App() {
       saveDecision(fallbackResult);
       setSavedDecisions(getSavedDecisions());
       setCurrentDecision(fallbackResult);
+      setActiveTab('overview');
     } finally {
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
@@ -156,6 +171,7 @@ export default function App() {
 
   const handleSelectDecision = (decision: DecisionAnalysis) => {
     setCurrentDecision(decision);
+    setActiveTab('overview');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -190,7 +206,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `the_tiebreaker_decisions_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `tie_breaker_decisions_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -227,6 +243,7 @@ export default function App() {
       if (found) {
         setCurrentDecision(found);
         setShowSamplePicker(false);
+        setActiveTab('overview');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
@@ -235,7 +252,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#F5F5F0] font-sans selection:bg-[#D4AF37]/30 selection:text-[#D4AF37]">
+    <div className="min-h-screen bg-[#FAF8F5] text-[#18191C] font-sans selection:bg-[#C59B27]/20 selection:text-[#18191C] flex flex-col overflow-x-hidden">
       {/* HEADER */}
       <Header
         onNewDecision={handleNewDecision}
@@ -245,41 +262,84 @@ export default function App() {
         savedCount={savedDecisions.length}
         onExport={handleExport}
         onImport={handleImport}
+        currentDecisionTitle={currentDecision?.title}
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
       />
 
-      {/* MAIN CONTENT AREA */}
-      <main>
-        {currentDecision ? (
-          /* RESULTS DASHBOARD VIEW */
-          <ResultsDashboard
-            decision={currentDecision}
-            onUpdateDecision={handleUpdateDecision}
-            onSave={() => {
-              saveDecision(currentDecision);
-              setSavedDecisions(getSavedDecisions());
-            }}
-            onNewDecision={handleNewDecision}
-          />
-        ) : (
-          /* HOMEPAGE & DECISION WORKSPACE VIEW */
-          <div className="space-y-4">
-            <Hero
-              onStartAnalysis={() => {
-                const el = document.getElementById('workspace');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }}
-              onOpenHowItWorks={() => setShowHowItWorks(true)}
-              onSelectSample={handleSelectSample}
-            />
+      {/* MOBILE OVERLAY SIDEBAR DRAWER */}
+      <Sidebar
+        currentDecision={currentDecision}
+        savedDecisions={savedDecisions}
+        activeTab={activeTab}
+        onSelectTab={(tab) => setActiveTab(tab)}
+        onSelectDecision={handleSelectDecision}
+        onNewDecision={handleNewDecision}
+        onOpenHistory={() => setShowHistory(true)}
+        onOpenHowItWorks={() => setShowHowItWorks(true)}
+        onSelectSample={() => handleSelectSample()}
+        savedCount={savedDecisions.length}
+        onExport={handleExport}
+        onImport={handleImport}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+      />
 
-            <DecisionWorkspace
-              onRunAnalysis={handleRunAnalysis}
-              isAnalyzing={isAnalyzing}
-              loadingStep={loadingStep}
+      {/* MAIN CONTENT AREA WITH OPTIONAL SIDEBAR INTEGRATION */}
+      <div className="flex-1 flex max-w-full overflow-x-hidden">
+        {/* Persistent desktop sidebar when viewing active dashboard */}
+        {currentDecision && (
+          <div className="hidden lg:block w-64 lg:w-72 shrink-0 border-r border-[#E8E5DF]/60 bg-white min-h-screen">
+            <Sidebar
+              currentDecision={currentDecision}
+              savedDecisions={savedDecisions}
+              activeTab={activeTab}
+              onSelectTab={(tab) => setActiveTab(tab)}
+              onSelectDecision={handleSelectDecision}
+              onNewDecision={handleNewDecision}
+              onOpenHistory={() => setShowHistory(true)}
+              onOpenHowItWorks={() => setShowHowItWorks(true)}
+              onSelectSample={() => handleSelectSample()}
+              savedCount={savedDecisions.length}
+              onExport={handleExport}
+              onImport={handleImport}
             />
           </div>
         )}
-      </main>
+
+        <main className="flex-1 min-w-0 max-w-full overflow-x-hidden">
+          {currentDecision ? (
+            /* RESULTS DASHBOARD VIEW */
+            <ResultsDashboard
+              decision={currentDecision}
+              onUpdateDecision={handleUpdateDecision}
+              onSave={() => {
+                saveDecision(currentDecision);
+                setSavedDecisions(getSavedDecisions());
+              }}
+              onNewDecision={handleNewDecision}
+              initialTab={activeTab}
+            />
+          ) : (
+            /* HOMEPAGE & DECISION WORKSPACE VIEW */
+            <div className="space-y-4">
+              <Hero
+                onStartAnalysis={() => {
+                  const el = document.getElementById('workspace');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                onOpenHowItWorks={() => setShowHowItWorks(true)}
+                onSelectSample={handleSelectSample}
+              />
+
+              <DecisionWorkspace
+                onRunAnalysis={handleRunAnalysis}
+                isAnalyzing={isAnalyzing}
+                loadingStep={loadingStep}
+              />
+            </div>
+          )}
+        </main>
+      </div>
 
       {/* FOOTER */}
       <Footer />
@@ -307,44 +367,44 @@ export default function App() {
 
       {/* SAMPLE DECISION PICKER MODAL */}
       {showSamplePicker && (
-        <div className="fixed inset-0 z-50 bg-[#0A0A0A]/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-[#111111] border border-[#222222] rounded-lg max-w-2xl w-full p-6 space-y-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#222222] pb-4">
+        <div className="fixed inset-0 z-50 bg-[#18191C]/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white border border-[#E8E5DF] rounded-2xl max-w-2xl w-full p-5 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-[#E8E5DF]/60 pb-4">
               <div className="flex items-center gap-2.5">
-                <Sparkles className="w-5 h-5 text-[#D4AF37]" />
-                <h3 className="font-serif italic text-lg font-light text-[#F5F5F0]">
-                  Select a Sample Decision Analysis
+                <Sparkles className="w-5 h-5 text-[#B88E3D]" />
+                <h3 className="font-serif italic text-lg sm:text-xl font-semibold text-[#18191C]">
+                  Select a Pre-Built Sample Analysis
                 </h3>
               </div>
               <button
                 onClick={() => setShowSamplePicker(false)}
-                className="p-1.5 text-[#A0A0A0] hover:text-[#F5F5F0] rounded-sm bg-[#1A1A1A]"
+                className="p-1.5 text-[#8C909A] hover:text-[#18191C] rounded-lg hover:bg-[#FAF7F2]"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+            <div className="space-y-3 overflow-y-auto pr-1 flex-1">
               {SAMPLE_DECISIONS.map((sample) => (
                 <div
                   key={sample.id}
                   onClick={() => handleSelectSample(sample.id)}
-                  className="p-4 rounded-sm bg-[#0A0A0A] border border-[#222222] hover:border-[#D4AF37]/40 cursor-pointer transition-all space-y-2 group"
+                  className="p-4 sm:p-5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF]/70 hover:border-[#C59B27] cursor-pointer transition-all space-y-2 group shadow-xs"
                 >
                   <div className="flex items-center justify-between">
-                    <h4 className="font-serif italic text-sm font-light text-[#F5F5F0] group-hover:text-[#D4AF37] transition-colors">
+                    <h4 className="font-serif italic text-base font-semibold text-[#18191C] group-hover:text-[#B88E3D] transition-colors">
                       {sample.title}
                     </h4>
-                    <span className="text-[#D4AF37] text-xs font-bold uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[#B88E3D] text-xs font-semibold uppercase tracking-wider flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       Load Analysis <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
 
-                  <p className="text-xs text-[#A0A0A0] line-clamp-2">
+                  <p className="text-xs text-[#595E68] line-clamp-2">
                     {sample.originalPrompt}
                   </p>
 
-                  <div className="flex items-center gap-2 text-[11px] font-mono text-[#666666] pt-1">
+                  <div className="flex items-center gap-2 text-[11px] font-mono text-[#8C909A] pt-1">
                     <span>{sample.options.length} Options</span>
                     <span>•</span>
                     <span>{sample.criteria.length} Matrix Criteria</span>
@@ -358,3 +418,5 @@ export default function App() {
     </div>
   );
 }
+
+

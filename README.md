@@ -24,11 +24,14 @@ The Tiebreaker is a sophisticated decision analysis application that helps users
 
 The application guides users through a structured decision-making process that combines:
 - **Weighted decision matrices** with customizable criteria
-- **Pros & cons analysis** with impact ratings
+- **Pros & cons analysis** with impact ratings and source tracking
 - **SWOT analysis** for each option
 - **Risk modeling** with probability, impact, and mitigation strategies
-- **Scenario planning** for short and long-term outcomes
+- **Scenario planning** with best, expected, and worst-case outcomes
+- **Long-term impact assessment** across financial, career, time, and learning dimensions
 - **Cognitive bias detection** and blindspot identification
+- **Evidence classification** distinguishing facts, assumptions, and interpretations
+- **AI-suggested alternatives** that don't override your original options
 - **Personalized recommendations** aligned with your priorities
 
 ---
@@ -37,35 +40,44 @@ The application guides users through a structured decision-making process that c
 
 ### 🎯 Comprehensive Decision Analysis
 - **Multi-option evaluation**: Analyze 2-4 options simultaneously
-- **Customizable criteria**: Set your own priorities with weighted importance
-- **Clarifying questions**: AI-generated questions to refine your decision context
-- **Structured output**: Consistent, actionable analysis format
+- **Decision metadata**: Categorize decisions (Career, Finance, Education, etc.) and assess reversibility and time horizon
+- **Clarifying questions**: AI-generated questions to refine your decision context with suggested answers
+- **Structured output**: Consistent, actionable analysis format with evidence classification
 
 ### 📊 Advanced Analytics
-- **Weighted scoring matrix**: Quantitative comparison across multiple criteria
+- **Weighted scoring matrix**: Quantitative comparison across multiple criteria (weights sum to 100%)
 - **Risk assessment**: Probability and impact ratings with mitigation strategies
-- **Scenario modeling**: Short-term (1-6 months) and long-term (1-5 years) projections
+- **Scenario modeling**: Best case, expected case, and worst-case projections
+- **Long-term impacts**: Financial, career, time, learning, and opportunity cost analysis
+- **Sensitivity analysis**: Identify which criteria most influence the decision
 - **SWOT analysis**: Strengths, weaknesses, opportunities, and threats for each option
 
 ### 🧠 Deep Thinking Tools
 - **Bias detection**: Identifies cognitive biases affecting your decision
-- **Assumption mapping**: Surface hidden assumptions in your reasoning
+- **Assumption mapping**: Surface and track hidden assumptions with confirmation status
+- **Evidence classification**: Labels items as FACT, ASSUMPTION, INTERPRETATION, or UNKNOWN
 - **Blindspot questions**: Critical questions you haven't considered
 - **Research guidance**: Specific items to investigate further
 - **Mentor questions**: What to ask trusted advisors
+- **Think Deeper Chat**: Follow-up conversations with AI for deeper exploration
 
 ### 💾 Decision Management
 - **Local storage**: Save and revisit past decisions
-- **Export/Import**: JSON backup of your decision history
-- **Status tracking**: Mark decisions as draft, analyzed, or decided
+- **Decision status tracking**: Mark decisions as draft, clarifying, analyzed, or decided
+- **Version history**: Track changes to your analysis over time
+- **Journal entries**: Document thoughts, concerns, and reflections
+- **Outcome tracking**: Record final decisions and compare predictions vs. actual results
+- **Favorites**: Mark important decisions for quick access
 - **Custom notes**: Add personal reflections to any analysis
+- **Export/Import**: JSON backup of your decision history
 
 ### 🎨 Premium User Experience
-- **Dark theme**: Elegant, distraction-free interface
-- **Responsive design**: Works seamlessly on desktop and mobile
+- **Dark/light theme**: Elegant, distraction-free interface with warm neutral tones
+- **Responsive design**: Works seamlessly on desktop and mobile with adaptive sidebar
 - **Sample decisions**: Pre-built examples to explore the methodology
 - **Smooth animations**: Polished interactions with motion library
-- **Real-time analysis**: Instant AI-powered insights
+- **Real-time analysis**: Instant AI-powered insights with loading states
+- **Mobile sidebar drawer**: Easy navigation on smaller screens
 
 ---
 
@@ -81,7 +93,7 @@ The application guides users through a structured decision-making process that c
 
 ### Backend
 - **Express.js** - REST API server
-- **Google Gemini AI** - Advanced language model for analysis
+- **Google Gemini AI** (gemini-3.6-flash) - Advanced language model for analysis
 - **TypeScript** - Server-side type safety
 - **Vite Middleware** - Development proxy
 
@@ -105,16 +117,17 @@ the-tiebreaker/
 │   │   ├── ResultsDashboard.tsx   # Analysis results display
 │   │   ├── DecisionHistory.tsx    # Past decisions drawer
 │   │   ├── HowItWorksModal.tsx    # Methodology explanation
+│   │   ├── Sidebar.tsx            # Desktop/mobile navigation sidebar
 │   │   └── Footer.tsx       # Page footer
 │   ├── data/
 │   │   └── sampleDecisions.ts  # Example decision analyses
 │   ├── utils/
 │   │   └── storage.ts       # Local storage utilities
-│   ├── types.ts             # TypeScript type definitions
+│   ├── types.ts             # TypeScript type definitions (250+ lines)
 │   ├── App.tsx              # Main application component
 │   ├── main.tsx             # Application entry point
 │   └── index.css            # Global styles
-├── server.ts                # Express backend with Gemini AI
+├── server.ts                # Express backend with Gemini AI (645 lines)
 ├── package.json             # Dependencies and scripts
 ├── vite.config.ts           # Vite configuration
 ├── tsconfig.json            # TypeScript configuration
@@ -135,7 +148,7 @@ the-tiebreaker/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/the-tiebreaker.git
+   git clone https://github.com/ArfaMunam47/the-tiebreaker.git
    cd the-tiebreaker
    ```
 
@@ -187,11 +200,25 @@ npm run clean
 
 1. **Start on the homepage** - Review the methodology or jump straight to analysis
 2. **Enter your decision** - Describe the choice you're facing
-3. **Specify options** - List the paths you're considering (optional)
-4. **Set priorities** - Define what matters most to you (optional)
-5. **Answer clarifying questions** - Provide context for better analysis
-6. **Review results** - Explore the comprehensive analysis dashboard
-7. **Take action** - Use insights to make your decision
+3. **Add context** (optional):
+   - Specify options you're considering
+   - Set your priorities/values
+   - Choose a decision category
+   - Assess reversibility and time horizon
+4. **Answer clarifying questions** - Provide context for better analysis
+5. **Review results** - Explore the comprehensive analysis dashboard with:
+   - Executive summary
+   - Pros & cons with evidence classification
+   - Comparison matrix with weighted scores
+   - SWOT analysis
+   - Risk register with mitigation strategies
+   - Scenarios (best, expected, worst case)
+   - Long-term impacts
+   - Think deeper insights (biases, assumptions, blindspots)
+   - AI-suggested alternatives
+   - Objective recommendation with confidence level
+6. **Take action** - Use insights to make your decision
+7. **Track outcomes** - Record your final choice and lessons learned
 
 ### Exploring Sample Decisions
 
@@ -204,7 +231,9 @@ Click on example decisions from the homepage to see pre-built analyses:
 - **History drawer**: Access all past analyses via the header
 - **Export**: Download your decision history as JSON
 - **Import**: Restore decisions from a backup file
-- **Status tracking**: Mark decisions as draft, analyzed, or decided
+- **Status tracking**: Mark decisions as draft, clarifying, analyzed, or decided
+- **Journal entries**: Document your thoughts throughout the decision process
+- **Outcome tracking**: Record what you decided and the results
 
 ---
 
@@ -212,26 +241,37 @@ Click on example decisions from the homepage to see pre-built analyses:
 
 ### The Analysis Pipeline
 
-1. **Input Processing**: User provides decision context, options, and priorities
+1. **Input Processing**: User provides decision context, options, priorities, and metadata
 2. **AI Analysis**: Gemini model generates structured analysis following a comprehensive schema
-3. **Fallback System**: If AI is unavailable, a robust heuristic analysis is provided
-4. **Local Storage**: Analysis is saved for future reference
-5. **Interactive Dashboard**: Rich visualization of all analysis components
+3. **Evidence Classification**: Items are labeled as FACT, ASSUMPTION, INTERPRETATION, or UNKNOWN
+4. **AI-Suggested Alternatives**: Creative options are suggested separately from user-defined options
+5. **Fallback System**: If AI is unavailable, a robust heuristic analysis is provided
+6. **Local Storage**: Analysis is saved for future reference and tracking
+7. **Interactive Dashboard**: Rich visualization of all analysis components
 
 ### Analysis Components
 
 Each decision analysis includes:
 
 - **Executive Summary**: High-level overview of the dilemma
-- **Options**: Detailed descriptions of each alternative
-- **Pros & Cons**: Weighted advantages and disadvantages
+- **Decision Metadata**: Category, reversibility, time horizon, clarification state
+- **Options**: Detailed descriptions of each alternative with source tracking
+- **Clarifying Questions**: AI-generated questions with suggested answers
+- **Pros & Cons**: Weighted advantages and disadvantages with evidence classification
 - **Comparison Matrix**: Side-by-side evaluation across criteria
 - **SWOT Analysis**: Strategic assessment for each option
+- **Criteria & Weights**: Customizable decision factors (sum to 100%)
 - **Weighted Scores**: Quantitative scoring (1-10) across criteria
+- **Evidence Items**: Classified facts, assumptions, interpretations
+- **Assumption List**: Trackable assumptions with confirmation status
+- **AI-Suggested Alternatives**: Creative hybrid options (kept separate from main options)
 - **Risk Register**: Identified risks with probability, impact, and mitigation
-- **Scenarios**: Short and long-term outcome projections
-- **Think Deeper**: Cognitive insights including biases and blindspots
-- **Recommendation**: Data-driven suggestion with confidence level
+- **Scenarios**: Best, expected, and worst-case outcomes per option
+- **Long-term Impacts**: Financial, career, time, learning, and opportunity costs
+- **Sensitivity Analysis**: Criteria ranked by influence on decision
+- **Think Deeper**: Cognitive insights including biases, blindspots, and research items
+- **Recommendation**: Data-driven suggestion with confidence level, reversal conditions, and opportunity costs
+- **Journal & Outcomes**: Track decision journey and actual results
 
 ---
 
@@ -246,13 +286,24 @@ Primary endpoint for decision analysis.
   "prompt": "Should I accept a job offer or stay at my current role?",
   "options": ["Accept new job", "Stay current", "Negotiate counteroffer"],
   "priorities": ["Career growth", "Salary", "Work-life balance"],
+  "category": "Career",
+  "reversibility": "Somewhat reversible",
+  "timeHorizon": "1 year",
   "clarifyingAnswers": {
     "q1": "Immediate income is crucial"
+  },
+  "clarificationState": {
+    "decisionSummary": "...",
+    "optionsUnderstood": [...],
+    "keyConstraints": [...],
+    "assumptionsIdentified": [...],
+    "missingInfo": [...],
+    "confirmedByUser": true
   }
 }
 ```
 
-**Response:** Complete `DecisionAnalysis` object with all analysis components.
+**Response:** Complete `DecisionAnalysis` object with all analysis components including evidence classification, AI-suggested alternatives, and structured recommendation.
 
 ### `POST /api/think-deeper-chat`
 Follow-up questions for deeper exploration.
@@ -280,7 +331,7 @@ Health check endpoint.
 ```json
 {
   "status": "ok",
-  "timestamp": "2026-08-13T00:00:00.000Z"
+  "timestamp": "2026-08-14T05:35:00.000Z"
 }
 ```
 
@@ -346,6 +397,8 @@ Contributions are welcome! Here's how you can help:
 - Maintain component modularity
 - Add types for all new data structures
 - Test with sample decisions before submitting
+- Ensure evidence classification is properly implemented
+- Maintain the separation between user options and AI-suggested alternatives
 
 ---
 
@@ -357,10 +410,11 @@ Contributions are welcome! Here's how you can help:
 - [ ] **Decision templates** - Pre-built frameworks for common decisions
 - [ ] **Collaborative analysis** - Share decisions with advisors
 - [ ] **Advanced visualizations** - Charts and graphs for comparisons
-- [ ] **Decision journaling** - Track outcomes vs. predictions
+- [ ] **Decision journaling** - Track outcomes vs. predictions with analytics
 - [ ] **Integration APIs** - Connect with calendar, finance, and productivity tools
 - [ ] **Mobile apps** - Native iOS and Android applications
 - [ ] **AI model selection** - Choose between different AI models
+- [ ] **Team decision-making** - Multi-stakeholder analysis tools
 
 ---
 
@@ -383,8 +437,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you have questions, feedback, or need help:
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/the-tiebreaker/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/the-tiebreaker/discussions)
+- **Issues**: [GitHub Issues](https://github.com/ArfaMunam47/the-tiebreaker/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ArfaMunam47/the-tiebreaker/discussions)
 - **Email**: support@thetiebreaker.app
 
 ---
@@ -397,11 +451,30 @@ If you have questions, feedback, or need help:
 
 ---
 
+## Key Design Principles
+
+### Decision Integrity
+- **User options are sacred**: AI never silently adds options to your main list
+- **AI suggestions are separate**: Creative alternatives are flagged as AI-suggested
+- **Transparent confidence**: AI reports confidence levels and explains uncertainty
+
+### Evidence-Based Analysis
+- **Clear classification**: Every claim is labeled as fact, assumption, interpretation, or unknown
+- **Assumption tracking**: Monitor and confirm/reject assumptions over time
+- **Source attribution**: Track whether insights come from user or AI
+
+### Actionable Insights
+- **Reversal conditions**: Explicit triggers that would change the recommendation
+- **Opportunity costs**: Clear statement of what each option sacrifices
+- **Why-not explanations**: Understand why runner-up options lost
+
+---
+
 <div align="center">
   <p>Built with ❤️ using React, TypeScript, and Google Gemini AI</p>
   <p>
-    <a href="https://github.com/yourusername/the-tiebreaker">Star on GitHub</a> •
-    <a href="https://github.com/yourusername/the-tiebreaker/issues">Report Bug</a> •
-    <a href="https://github.com/yourusername/the-tiebreaker/issues">Request Feature</a>
+    <a href="https://github.com/ArfaMunam47/the-tiebreaker">Star on GitHub</a> •
+    <a href="https://github.com/ArfaMunam47/the-tiebreaker/issues">Report Bug</a> •
+    <a href="https://github.com/ArfaMunam47/the-tiebreaker/issues">Request Feature</a>
   </p>
 </div>

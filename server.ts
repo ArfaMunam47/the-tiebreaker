@@ -35,7 +35,7 @@ app.get("/api/health", (_req, res) => {
 // Primary AI Decision Analysis Endpoint
 app.post("/api/analyze", async (req, res) => {
   try {
-    const { prompt, options, priorities, clarifyingAnswers } = req.body;
+    const { prompt, options, priorities, clarifyingAnswers, category, reversibility, timeHorizon, clarificationState } = req.body;
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return res.status(400).json({ error: "Please enter a valid decision prompt." });
@@ -46,15 +46,50 @@ app.post("/api/analyze", async (req, res) => {
     const systemInstruction = `You are "The Tiebreaker", an elite AI decision-intelligence analyst. 
 Your core principle is: "Don't decide for me. Help me decide better."
 Analyze the user's decision thoroughly. Never pretend to know guaranteed future outcomes. Separate clear facts from assumptions.
-Break the decision down systematically into options, pros & cons with impact ratings, side-by-side comparison across criteria, SWOT analysis, weighted decision matrix (criteria with weights summing to 100%), risk analysis with probability, impact and mitigation, future scenarios (1-6 months and 1-5 years), deep thinking insights (hidden assumptions, cognitive biases, blindspots, questions to ask others, research items), and an objective, balanced recommendation based on user priorities.
-Always assign unique IDs to options (e.g., 'opt1', 'opt2', 'opt3') and criteria (e.g., 'crit1', 'crit2', 'crit3', 'crit4', 'crit5'). Ensure option IDs in prosCons, swot, risks, scenarios, and recommendation strictly match option IDs.
-For weightedScores, construct a nested JSON object mapping each optionId (e.g. 'opt1') to an object of criterionId (e.g. 'crit1') to an integer score from 1 to 10.`;
+
+CRITICAL DECISION INTEGRITY RULE:
+1. ONLY include the options specified by the user in the main "options" array. Never silently add a new third option into "options".
+2. If you conceive of an alternative creative/hybrid option (e.g. Option C), place it strictly in "aiSuggestedAlternatives" (array of { id, title, description, reasoning }) as an AI-SUGGESTED ALTERNATIVE. It MUST NOT be in the main options array or scoring system until explicitly added by the user.
+
+CONFIDENCE RULE:
+If important information is missing or scores are close, set confidenceLevel to "Moderate" or "Low" with a clear confidenceReason explaining why. Do not claim "High" confidence when data is incomplete.
+
+Break the decision down systematically into:
+- Category (e.g., Job Offer, Career, Education, Business, Technology, Finance, Relocation, etc.)
+- Reversibility (Easy to reverse, Somewhat reversible, Difficult to reverse, Nearly irreversible)
+- Time Horizon (Immediate, 3 months, 1 year, 3 years, 5+ years)
+- Clarification State (decision summary, options understood, key constraints, assumptions identified, missing information)
+- Pros & Cons (with source strictly 'USER PROVIDED' or 'AI SUGGESTED')
+- Side-by-side Comparison across criteria
+- SWOT analysis
+- Weighted Decision Matrix (criteria with weights summing to 100%, and scores 1-10 for options)
+- Evidence Classification (items labeled FACT, ASSUMPTION, INTERPRETATION, or UNKNOWN)
+- Assumption Audit List (items with status 'confirmed')
+- Risk Analysis (risk, probability, impact, mitigation)
+- Case Scenarios (bestCase, expectedCase, worstCase per option)
+- Long-term Impacts (financial, career, time, learning, opportunity cost)
+- Deep Thinking Insights (assumptions, missing info, biases, blindspots, questions to ask others, research)
+- AI Suggested Alternatives (separate hybrid/creative options)
+- Objective Recommendation containing:
+  - recommendedOptionId and recommendedOptionTitle
+  - mainReasons
+  - biggestConcern
+  - missingInformation
+  - confidenceLevel ('High' | 'Moderate' | 'Low')
+  - confidenceReason
+  - whyNotOptions (map of optionId -> why that runner-up lost)
+  - reversalConditions (array of conditions that would change mind e.g. "If income drops below $X")
+  - opportunityCosts (map of optionId -> what is explicitly sacrificed)`;
 
     const userContextPrompt = `
 Decision Problem: "${prompt.trim()}"
+${category ? `Selected Category: ${category}` : ''}
+${reversibility ? `Reversibility Level: ${reversibility}` : ''}
+${timeHorizon ? `Time Horizon: ${timeHorizon}` : ''}
 ${options && options.length > 0 ? `User Specified Options: ${JSON.stringify(options)}` : "Identify 2 to 4 realistic options for this decision."}
 ${priorities && priorities.length > 0 ? `User Core Priorities/Values: ${JSON.stringify(priorities)}` : "Infer key decision criteria (e.g., Career Growth, Financial, Quality of Life, Risk, Flexibility)."}
 ${clarifyingAnswers && Object.keys(clarifyingAnswers).length > 0 ? `User Clarifications Provided: ${JSON.stringify(clarifyingAnswers)}` : ""}
+${clarificationState ? `User Clarification Context: ${JSON.stringify(clarificationState)}` : ""}
 
 Please generate a comprehensive, structured JSON analysis.
 `;
@@ -62,7 +97,7 @@ Please generate a comprehensive, structured JSON analysis.
     if (!ai) {
       // Fallback response if GEMINI_API_KEY is missing/placeholder
       console.warn("GEMINI_API_KEY missing or invalid. Returning fallback structured response.");
-      return res.json(generateFallbackAnalysis(prompt, options, priorities));
+      return res.json(generateFallbackAnalysis(prompt, options, priorities, category, reversibility, timeHorizon));
     }
 
     const responseSchema = {
@@ -259,6 +294,10 @@ Please generate a comprehensive, structured JSON analysis.
       id: "dec_" + Date.now() + "_" + Math.random().toString(36).substr(2, 5),
       title: parsedData.title || prompt.slice(0, 50),
       originalPrompt: prompt,
+      category: category || parsedData.category || "General",
+      reversibility: reversibility || parsedData.reversibility || "Somewhat reversible",
+      timeHorizon: timeHorizon || parsedData.timeHorizon || "1 year",
+      clarificationState: clarificationState || parsedData.clarificationState,
       userPriorities: priorities || [],
       options: parsedData.options || [],
       clarifyingQuestions: parsedData.clarifyingQuestions || [],
@@ -287,7 +326,16 @@ Please generate a comprehensive, structured JSON analysis.
   } catch (error: any) {
     console.error("Error analyzing decision with Gemini:", error);
     // If API error or schema parse error, return fallback heuristic response safely
-    return res.json(generateFallbackAnalysis(req.body?.prompt || "My Decision", req.body?.options, req.body?.priorities));
+    return res.json(
+      generateFallbackAnalysis(
+        req.body?.prompt || "My Decision",
+        req.body?.options,
+        req.body?.priorities,
+        req.body?.category,
+        req.body?.reversibility,
+        req.body?.timeHorizon
+      )
+    );
   }
 });
 
@@ -335,13 +383,20 @@ Provide a clear, objective, highly insightful 2-3 paragraph answer that exposes 
 });
 
 // Helper for generating robust fallback analysis if key is unconfigured or rate limited
-function generateFallbackAnalysis(prompt: string, userOptions?: string[], userPriorities?: string[]) {
+function generateFallbackAnalysis(
+  prompt: string,
+  userOptions?: string[],
+  userPriorities?: string[],
+  userCategory?: any,
+  userReversibility?: any,
+  userTimeHorizon?: any
+) {
   const opt1Title = userOptions?.[0] || "Option A: Primary Alternative";
   const opt2Title = userOptions?.[1] || "Option B: Status Quo or Secondary Route";
   
   const options = [
-    { id: "opt1", title: opt1Title, description: "A proactive change aimed at higher potential upside and long-term trajectory." },
-    { id: "opt2", title: opt2Title, description: "A safer, established path offering immediate stability and lower immediate variance." },
+    { id: "opt1", title: opt1Title, description: "A proactive path targeting higher potential upside and long-term trajectory.", source: 'user' as const },
+    { id: "opt2", title: opt2Title, description: "A stable alternative offering immediate predictability and lower variance.", source: 'user' as const },
   ];
 
   const criteria = [
@@ -356,41 +411,54 @@ function generateFallbackAnalysis(prompt: string, userOptions?: string[], userPr
     id: "dec_" + Date.now(),
     title: prompt.length > 50 ? prompt.slice(0, 47) + "..." : prompt,
     originalPrompt: prompt,
+    category: userCategory || "Career",
+    reversibility: userReversibility || "Somewhat reversible",
+    timeHorizon: userTimeHorizon || "1 year",
     userPriorities: userPriorities || ["Career Growth", "Financial Outcome", "Flexibility"],
     options,
+    clarificationState: {
+      decisionSummary: prompt,
+      optionsUnderstood: [opt1Title, opt2Title],
+      keyConstraints: ["Time availability", "Financial safety net", "Skill requirements"],
+      assumptionsIdentified: ["Option 1 will deliver expected upside within 12 months", "Option 2 remains stable without major disruption"],
+      missingInfo: ["Exact schedule/financial commitment breakdown for Option 1"],
+      confirmedByUser: true,
+    },
     clarifyingQuestions: [
       {
         id: "q1",
         question: "What is your main non-negotiable threshold for this choice?",
-        suggestedAnswers: ["Guaranteed baseline income", "Work-life balance", "Maximum growth upside"]
+        suggestedAnswers: ["Guaranteed baseline income", "Work-life balance", "Maximum growth upside"],
+        whyItMatters: "Clarifies your primary constraint before weighting trade-offs."
       },
       {
         id: "q2",
         question: "What would happen if you deferred this decision by 3 to 6 months?",
-        suggestedAnswers: ["Lose competitive advantage", "Gain clearer information", "No significant impact"]
+        suggestedAnswers: ["Lose competitive advantage", "Gain clearer information", "No significant impact"],
+        whyItMatters: "Helps measure the true time urgency of taking action now."
       }
     ],
     prosCons: [
       {
         optionId: "opt1",
         pros: [
-          { text: "Unlocks significant upside potential and skill growth", weight: "high", details: "Accelerates trajectory over 2-3 years." },
-          { text: "Expanded networking and real-world exposure", weight: "medium" }
+          { text: "Unlocks significant upside potential and skill growth", weight: "high", details: "Accelerates trajectory over 2-3 years.", source: "AI SUGGESTED" },
+          { text: "Expanded networking and real-world exposure", weight: "medium", source: "AI SUGGESTED" }
         ],
         cons: [
-          { text: "Higher initial uncertainty and transition stress", weight: "high" },
-          { text: "Potential short-term opportunity costs", weight: "medium" }
+          { text: "Higher initial uncertainty and transition stress", weight: "high", source: "AI SUGGESTED" },
+          { text: "Potential short-term opportunity costs", weight: "medium", source: "AI SUGGESTED" }
         ]
       },
       {
         optionId: "opt2",
         pros: [
-          { text: "High predictability and established comfort zone", weight: "high" },
-          { text: "Zero transition overhead or immediate financial risk", weight: "medium" }
+          { text: "High predictability and established comfort zone", weight: "high", source: "AI SUGGESTED" },
+          { text: "Zero transition overhead or immediate financial risk", weight: "medium", source: "AI SUGGESTED" }
         ],
         cons: [
-          { text: "Potential plateau in personal growth or market value", weight: "high" },
-          { text: "Risk of regret or lingering 'what-if' curiosity", weight: "medium" }
+          { text: "Potential plateau in personal growth or market value", weight: "high", source: "AI SUGGESTED" },
+          { text: "Risk of regret or lingering 'what-if' curiosity", weight: "medium", source: "AI SUGGESTED" }
         ]
       }
     ],
@@ -420,6 +488,23 @@ function generateFallbackAnalysis(prompt: string, userOptions?: string[], userPr
       opt1: { crit1: 9, crit2: 8, crit3: 7, crit4: 5, crit5: 8 },
       opt2: { crit1: 5, crit2: 6, crit3: 6, crit4: 9, crit5: 6 }
     },
+    evidenceItems: [
+      { id: "e1", text: `${opt1Title} offers higher growth upside.`, category: "INTERPRETATION" },
+      { id: "e2", text: `${opt2Title} maintains current status quo stability.`, category: "FACT" },
+      { id: "e3", text: "You have 12 months of buffer runway to experiment.", category: "ASSUMPTION" }
+    ],
+    assumptionsList: [
+      { id: "a1", text: `Choosing ${opt1Title} will deliver tangible skills within 6 months.`, status: "confirmed" },
+      { id: "a2", text: `Staying with ${opt2Title} avoids financial risk in the short term.`, status: "confirmed" }
+    ],
+    aiSuggestedAlternatives: [
+      {
+        id: "alt1",
+        title: "Hybrid Phased Approach",
+        description: `Start ${opt1Title} on a part-time trial basis for 60 days while holding ${opt2Title} to validate actual fit before full commitment.`,
+        reasoning: "De-risks transition while preserving maximum flexibility."
+      }
+    ],
     risks: [
       {
         id: "r1",
@@ -452,40 +537,84 @@ function generateFallbackAnalysis(prompt: string, userOptions?: string[], userPr
         keyTurningPoint: "Annual appraisal"
       }
     ],
+    caseScenarios: [
+      {
+        optionId: "opt1",
+        bestCase: "Skill acquisition accelerates rapidly; opens doors to top-tier compensation within 12 months.",
+        expectedCase: "Steady progress over 6 months; initial workload adjustment followed by strong output.",
+        worstCase: "Slower progress than expected; requires extending runway or adjusting timeline."
+      },
+      {
+        optionId: "opt2",
+        bestCase: "Current role remains stable with steady incremental salary increases.",
+        expectedCase: "Predictable routine, modest skill progression over the next 2 years.",
+        worstCase: "Stagnation in skills leading to decreased competitiveness in 3 years."
+      }
+    ],
+    longTermImpacts: [
+      {
+        optionId: "opt1",
+        financialImpact: "Higher upside after 12 months; short-term investment phase.",
+        careerImpact: "Accelerates high-value modern skill profile.",
+        timeImpact: "Intense initial 6 months, relaxing into sustainable momentum.",
+        learningImpact: "Maximum learning velocity and exponential capability.",
+        opportunityCost: "Trading short-term leisure for long-term capability."
+      },
+      {
+        optionId: "opt2",
+        financialImpact: "Steady immediate income; lower long-term ceiling.",
+        careerImpact: "Incremental growth; risk of domain stagnation.",
+        timeImpact: "Predictable work hours and steady schedule.",
+        learningImpact: "Gradual learning curve within familiar territory.",
+        opportunityCost: "Sacrificing high-growth trajectory for present comfort."
+      }
+    ],
     thinkDeeper: {
       assumptions: [
-        "Assuming that Option 1's demands will remain constant after the onboarding phase.",
-        "Assuming that Option 2 will maintain its current level of security without external shifts."
+        `Assuming that ${opt1Title}'s demands will remain constant after the onboarding phase.`,
+        `Assuming that ${opt2Title} will maintain its current level of security without external shifts.`
       ],
       missingInformation: [
-        "Exact compensation and work expectations details for Option 1.",
-        "Long-term strategic roadmap for Option 2."
+        `Exact compensation and work expectations details for ${opt1Title}.`,
+        `Long-term strategic roadmap for ${opt2Title}.`
       ],
       biases: [
-        "Status Quo Bias: Natural preference for Option 2 due to familiarity.",
+        "Status Quo Bias: Natural preference for familiar options.",
         "Sunk Cost Fallacy: Overweighting past investments made in the current path."
       ],
       blindspotQuestions: [
-        "What is the worst-case scenario for Option 1, and could you comfortably survive it?",
+        `What is the worst-case scenario for ${opt1Title}, and could you comfortably survive it?`,
         "If someone you deeply respect made this decision for you, which would they pick?"
       ],
       questionsToAskOthers: [
         "Ask a trusted mentor who has taken a similar leap: 'What was your biggest surprise in year 1?'"
       ],
       researchItems: [
-        "Review industry salary benchmarks and workload expectations for Option 1."
+        "Review industry benchmarks and workload expectations for your primary option."
       ]
     },
     recommendation: {
       recommendedOptionId: "opt1",
       recommendedOptionTitle: opt1Title,
       mainReasons: [
-        "Option 1 aligns significantly better with high-weight growth and long-term potential priorities.",
-        "The calculated weighted decision score favors Option 1 (7.7 vs 6.1)."
+        `${opt1Title} aligns significantly better with high-weight growth and long-term potential priorities.`,
+        "The calculated weighted decision score favors this path (7.7 vs 6.1)."
       ],
       biggestConcern: "Managing short-term transition stress and pacing during the initial 90 days.",
       missingInformation: "Firm confirmation on workload expectations and trial period flexibility.",
-      confidenceLevel: "High"
+      confidenceLevel: "Moderate",
+      confidenceReason: "Confidence is moderate because exact workload expectations and financial runway details need final verification.",
+      whyNotOptions: {
+        opt2: `${opt2Title} lost because it scores lower on long-term Career & Growth Impact (5.0 vs 9.0) and Autonomy (6.0 vs 7.0), despite higher short-term stability.`
+      },
+      reversalConditions: [
+        "If immediate income drops below your minimum living expenses.",
+        "If workload demands exceed 60 hours/week without compensation."
+      ],
+      opportunityCosts: {
+        opt1: `Choosing ${opt1Title} means giving up immediate short-term predictability.`,
+        opt2: `Choosing ${opt2Title} means giving up accelerated long-term growth and higher income ceiling.`
+      }
     },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

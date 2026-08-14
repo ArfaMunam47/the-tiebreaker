@@ -5,70 +5,86 @@ export const SAMPLE_DECISIONS: DecisionAnalysis[] = [
     id: 'sample_1',
     title: 'Remote Startup Offer vs. University Degree Completion',
     originalPrompt: 'Should I accept an exciting $75k remote startup engineering offer or focus full-time on completing my computer science degree?',
+    category: 'Career',
+    reversibility: 'Somewhat reversible',
+    timeHorizon: '1 year',
     userPriorities: ['Career Growth', 'Financial Independence', 'Learning & Mastery', 'Flexibility'],
     options: [
       {
         id: 'opt1',
         title: 'Accept Remote Startup Offer',
-        description: 'Join a fast-growing YC-backed startup as a remote engineer ($75k salary + equity), deferring university by 1-2 years.'
+        description: 'Join a fast-growing YC-backed startup as a remote engineer ($75k salary + equity), deferring university by 1-2 years.',
+        source: 'user',
       },
       {
         id: 'opt2',
         title: 'Stay Full-Time in University',
-        description: 'Focus entirely on finishing the remaining 3 semesters of CS degree while doing summer internships.'
+        description: 'Focus entirely on finishing the remaining 3 semesters of CS degree while doing summer internships.',
+        source: 'user',
       },
       {
         id: 'opt3',
         title: 'Negotiate Part-Time Student Status',
-        description: 'Work 25 hours/week for the startup at adjusted pay ($50k) while taking 2 evening/online university courses.'
+        description: 'Work 25 hours/week for the startup at adjusted pay ($50k) while taking 2 evening/online university courses.',
+        source: 'user',
       }
     ],
+    clarificationState: {
+      decisionSummary: 'Choosing between immediate $75k remote startup role and completing final 3 semesters of CS degree.',
+      optionsUnderstood: ['Accept Startup Offer', 'Finish Degree', 'Part-time Study + Work'],
+      keyConstraints: ['University credit expiration rules', 'Immediate financial independence need', 'Workload limits'],
+      assumptionsIdentified: ['Startup will provide 18+ months of stability', 'Degree can be deferred up to 2 years'],
+      missingInfo: ['Formal written leave-of-absence approval from university dean'],
+      confirmedByUser: true,
+    },
     clarifyingQuestions: [
       {
         id: 'q1',
         question: 'Does your university allow formal leaves of absence or deferrals without losing credits?',
-        suggestedAnswers: ['Yes, up to 2 years permitted', 'No, credits expire', 'Need to check with dean']
+        suggestedAnswers: ['Yes, up to 2 years permitted', 'No, credits expire', 'Need to check with dean'],
+        whyItMatters: 'Determines whether accepting the job permanently destroys degree progress.'
       },
       {
         id: 'q2',
         question: 'How critical is immediate income to your living situation right now?',
-        suggestedAnswers: ['Crucial (self-funding)', 'Helpful but not urgent', 'Not urgent (family supported)']
+        suggestedAnswers: ['Crucial (self-funding)', 'Helpful but not urgent', 'Not urgent (family supported)'],
+        whyItMatters: 'Weights financial independence relative to academic timing.'
       }
     ],
     prosCons: [
       {
         optionId: 'opt1',
         pros: [
-          { text: 'Immediate $75k/year financial independence & startup equity', weight: 'high', details: 'Zero student debt accumulation.' },
-          { text: 'Accelerated real-world production codebase mastery', weight: 'high', details: 'Ship code used by real customers daily.' },
-          { text: 'Strong remote work flexibility and industry network', weight: 'medium' }
+          { text: 'Immediate $75k/year financial independence & startup equity', weight: 'high', details: 'Zero student debt accumulation.', source: 'AI SUGGESTED' },
+          { text: 'Accelerated real-world production codebase mastery', weight: 'high', details: 'Ship code used by real customers daily.', source: 'AI SUGGESTED' },
+          { text: 'Strong remote work flexibility and industry network', weight: 'medium', source: 'AI SUGGESTED' }
         ],
         cons: [
-          { text: 'Delayed degree completion by 1 to 2 years', weight: 'high', details: 'May restrict certain corporate or visa pathways.' },
-          { text: 'High startup volatility and potential workload pressure', weight: 'medium' }
+          { text: 'Delayed degree completion by 1 to 2 years', weight: 'high', details: 'May restrict certain corporate or visa pathways.', source: 'AI SUGGESTED' },
+          { text: 'High startup volatility and potential workload pressure', weight: 'medium', source: 'AI SUGGESTED' }
         ]
       },
       {
         optionId: 'opt2',
         pros: [
-          { text: 'Guaranteed completion of accredited CS degree', weight: 'high' },
-          { text: 'Unstructured time for university research, campus life, & internships', weight: 'medium' },
-          { text: 'Low burnout risk compared to full-time work + school', weight: 'medium' }
+          { text: 'Guaranteed completion of accredited CS degree', weight: 'high', source: 'AI SUGGESTED' },
+          { text: 'Unstructured time for university research, campus life, & internships', weight: 'medium', source: 'AI SUGGESTED' },
+          { text: 'Low burnout risk compared to full-time work + school', weight: 'medium', source: 'AI SUGGESTED' }
         ],
         cons: [
-          { text: 'Forfeiting $75k income and startup equity', weight: 'high' },
-          { text: 'Theoretical coursework may lag behind modern AI engineering tools', weight: 'medium' }
+          { text: 'Forfeiting $75k income and startup equity', weight: 'high', source: 'AI SUGGESTED' },
+          { text: 'Theoretical coursework may lag behind modern AI engineering tools', weight: 'medium', source: 'AI SUGGESTED' }
         ]
       },
       {
         optionId: 'opt3',
         pros: [
-          { text: 'Balanced path: earn $50k while keeping degree momentum', weight: 'high' },
-          { text: 'Keeps both options open with minimal long-term regret', weight: 'medium' }
+          { text: 'Balanced path: earn $50k while keeping degree momentum', weight: 'high', source: 'AI SUGGESTED' },
+          { text: 'Keeps both options open with minimal long-term regret', weight: 'medium', source: 'AI SUGGESTED' }
         ],
         cons: [
-          { text: 'Extremely intense schedule with high risk of cognitive overload', weight: 'high' },
-          { text: 'Requires firm discipline and startup boundary negotiation', weight: 'medium' }
+          { text: 'Extremely intense schedule with high risk of cognitive overload', weight: 'high', source: 'AI SUGGESTED' },
+          { text: 'Requires firm discipline and startup boundary negotiation', weight: 'medium', source: 'AI SUGGESTED' }
         ]
       }
     ],
@@ -113,6 +129,24 @@ export const SAMPLE_DECISIONS: DecisionAnalysis[] = [
       opt2: { crit1: 6, crit2: 3, crit3: 10, crit4: 8, crit5: 5 },
       opt3: { crit1: 8, crit2: 7, crit3: 8, crit4: 4, crit5: 7 }
     },
+    evidenceItems: [
+      { id: 'e1', text: 'Startup offers $75,000 base salary plus equity.', category: 'FACT' },
+      { id: 'e2', text: 'University allows up to 2 years of formal leave.', category: 'FACT' },
+      { id: 'e3', text: 'Production engineering experience boosts future hiring faster than GPA.', category: 'INTERPRETATION' },
+      { id: 'e4', text: 'The startup will achieve Series A funding in 12 months.', category: 'ASSUMPTION' }
+    ],
+    assumptionsList: [
+      { id: 'a1', text: 'Degree can be paused for 12 months without losing completed credits.', status: 'confirmed' },
+      { id: 'a2', text: 'Startup workload allows remote work flexibility.', status: 'confirmed' }
+    ],
+    aiSuggestedAlternatives: [
+      {
+        id: 'alt1',
+        title: '6-Month Internship Contract',
+        description: 'Negotiate a fixed 6-month co-op or internship contract with the startup to test the role before taking a long-term leave.',
+        reasoning: 'Reduces commitment risk while still securing practical experience and initial income.'
+      }
+    ],
     risks: [
       {
         id: 'r1',
@@ -143,6 +177,38 @@ export const SAMPLE_DECISIONS: DecisionAnalysis[] = [
         shortTerm: 'Months 1-6: Focus on algorithms coursework, campus networking, applying for competitive internships.',
         longTerm: 'Years 1-3: Graduate on time, enter market as new grad with solid academic foundation.',
         keyTurningPoint: 'Senior Capstone project presentation'
+      }
+    ],
+    caseScenarios: [
+      {
+        optionId: 'opt1',
+        bestCase: 'Startup thrives; gain $100k+ compensation, stock value explodes, return to finish degree at leisure.',
+        expectedCase: 'Gain 18 months of solid production engineering experience; transition smoothly to mid-level engineering.',
+        worstCase: 'Startup fails at month 8; use formal leave to re-enter university seamlessly.'
+      },
+      {
+        optionId: 'opt2',
+        bestCase: 'Graduate with honors; land top-tier $120k tech company offer upon graduation.',
+        expectedCase: 'Finish degree comfortably; secure standard $80k software developer position.',
+        worstCase: 'Entry-level job market remains tight; struggle to stand out without real codebase experience.'
+      }
+    ],
+    longTermImpacts: [
+      {
+        optionId: 'opt1',
+        financialImpact: '$75k+ immediate earnings; early retirement compounding.',
+        careerImpact: 'Accelerated promotion to Mid/Senior Developer title.',
+        timeImpact: 'Full-time work routine with high independence.',
+        learningImpact: 'Modern tech stack, AI tooling, deployment pipelines.',
+        opportunityCost: 'Forfeiting traditional campus social experiences.'
+      },
+      {
+        optionId: 'opt2',
+        financialImpact: 'Tuition outflow, zero immediate savings.',
+        careerImpact: 'Traditional new-grad entry trajectory.',
+        timeImpact: 'Flexible student schedule with seasonal exam surges.',
+        learningImpact: 'Core CS algorithms, operating systems, data structures.',
+        opportunityCost: 'Giving up $75k salary and early equity options.'
       }
     ],
     thinkDeeper: {
@@ -180,7 +246,20 @@ export const SAMPLE_DECISIONS: DecisionAnalysis[] = [
       ],
       biggestConcern: 'Ensuring formal academic leave of absence is secured before signing offer.',
       missingInformation: 'Confirmation of startup financial runway and formal university leave approval.',
-      confidenceLevel: 'High'
+      confidenceLevel: 'High',
+      confidenceReason: 'High confidence because real codebase experience and financial independence heavily outweigh delayed academic timing when formal leave is secured.',
+      whyNotOptions: {
+        opt2: 'Staying full-time in university lost because it offers zero immediate income and delays real-world production codebase mastery by 1.5 years.',
+        opt3: 'Part-time student status lost due to extreme burnout and context-switching risk during exam weeks.'
+      },
+      reversalConditions: [
+        'If university refuses formal leave of absence and threatens credit cancellation.',
+        'If startup cash runway is under 6 months.'
+      ],
+      opportunityCosts: {
+        opt1: 'Giving up traditional campus life and immediate graduation timeline.',
+        opt2: 'Sacrificing $75,000 salary, equity, and senior title progression.'
+      }
     },
     createdAt: '2026-08-10T14:30:00.000Z',
     updatedAt: '2026-08-12T10:15:00.000Z',
@@ -188,141 +267,150 @@ export const SAMPLE_DECISIONS: DecisionAnalysis[] = [
   },
   {
     id: 'sample_2',
-    title: 'Buy First Home vs. Continue Renting & Investing',
-    originalPrompt: 'Should we buy a $550,000 suburban townhouse with 20% down, or continue renting in the city at $2,600/month and investing savings into index funds?',
-    userPriorities: ['Financial Wealth Building', 'Family Stability', 'Flexibility & Mobility', 'Peace of Mind'],
+    title: 'Buy Suburban Home vs. Rent & Invest in Index Funds',
+    originalPrompt: 'Should I buy a 4-bedroom suburban home for $650k with a 20% down payment or stay in my urban apartment rental ($2,800/mo) and invest the $130k down payment into S&P 500 index funds?',
+    category: 'Finance',
+    reversibility: 'Difficult to reverse',
+    timeHorizon: '5+ years',
+    userPriorities: ['Wealth Accumulation', 'Lifestyle Stability', 'Location Flexibility', 'Maintenance Stress'],
     options: [
       {
         id: 'opt1',
-        title: 'Buy Suburban Townhouse ($550k)',
-        description: 'Put $110,000 down on a 3-bedroom suburban townhouse with $3,400 total monthly mortgage, HOA, taxes, and insurance.'
+        title: 'Buy Suburban Home ($650k)',
+        description: 'Purchase 4-bedroom suburban house with $130k down payment (20%), locking in fixed mortgage payments and acquiring physical property equity.'
       },
       {
         id: 'opt2',
-        title: 'Rent City Apartment & Invest Delta',
-        description: 'Stay in city rental ($2,600/mo) and dollar-cost average $110k plus $800/mo surplus directly into broad-market index funds.'
+        title: 'Rent Urban Apartment & Invest Capital',
+        description: 'Continue renting downtown apartment at $2,800/mo, deploy $130k down payment into S&P 500 index funds, and invest monthly savings delta.'
       }
     ],
     clarifyingQuestions: [
       {
         id: 'q1',
-        question: 'How long do you realistically plan to stay in this location?',
-        suggestedAnswers: ['3 years or less', '5 to 7 years', '10+ years']
+        question: 'What is your planned holding period for the suburban home if purchased?',
+        suggestedAnswers: ['3–5 years', '7–10 years', '15+ years'],
+        userAnswer: '7–10 years'
       }
     ],
     prosCons: [
       {
         optionId: 'opt1',
         pros: [
-          { text: 'Fixed mortgage principal payments build forced equity over time', weight: 'high' },
-          { text: 'Long-term stability, personal customization, and space for family', weight: 'high' }
+          { text: 'Locked-in housing stability & freedom to customize property', weight: 'high', source: 'USER PROVIDED' },
+          { text: 'Leveraged real estate appreciation & long-term forced savings equity', weight: 'high', source: 'AI SUGGESTED' },
+          { text: 'Spacious 4-bedroom layout suitable for growing family or home office', weight: 'medium', source: 'USER PROVIDED' }
         ],
         cons: [
-          { text: 'Illiquid asset with maintenance expenses (1-2%/yr) and HOA fees', weight: 'high' },
-          { text: 'Higher upfront lock-in and reduced mobility if career demands move', weight: 'medium' }
+          { text: 'High illiquid upfront capital ($130k down payment + closing fees)', weight: 'high', source: 'USER PROVIDED' },
+          { text: 'Property taxes, HOA fees, home insurance, & ongoing maintenance costs', weight: 'high', source: 'AI SUGGESTED' },
+          { text: 'Reduced job relocation flexibility', weight: 'medium', source: 'AI SUGGESTED' }
         ]
       },
       {
         optionId: 'opt2',
         pros: [
-          { text: '100% liquid portfolio in index funds with zero maintenance stress', weight: 'high' },
-          { text: 'High geographic flexibility to move for job opportunities', weight: 'medium' }
+          { text: 'High liquidity: $130k grows compounded in broad-market equity index funds', weight: 'high', source: 'USER PROVIDED' },
+          { text: 'Zero landlord or structural maintenance responsibilities', weight: 'high', source: 'USER PROVIDED' },
+          { text: 'Total mobility to move across cities/neighborhoods on 30-day notice', weight: 'medium', source: 'AI SUGGESTED' }
         ],
         cons: [
-          { text: 'Rent increases over time with zero asset accumulation from rent paid', weight: 'high' },
-          { text: 'Less space and risk of landlord non-renewal', weight: 'medium' }
+          { text: 'Exposure to rent increases upon lease renewals', weight: 'high', source: 'AI SUGGESTED' },
+          { text: 'No tangible physical property equity or home customization freedom', weight: 'medium', source: 'USER PROVIDED' }
         ]
       }
     ],
     comparison: [
-      { criterion: 'Monthly Outflow', scores: { opt1: '$3,400 + Maintenance', opt2: '$2,600 Rent' }, winnerOptionId: 'opt2' },
-      { criterion: '10-Year Equity Horizon', scores: { opt1: 'Home Equity (~$240k)', opt2: 'Index Fund (~$290k)' }, winnerOptionId: 'opt2' },
-      { criterion: 'Living Space & Freedom', scores: { opt1: '3 Beds + Yard + Garage', opt2: '2 Beds City Apt' }, winnerOptionId: 'opt1' }
+      { criterion: '10-Year Net Worth Potential', scores: { opt1: 'Moderate-High ($380k equity)', opt2: 'High ($490k liquidated portfolio)' }, winnerOptionId: 'opt2' },
+      { criterion: 'Lifestyle Stability & Space', scores: { opt1: 'High (Spacious home & yard)', opt2: 'Moderate (850 sq ft apartment)' }, winnerOptionId: 'opt1' },
+      { criterion: 'Financial Liquidity & Flexibility', scores: { opt1: 'Low (Tied up in physical real estate)', opt2: 'High (Liquid stock portfolio)' }, winnerOptionId: 'opt2' }
     ],
     swot: [
       {
         optionId: 'opt1',
-        strengths: ['Hedge against inflation', 'Emotional security of ownership'],
-        weaknesses: ['High upfront closing costs ($15k)', 'Property tax spikes'],
-        opportunities: ['Refinancing when interest rates drop', 'Suburban appreciation'],
-        threats: ['Local real estate market stagnation or HOA special assessments']
+        strengths: ['Physical asset security', 'Fixed mortgage payment baseline', 'Generous living space'],
+        weaknesses: ['High illiquidity', 'Unpredictable repair costs ($5k-$15k HVAC/roof risks)'],
+        opportunities: ['Neighborhood appreciation surge', 'Mortgage refinancing if interest rates drop'],
+        threats: ['Local property tax rate hikes', 'Suburban housing market downturn']
       },
       {
         optionId: 'opt2',
-        strengths: ['Maximum liquidity', 'Zero unexpected repair bills'],
-        weaknesses: ['Vulnerable to landlord decisions', 'No leverage benefit'],
-        opportunities: ['Ability to move instantly for 30%+ salary jumps'],
-        threats: ['Discipline slippage in investing the monthly rent differential']
+        strengths: ['100% liquid investment portfolio', 'Frictionless mobility', 'Zero repair liabilities'],
+        weaknesses: ['Rent inflation vulnerability', 'Less living space for hosting/family'],
+        opportunities: ['Market dollar-cost averaging upside', 'Flexibility to move closer to career promotions'],
+        threats: ['Stock market volatility during short-term drawdowns', 'Landlord non-renewal']
       }
     ],
     criteria: [
-      { id: 'crit1', name: 'Financial Wealth Building', weight: 35, description: 'Net worth accumulation over a 7-10 year horizon.' },
-      { id: 'crit2', name: 'Living Space & Stability', weight: 30, description: 'Space for lifestyle, pets, or family expansion.' },
-      { id: 'crit3', name: 'Flexibility & Mobility', weight: 20, description: 'Ease of moving without selling costs.' },
-      { id: 'crit4', name: 'Peace of Mind & Low Stress', weight: 15, description: 'Predictability and absence of landlord/repair worries.' }
+      { id: 'crit1', name: 'Wealth Accumulation', weight: 35, description: 'Total net worth growth over a 7-10 year timeline.' },
+      { id: 'crit2', name: 'Lifestyle Stability', weight: 25, description: 'Living space quality, neighborhood comfort, and predictability.' },
+      { id: 'crit3', name: 'Location Flexibility', weight: 20, description: 'Ease of changing locations for career or personal reasons.' },
+      { id: 'crit4', name: 'Maintenance Stress', weight: 20, description: 'Mental bandwidth required for property upkeep and repairs.' }
     ],
     weightedScores: {
-      opt1: { crit1: 7, crit2: 9, crit3: 4, crit4: 7 },
-      opt2: { crit1: 8, crit2: 5, crit3: 9, crit4: 8 }
+      opt1: { crit1: 7, crit2: 9, crit3: 4, crit4: 4 },
+      opt2: { crit1: 9, crit2: 6, crit3: 9, crit4: 9 }
     },
     risks: [
-      {
-        id: 'r1',
-        optionId: 'opt1',
-        risk: 'Roof or HVAC replacement ($12k) required within 24 months',
-        probability: 'Medium',
-        impact: 'High',
-        mitigation: 'Maintain a $20,000 liquid home emergency fund separate from down payment.'
-      }
+      { id: 'r1', optionId: 'opt1', risk: 'Unanticipated structural repair costs (roof, plumbing, HVAC)', probability: 'High', impact: 'High', mitigation: 'Maintain a dedicated $20k liquid emergency home repair reserve.' },
+      { id: 'r2', optionId: 'opt2', risk: 'Rent increases exceeding inflation over 5+ year period', probability: 'Medium', impact: 'Medium', mitigation: 'Negotiate 2-year lease terms or budget for neighborhood shifts.' }
     ],
     scenarios: [
-      {
-        optionId: 'opt1',
-        shortTerm: 'Months 1-12: Moving logistics, furnishing townhouse, settling into suburban routine.',
-        longTerm: 'Years 5-10: Paid down $75k principal, home appreciated 25%, low monthly cost relative to future rents.'
-      },
-      {
-        optionId: 'opt2',
-        shortTerm: 'Months 1-12: Seamless urban lifestyle, automated monthly $800 transfers to brokerage.',
-        longTerm: 'Years 5-10: Liquid investment portfolio grown to $250k+, but city rent rose to $3,300/mo.'
-      }
+      { optionId: 'opt1', shortTerm: 'Months 1-6: Initial move friction, buying lawn/maintenance equipment, adapting to commute.', longTerm: 'Years 1-7: Predictable housing costs, accumulating real estate equity.' },
+      { optionId: 'opt2', shortTerm: 'Months 1-6: Seamless urban routine, index fund capital fully deployed.', longTerm: 'Years 1-7: Compounded investment account growth, maximum career mobility.' }
     ],
     thinkDeeper: {
       assumptions: [
-        'Assuming a 7% average stock market return vs 4% real estate appreciation rate.',
-        'Assuming you will religiously invest the $800/mo difference when renting.'
+        'Assuming S&P 500 returns average ~8% annually over 10 years.',
+        'Assuming local real estate appreciates at historical average ~4% annually.'
       ],
       missingInformation: [
-        'Current HOA reserve fund health and historic property tax increases for the townhouse.',
-        'Exact commute times from suburban location to work.'
+        'Exact HOA fees and local property tax rate for the target suburban neighborhood.',
+        'Commute cost delta between urban apartment and suburban home.'
       ],
       biases: [
-        'American Dream Bias: Assuming homeownership is universally superior to renting.',
-        'Loss Aversion: Overestimating the stress of home repairs compared to rent hikes.'
+        'American Dream Ownership Bias: Viewing homeownership as inherently superior without factoring opportunity cost of capital.',
+        'Recency Bias: Assuming stock market returns will consistently outperform without drawdowns.'
       ],
       blindspotQuestions: [
-        'If you need to move in 3 years, selling costs (6% realtor fees) will eat $33,000. Is a 5+ year stay guaranteed?'
+        'If you move in 4 years due to a job change, will closing costs and realtor commissions (6%) wipe out equity gains?',
+        'How much do you value having a private yard versus walking to downtown amenities?'
       ],
       questionsToAskOthers: [
-        'Ask existing townhouse HOA residents: "Are there any pending special assessments?"'
+        'Ask a financial advisor: "How does buying vs. renting impact my total portfolio risk allocation?"',
+        'Ask suburban neighbors: "What are your actual yearly maintenance and utility expenses?"'
       ],
       researchItems: [
-        'Run a detailed rent-vs-buy calculator incorporating local property tax and interest rates.'
+        'Calculate net rent-vs-buy breakeven using local property tax rates and mortgage interest rates.',
+        'Review historical suburban housing appreciation vs downtown rent growth over the past decade.'
       ]
     },
     recommendation: {
-      recommendedOptionId: 'opt1',
-      recommendedOptionTitle: 'Buy Suburban Townhouse (If Horizon > 5 Years)',
+      recommendedOptionId: 'opt2',
+      recommendedOptionTitle: 'Rent Urban Apartment & Invest Capital in Index Funds',
       mainReasons: [
-        'If planning to stay at least 5-7 years, equity buildup and space for family outweigh city rent flexibility.',
-        'Suburban space directly supports personal life goals.'
+        'Higher 10-year net worth projection due to liquid stock market compounding vs illiquid home equity after mortgage interest & property taxes.',
+        'Maximum location flexibility and zero maintenance stress fit current career trajectory.'
       ],
-      biggestConcern: 'Ensuring liquid emergency buffer remains intact post-closing.',
-      missingInformation: 'HOA reserve fund review and commute trial run.',
-      confidenceLevel: 'High'
+      biggestConcern: 'Rent increases during market inflationary cycles.',
+      missingInformation: 'Firm 10-year career trajectory confirmation regarding urban vs suburban location preference.',
+      confidenceLevel: 'High',
+      confidenceReason: 'High confidence because liquid portfolio compounding and career mobility outweigh the illiquid real estate leverage benefits over a 7-10 year horizon.',
+      whyNotOptions: {
+        opt1: 'Buying the suburban home lost primarily due to high illiquid capital lockup ($130k down payment), interest/tax drag, and ongoing maintenance responsibilities.'
+      },
+      reversalConditions: [
+        'If mortgage rates drop below 4.5% making real estate leverage significantly cheaper.',
+        'If family expansion creates an urgent need for 4 bedrooms and a private yard.'
+      ],
+      opportunityCosts: {
+        opt1: 'Locking up $130k capital that could compound in liquid global equities.',
+        opt2: 'Forfeiting physical home customization and long-term locked-in real estate asset equity.'
+      }
     },
-    createdAt: '2026-08-01T11:00:00.000Z',
-    updatedAt: '2026-08-05T09:20:00.000Z',
+    createdAt: '2026-08-11T09:15:00.000Z',
+    updatedAt: '2026-08-12T11:20:00.000Z',
     status: 'analyzed'
   }
 ];
+

@@ -9,7 +9,7 @@ import {
 } from '../types';
 import { calculateWeightedTotalScore } from '../utils/storage';
 import {
-  CheckCircle2,
+  Check,
   AlertTriangle,
   Scale,
   Sparkles,
@@ -21,7 +21,6 @@ import {
   Trash2,
   Save,
   Printer,
-  Share2,
   Send,
   HelpCircle,
   BarChart3,
@@ -31,6 +30,9 @@ import {
   MessageSquare,
   RefreshCw,
   Award,
+  SlidersHorizontal,
+  Table,
+  Grid2X2,
 } from 'lucide-react';
 
 interface ResultsDashboardProps {
@@ -38,9 +40,10 @@ interface ResultsDashboardProps {
   onUpdateDecision: (updated: DecisionAnalysis) => void;
   onSave: () => void;
   onNewDecision: () => void;
+  initialTab?: TabType;
 }
 
-type TabType =
+export type TabType =
   | 'overview'
   | 'prosCons'
   | 'compare'
@@ -55,9 +58,16 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   onUpdateDecision,
   onSave,
   onNewDecision,
+  initialTab = 'overview',
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Editable local state for Matrix Criteria and Option Scores
   const [criteria, setCriteria] = useState<Criterion[]>(decision.criteria || []);
@@ -68,9 +78,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   const [chatMessages, setChatMessages] = useState<FollowUpMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [isSendingChat, setIsSendingChat] = useState(false);
-
-  // Clarifying answers local state
-  const [clarifyingAnswers, setClarifyingAnswers] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setCriteria(decision.criteria || []);
@@ -109,14 +116,13 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     const newId = 'crit_' + Date.now();
     const newCrit: Criterion = {
       id: newId,
-      name: 'New Custom Criterion',
+      name: 'Custom Priority',
       weight: 10,
-      description: 'Custom user priority',
+      description: 'User specified evaluation parameter',
     };
     const updatedCriteria = [...criteria, newCrit];
     setCriteria(updatedCriteria);
 
-    // Initialize default scores for each option
     const updatedScores = { ...scores };
     decision.options.forEach((opt) => {
       if (!updatedScores[opt.id]) updatedScores[opt.id] = {};
@@ -151,16 +157,29 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       weight: 'medium',
     };
 
-    const updated = prosConsData.map((pc) => {
-      if (pc.optionId === optionId) {
-        return {
-          ...pc,
-          pros: type === 'pro' ? [...pc.pros, newItem] : pc.pros,
-          cons: type === 'con' ? [...pc.cons, newItem] : pc.cons,
-        };
-      }
-      return pc;
-    });
+    const exists = prosConsData.some((pc) => pc.optionId === optionId);
+    let updated: typeof prosConsData;
+    if (exists) {
+      updated = prosConsData.map((pc) => {
+        if (pc.optionId === optionId) {
+          return {
+            ...pc,
+            pros: type === 'pro' ? [...pc.pros, newItem] : pc.pros,
+            cons: type === 'con' ? [...pc.cons, newItem] : pc.cons,
+          };
+        }
+        return pc;
+      });
+    } else {
+      updated = [
+        ...prosConsData,
+        {
+          optionId,
+          pros: type === 'pro' ? [newItem] : [],
+          cons: type === 'con' ? [newItem] : [],
+        },
+      ];
+    }
 
     setProsConsData(updated);
     onUpdateDecision({
@@ -220,10 +239,10 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     }
   };
 
-  // Find recommended option title
-  const recommendedOpt = decision.options.find(
-    (o) => o.id === decision.recommendation?.recommendedOptionId
-  ) || decision.options[0];
+  // Find recommended option
+  const recommendedOpt =
+    decision.options.find((o) => o.id === decision.recommendation?.recommendedOptionId) ||
+    decision.options[0];
 
   // Calculate top scoring option dynamically from matrix
   let topScoringOptionId = decision.options[0]?.id || '';
@@ -237,71 +256,101 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     }
   });
 
+  const tabList: { id: TabType; label: string; icon: React.ElementType }[] = [
+    { id: 'overview', label: 'Executive Overview', icon: BarChart3 },
+    { id: 'prosCons', label: 'Pros & Cons', icon: FileText },
+    { id: 'compare', label: 'Compare Matrix', icon: Table },
+    { id: 'swot', label: 'SWOT Grid', icon: Grid2X2 },
+    { id: 'matrix', label: 'Weighted Matrix', icon: SlidersHorizontal },
+    { id: 'risks', label: 'Risk Analysis', icon: Shield },
+    { id: 'future', label: '1–5 Yr Scenarios', icon: Clock },
+    { id: 'thinkDeeper', label: 'Think Deeper & AI', icon: Compass },
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-fadeIn print:px-0 print:py-0">
+    <div className="max-w-7xl mx-auto px-4 py-6 md:py-10 space-y-8 animate-fadeIn print:px-0 print:py-0">
       {/* HEADER BANNER */}
-      <div className="bg-[#111111] border border-[#222222] rounded-lg p-6 sm:p-8 relative overflow-hidden shadow-2xl print:border-none print:shadow-none">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[#D4AF37]/5 blur-[100px] pointer-events-none rounded-full" />
+      <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-xs print:border-none print:shadow-none">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#C59B27]/5 blur-[100px] pointer-events-none rounded-full" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-widest bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30 rounded-full">
+              <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest bg-[#FAF7F2] text-[#B88E3D] border border-[#E8E5DF] rounded-md">
                 Decision Analysis
               </span>
-              <span className="text-xs text-[#666666] font-mono">
+              <span className="text-xs text-[#8C909A] font-mono">
                 {decision.options.length} Options Evaluated • Updated{' '}
                 {new Date(decision.updatedAt).toLocaleDateString()}
               </span>
             </div>
 
-            <h1 className="font-serif italic text-2xl sm:text-3xl font-light text-[#F5F5F0] leading-snug">
+            <h1 className="font-serif italic text-2xl sm:text-3xl font-normal text-[#18191C] leading-snug">
               {decision.title}
             </h1>
 
             {/* Recommendation Highlight Pill */}
             {recommendedOpt && (
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-sm bg-[#1A1A1A] border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-medium">
-                <Award className="w-4 h-4 text-[#D4AF37]" />
-                <span>
-                  Recommended: <strong className="font-bold text-[#F5F5F0]">{recommendedOpt.title}</strong>
-                </span>
-                <span className="ml-1 text-[11px] font-mono text-[#D4AF37]/80">
-                  ({decision.recommendation?.confidenceLevel || 'High'} Confidence)
-                </span>
+              <div className="space-y-2">
+                <div className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] text-[#18191C] text-xs font-medium shadow-xs">
+                  <Award className="w-4 h-4 text-[#B88E3D]" />
+                  <span>
+                    Recommended:{' '}
+                    <strong className="font-semibold text-[#18191C]">{recommendedOpt.title}</strong>
+                  </span>
+                  <span className="ml-1 text-[11px] font-mono text-[#B88E3D] font-bold">
+                    ({decision.recommendation?.confidenceLevel || 'High'} Confidence)
+                  </span>
+                  {decision.reversibility && (
+                    <span className="px-2 py-0.5 rounded bg-white text-[10px] text-[#595E68] border border-[#E8E5DF]">
+                      ↺ {decision.reversibility}
+                    </span>
+                  )}
+                  {decision.timeHorizon && (
+                    <span className="px-2 py-0.5 rounded bg-white text-[10px] text-[#595E68] border border-[#E8E5DF]">
+                      ⏱ {decision.timeHorizon} horizon
+                    </span>
+                  )}
+                </div>
+
+                {decision.recommendation?.confidenceReason && (
+                  <p className="text-xs text-[#595E68] bg-[#FAF7F2] p-2.5 rounded-lg border border-[#E8E5DF] italic">
+                    💡 <strong>Confidence Rationale:</strong> {decision.recommendation.confidenceReason}
+                  </p>
+                )}
               </div>
             )}
           </div>
 
           {/* Action Bar */}
-          <div className="flex flex-wrap items-center gap-3 print:hidden">
+          <div className="flex flex-wrap items-center gap-2.5 print:hidden">
             <button
               onClick={handleSaveClick}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-sm border transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider rounded-lg border transition-all ${
                 savedSuccess
-                  ? 'bg-emerald-950/60 text-emerald-400 border-emerald-500/40'
-                  : 'bg-[#1A1A1A] hover:bg-[#222222] text-[#A0A0A0] hover:text-[#F5F5F0] border border-[#222222]'
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : 'bg-white hover:bg-[#FAF7F2] text-[#18191C] border-[#E8E5DF] shadow-xs'
               }`}
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-4 h-4 text-[#B88E3D]" />
               <span>{savedSuccess ? 'Saved to History!' : 'Save Decision'}</span>
             </button>
 
             <button
               onClick={handlePrintReport}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider bg-[#1A1A1A] hover:bg-[#222222] text-[#A0A0A0] hover:text-[#F5F5F0] border border-[#222222] rounded-sm transition-all"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider bg-white hover:bg-[#FAF7F2] text-[#18191C] border border-[#E8E5DF] rounded-lg transition-all shadow-xs"
               title="Print or Export PDF"
             >
-              <Printer className="w-4 h-4" />
+              <Printer className="w-4 h-4 text-[#8C909A]" />
               <span className="hidden sm:inline">Export Report</span>
             </button>
 
             <button
               onClick={onNewDecision}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider text-[#0A0A0A] bg-[#D4AF37] hover:bg-[#e0be48] rounded-sm shadow-md transition-all"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-[#18191C] hover:bg-[#2A2D34] rounded-lg shadow-xs transition-all"
             >
-              <Plus className="w-4 h-4 text-[#0A0A0A]" />
-              <span>New Analysis</span>
+              <Plus className="w-4 h-4 text-[#C59B27]" />
+              <span>New Decision</span>
             </button>
           </div>
         </div>
@@ -309,24 +358,27 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
       {/* CLARIFYING QUESTIONS BANNER (if available) */}
       {decision.clarifyingQuestions && decision.clarifyingQuestions.length > 0 && (
-        <div className="bg-[#111111] border border-[#D4AF37]/30 rounded-lg p-5 space-y-3">
-          <div className="flex items-center gap-2 text-[#D4AF37] text-xs font-bold uppercase tracking-wider">
-            <HelpCircle className="w-4 h-4 text-[#D4AF37]" />
-            <span>Clarifying Questions Identified By AI</span>
+        <div className="bg-white border border-[#E8E5DF] rounded-xl p-5 space-y-3 shadow-xs">
+          <div className="flex items-center gap-2 text-[#B88E3D] text-xs font-bold uppercase tracking-wider">
+            <HelpCircle className="w-4 h-4 text-[#B88E3D]" />
+            <span>Clarifying Context Identified By AI</span>
           </div>
-          <p className="text-xs text-[#A0A0A0]">
-            Consider these questions to sharpen your decision context:
+          <p className="text-xs text-[#595E68]">
+            Key questions that sharpen the decision framework:
           </p>
           <div className="grid sm:grid-cols-2 gap-3 pt-1">
             {decision.clarifyingQuestions.map((q) => (
-              <div key={q.id} className="p-3 rounded-sm bg-[#0A0A0A] border border-[#222222] text-xs space-y-2">
-                <p className="font-medium text-[#F5F5F0]">{q.question}</p>
+              <div
+                key={q.id}
+                className="p-3.5 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] text-xs space-y-2"
+              >
+                <p className="font-semibold text-[#18191C]">{q.question}</p>
                 {q.suggestedAnswers && q.suggestedAnswers.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {q.suggestedAnswers.map((ans, idx) => (
                       <span
                         key={idx}
-                        className="px-2 py-0.5 rounded-sm bg-[#1A1A1A] border border-[#222222] text-[11px] text-[#A0A0A0]"
+                        className="px-2 py-0.5 rounded bg-white border border-[#E8E5DF] text-[11px] text-[#595E68]"
                       >
                         {ans}
                       </span>
@@ -339,36 +391,49 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         </div>
       )}
 
-      {/* NAVIGATION TABS */}
-      <div className="flex items-center border-b border-[#2A2A2A] overflow-x-auto no-scrollbar scroll-smooth print:hidden">
-        <div className="flex gap-2 min-w-max pb-2">
-          {[
-            { id: 'overview', label: 'Overview', icon: BarChart3 },
-            { id: 'prosCons', label: 'Pros & Cons', icon: FileText },
-            { id: 'compare', label: 'Compare', icon: Scale },
-            { id: 'swot', label: 'SWOT', icon: Shield },
-            { id: 'matrix', label: 'Decision Matrix', icon: TrendingUp },
-            { id: 'risks', label: 'Risk Analysis', icon: AlertTriangle },
-            { id: 'future', label: 'Future Scenarios', icon: Clock },
-            { id: 'thinkDeeper', label: 'Think Deeper', icon: Compass },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as TabType)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-sm text-xs font-bold uppercase tracking-wider transition-all ${
-                  isActive
-                    ? 'bg-[#1A1A1A] text-[#D4AF37] border-b-2 border-[#D4AF37]'
-                    : 'text-[#A0A0A0] hover:text-[#F5F5F0] hover:bg-[#111111]'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-[#D4AF37]' : 'text-[#666666]'}`} />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+      {/* NAVIGATION TABS (Mobile Dropdown + Fully Responsive Horizontal Tab Strip) */}
+      <div className="border-b border-[#E8E5DF]/60 pb-3 print:hidden space-y-2.5 max-w-full min-w-0">
+        {/* Mobile Dropdown Selector (visible on small mobile screens < 640px) */}
+        <div className="sm:hidden">
+          <label htmlFor="mobile-tab-select" className="block text-[10px] font-bold uppercase tracking-wider text-[#8C909A] mb-1">
+            Select Analysis Section
+          </label>
+          <select
+            id="mobile-tab-select"
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as TabType)}
+            className="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-white border border-[#E8E5DF] text-[#18191C] focus:outline-none focus:border-[#C59B27] shadow-xs cursor-pointer"
+          >
+            {tabList.map((tab) => (
+              <option key={tab.id} value={tab.id}>
+                {tab.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Horizontal Tab Strip (Scrollable & Responsive across all viewports) */}
+        <div className="w-full max-w-full min-w-0 overflow-hidden">
+          <div className="flex items-center gap-1.5 overflow-x-auto scroll-smooth py-1 px-1 max-w-full w-full touch-pan-x border border-[#E8E5DF]/60 bg-[#FAF7F2]/70 rounded-xl shadow-2xs">
+            {tabList.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-[#18191C] text-white shadow-xs'
+                      : 'text-[#595E68] hover:text-[#18191C] hover:bg-white border border-transparent hover:border-[#E8E5DF]/60'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-[#C59B27]' : 'text-[#8C909A]'}`} />
+                  <span className="whitespace-nowrap">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -379,26 +444,26 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         <div className="space-y-8 animate-fadeIn">
           {/* Executive Summary & Top Recommendation Box */}
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 bg-[#111111] border border-[#222222] rounded-lg p-6 space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#666666] flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#D4AF37]" />
-                Executive Summary
+            <div className="md:col-span-2 bg-white border border-[#E8E5DF] rounded-xl p-6 space-y-4 shadow-xs">
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#B88E3D] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#B88E3D]" />
+                Executive Synthesis
               </h3>
-              <p className="text-sm text-[#F5F5F0] leading-relaxed font-sans">
+              <p className="text-sm text-[#18191C] leading-relaxed font-sans">
                 {decision.recommendation?.mainReasons?.join(' ') ||
                   `Analyzing ${decision.options.length} options for "${decision.title}".`}
               </p>
 
               {/* Priorities Tags */}
-              <div className="pt-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#666666] block mb-2">
+              <div className="pt-2 border-t border-[#E8E5DF]">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#8C909A] block mb-2">
                   Priorities Evaluated:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {decision.userPriorities?.map((p, idx) => (
                     <span
                       key={idx}
-                      className="px-2.5 py-1 rounded-sm bg-[#1A1A1A] text-[#A0A0A0] text-xs border border-[#222222]"
+                      className="px-2.5 py-1 rounded-full bg-[#FAF7F2] text-[#18191C] text-xs font-medium border border-[#E8E5DF]"
                     >
                       {p}
                     </span>
@@ -408,40 +473,110 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             </div>
 
             {/* Recommendation Score Meter Box */}
-            <div className="bg-[#111111] border border-[#D4AF37]/30 rounded-lg p-6 space-y-4 relative overflow-hidden">
+            <div className="bg-white border border-[#E8E5DF] rounded-xl p-6 space-y-4 relative overflow-hidden shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#D4AF37]">
-                  AI Recommendation
+                <span className="text-xs font-bold uppercase tracking-wider text-[#B88E3D]">
+                  Primary Direction
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-sm bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#FAF7F2] text-[#18191C] border border-[#E8E5DF] font-semibold">
                   {decision.recommendation?.confidenceLevel || 'High'} Confidence
                 </span>
               </div>
 
               <div>
-                <h4 className="font-serif italic text-lg font-light text-[#F5F5F0]">
+                <h4 className="font-serif italic text-xl text-[#18191C]">
                   {recommendedOpt?.title}
                 </h4>
-                <p className="text-xs text-[#A0A0A0] mt-1 line-clamp-3">
+                <p className="text-xs text-[#595E68] mt-1.5 leading-relaxed line-clamp-3">
                   {recommendedOpt?.description}
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-[#222222] space-y-2 text-xs">
-                <div>
-                  <span className="text-[#666666]">Biggest Concern:</span>
-                  <p className="text-[#D4AF37] font-medium">
-                    {decision.recommendation?.biggestConcern || 'Managing short-term transition.'}
-                  </p>
-                </div>
+              <div className="pt-3 border-t border-[#E8E5DF] space-y-1.5 text-xs">
+                <span className="text-[#8C909A] font-medium">Primary Operational Risk:</span>
+                <p className="text-[#18191C] font-semibold">
+                  {decision.recommendation?.biggestConcern || 'Managing short-term transition.'}
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Option Scores Overview Cards */}
+          {/* Why Other Options Lost & Reversal Conditions */}
+          {(decision.recommendation?.whyNotOptions || (decision.recommendation?.reversalConditions && decision.recommendation.reversalConditions.length > 0)) && (
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Why Other Options Lost */}
+              {decision.recommendation?.whyNotOptions && (
+                <div className="bg-white border border-[#E8E5DF] rounded-xl p-6 space-y-3 shadow-xs">
+                  <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#8C909A] flex items-center gap-2">
+                    <Scale className="w-4 h-4 text-[#B88E3D]" />
+                    Why Other Options Lost
+                  </h4>
+                  <div className="space-y-2 text-xs">
+                    {Object.entries(decision.recommendation.whyNotOptions).map(([optId, reason]) => {
+                      const opt = decision.options.find((o) => o.id === optId);
+                      return (
+                        <div key={optId} className="p-3 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
+                          <span className="font-serif italic text-[#18191C] font-semibold block">
+                            {opt?.title || optId}
+                          </span>
+                          <p className="text-[#595E68] leading-relaxed">{reason}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Conditions that would change the recommendation */}
+              {decision.recommendation?.reversalConditions && decision.recommendation.reversalConditions.length > 0 && (
+                <div className="bg-white border border-[#E8E5DF] rounded-xl p-6 space-y-3 shadow-xs">
+                  <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#8C909A] flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600" />
+                    Conditions That Would Flip Recommendation
+                  </h4>
+                  <ul className="space-y-2 text-xs">
+                    {decision.recommendation.reversalConditions.map((cond, idx) => (
+                      <li key={idx} className="p-3 rounded-lg bg-rose-50/50 border border-rose-100 text-[#18191C] flex items-start gap-2">
+                        <span className="text-rose-600 font-bold">•</span>
+                        <span>{cond}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Evidence Items Breakdown (Facts vs Assumptions) */}
+          {decision.evidenceItems && decision.evidenceItems.length > 0 && (
+            <div className="bg-white border border-[#E8E5DF] rounded-xl p-6 space-y-4 shadow-xs">
+              <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#8C909A] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#B88E3D]" />
+                Evidence & Information Integrity Breakdown
+              </h4>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {decision.evidenceItems.map((item) => {
+                  const categoryColors = {
+                    FACT: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                    ASSUMPTION: 'bg-amber-50 text-amber-800 border-amber-200',
+                    INTERPRETATION: 'bg-blue-50 text-blue-800 border-blue-200',
+                    UNKNOWN: 'bg-slate-50 text-slate-800 border-slate-200',
+                  };
+                  return (
+                    <div key={item.id} className="p-3.5 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] space-y-2 text-xs">
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${categoryColors[item.category]}`}>
+                        {item.category}
+                      </span>
+                      <p className="text-[#18191C] font-medium leading-relaxed">{item.text}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#666666]">
-              Evaluated Options Score Breakdown
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#8C909A]">
+              Evaluated Options & Scores
             </h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {decision.options.map((opt) => {
@@ -452,38 +587,38 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 return (
                   <div
                     key={opt.id}
-                    className={`p-5 rounded-lg border transition-all space-y-4 relative ${
+                    className={`p-6 rounded-xl border transition-all space-y-4 relative bg-white ${
                       isRecommended || isLeader
-                        ? 'bg-[#111111] border-[#D4AF37]/50 shadow-lg'
-                        : 'bg-[#111111] border-[#222222]'
+                        ? 'border-[#C59B27] shadow-sm'
+                        : 'border-[#E8E5DF] shadow-xs'
                     }`}
                   >
                     {(isRecommended || isLeader) && (
-                      <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-[#D4AF37] text-[#0A0A0A] rounded-full shadow-md">
-                        {isRecommended ? 'Top Recommendation' : 'Highest Matrix Score'}
+                      <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-[#18191C] text-[#C59B27] rounded-full shadow-xs">
+                        {isRecommended ? 'Recommended' : 'Top Matrix Score'}
                       </span>
                     )}
 
                     <div>
-                      <h4 className="font-serif italic text-base font-light text-[#F5F5F0]">
+                      <h4 className="font-serif italic text-lg text-[#18191C] font-normal">
                         {opt.title}
                       </h4>
-                      <p className="text-xs text-[#A0A0A0] mt-1 leading-normal line-clamp-2">
+                      <p className="text-xs text-[#595E68] mt-1 leading-relaxed line-clamp-2">
                         {opt.description}
                       </p>
                     </div>
 
                     {/* Score Bar */}
-                    <div className="space-y-1.5 pt-2 border-t border-[#222222]">
+                    <div className="space-y-1.5 pt-3 border-t border-[#E8E5DF]">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-[#666666] font-medium">Weighted Score</span>
-                        <span className="font-mono font-bold text-[#D4AF37] text-sm">
+                        <span className="text-[#8C909A] font-semibold">Weighted Total</span>
+                        <span className="font-mono font-bold text-[#18191C] text-sm">
                           {weightedScore} / 10
                         </span>
                       </div>
-                      <div className="w-full bg-[#222222] h-2 rounded-full overflow-hidden">
+                      <div className="w-full bg-[#FAF7F2] border border-[#E8E5DF] h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-[#D4AF37] h-full rounded-full transition-all duration-500"
+                          className="bg-[#18191C] h-full rounded-full transition-all duration-500"
                           style={{ width: `${(weightedScore / 10) * 100}%` }}
                         />
                       </div>
@@ -500,11 +635,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {activeTab === 'prosCons' && (
         <div className="space-y-6 animate-fadeIn">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#666666]">
-              Advantages & Disadvantages by Option
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#8C909A]">
+              Advantages & Disadvantages
             </h3>
-            <span className="text-xs text-[#666666]">
-              You can add your own custom Pros/Cons to refine the analysis.
+            <span className="text-xs text-[#8C909A]">
+              Custom items can be added dynamically
             </span>
           </div>
 
@@ -519,93 +654,87 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={opt.id}
-                  className="bg-[#111111] border border-[#222222] rounded-lg p-6 space-y-5"
+                  className="bg-white border border-[#E8E5DF] rounded-xl p-6 space-y-5 shadow-xs"
                 >
-                  <div className="flex items-center justify-between border-b border-[#222222] pb-3">
-                    <h4 className="font-serif italic text-lg font-light text-[#F5F5F0]">
+                  <div className="flex items-center justify-between border-b border-[#E8E5DF] pb-3">
+                    <h4 className="font-serif italic text-lg text-[#18191C]">
                       {opt.title}
                     </h4>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleAddProCon(opt.id, 'pro')}
-                        className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-[#D4AF37]/10 text-[#D4AF37] hover:bg-[#D4AF37]/20 border border-[#D4AF37]/30 rounded-sm transition-colors flex items-center gap-1"
+                        className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#FAF7F2] text-[#18191C] hover:bg-[#18191C] hover:text-white border border-[#E8E5DF] rounded transition-colors flex items-center gap-1"
                       >
-                        <Plus className="w-3 h-3" /> Pro
+                        <Plus className="w-3 h-3 text-[#B88E3D]" /> Pro
                       </button>
                       <button
                         onClick={() => handleAddProCon(opt.id, 'con')}
-                        className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-[#1A1A1A] text-[#A0A0A0] hover:bg-[#222222] border border-[#222222] rounded-sm transition-colors flex items-center gap-1"
+                        className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#FAF7F2] text-[#18191C] hover:bg-[#18191C] hover:text-white border border-[#E8E5DF] rounded transition-colors flex items-center gap-1"
                       >
-                        <Plus className="w-3 h-3" /> Con
+                        <Plus className="w-3 h-3 text-[#8C909A]" /> Con
                       </button>
                     </div>
                   </div>
 
                   {/* PROS LIST */}
                   <div className="space-y-2">
-                    <span className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-wider flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Pros / Advantages ({pc.pros.length})
+                    <span className="text-[10px] font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
+                      <Check className="w-3.5 h-3.5" /> Advantages ({pc.pros.length})
                     </span>
                     <ul className="space-y-2">
                       {pc.pros.map((item, idx) => (
                         <li
                           key={idx}
-                          className="p-3 rounded-sm bg-[#0A0A0A] border-l-2 border-[#D4AF37] border-y border-r border-[#222222] text-xs text-[#F5F5F0] flex items-start justify-between gap-3"
+                          className="p-3.5 rounded-lg bg-[#FAF7F2] border-l-2 border-[#B88E3D] border-y border-r border-[#E8E5DF] text-xs flex items-start justify-between gap-3"
                         >
                           <div>
-                            <p className="font-medium text-[#F5F5F0]">{item.text}</p>
+                            <p className="font-semibold text-[#18191C]">{item.text}</p>
                             {item.details && (
-                              <p className="text-[11px] text-[#A0A0A0] mt-1">{item.details}</p>
+                              <p className="text-[11px] text-[#595E68] mt-1">{item.details}</p>
                             )}
                           </div>
                           <span
-                            className={`px-2 py-0.5 rounded-sm text-[10px] font-mono uppercase font-bold shrink-0 ${
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold shrink-0 ${
                               item.weight === 'high'
-                                ? 'bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30'
-                                : 'bg-[#1A1A1A] text-[#666666]'
+                                ? 'bg-white text-[#18191C] border border-[#E8E5DF]'
+                                : 'bg-transparent text-[#8C909A]'
                             }`}
                           >
                             {item.weight}
                           </span>
                         </li>
                       ))}
-                      {pc.pros.length === 0 && (
-                        <li className="text-xs text-[#666666] italic p-2">No pros listed.</li>
-                      )}
                     </ul>
                   </div>
 
                   {/* CONS LIST */}
-                  <div className="space-y-2 pt-2">
-                    <span className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-wider flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-[#A0A0A0]" /> Cons / Disadvantages ({pc.cons.length})
+                  <div className="space-y-2 pt-2 border-t border-[#E8E5DF]">
+                    <span className="text-[10px] font-bold text-[#8C909A] uppercase tracking-wider flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-[#8C909A]" /> Disadvantages ({pc.cons.length})
                     </span>
                     <ul className="space-y-2">
                       {pc.cons.map((item, idx) => (
                         <li
                           key={idx}
-                          className="p-3 rounded-sm bg-[#0A0A0A] border-l-2 border-[#666666] border-y border-r border-[#222222] text-xs text-[#F5F5F0] flex items-start justify-between gap-3"
+                          className="p-3.5 rounded-lg bg-[#FAF7F2] border-l-2 border-[#8C909A] border-y border-r border-[#E8E5DF] text-xs flex items-start justify-between gap-3"
                         >
                           <div>
-                            <p className="font-medium text-[#F5F5F0]">{item.text}</p>
+                            <p className="font-semibold text-[#18191C]">{item.text}</p>
                             {item.details && (
-                              <p className="text-[11px] text-[#A0A0A0] mt-1">{item.details}</p>
+                              <p className="text-[11px] text-[#595E68] mt-1">{item.details}</p>
                             )}
                           </div>
                           <span
-                            className={`px-2 py-0.5 rounded-sm text-[10px] font-mono uppercase font-bold shrink-0 ${
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold shrink-0 ${
                               item.weight === 'high'
-                                ? 'bg-[#222222] text-[#A0A0A0] border border-[#444444]'
-                                : 'bg-[#1A1A1A] text-[#666666]'
+                                ? 'bg-white text-[#18191C] border border-[#E8E5DF]'
+                                : 'bg-transparent text-[#8C909A]'
                             }`}
                           >
                             {item.weight}
                           </span>
                         </li>
                       ))}
-                      {pc.cons.length === 0 && (
-                        <li className="text-xs text-[#666666] italic p-2">No cons listed.</li>
-                      )}
                     </ul>
                   </div>
                 </div>
@@ -617,20 +746,20 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
       {/* 3. COMPARE TAB */}
       {activeTab === 'compare' && (
-        <div className="bg-[#111111] border border-[#222222] rounded-lg p-6 space-y-6 animate-fadeIn overflow-x-auto">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#666666]">
-              Side-by-Side Comparison Matrix
+        <div className="bg-white border border-[#E8E5DF] rounded-xl p-6 sm:p-8 space-y-6 animate-fadeIn overflow-x-auto shadow-xs">
+          <div className="flex items-center justify-between border-b border-[#E8E5DF] pb-4">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#8C909A]">
+              Side-by-Side Evaluation Matrix
             </h3>
-            <span className="text-xs text-[#666666]">
-              Criteria evaluation across options
+            <span className="text-xs text-[#8C909A]">
+              Cross-option criterion assessment
             </span>
           </div>
 
           <table className="w-full text-left border-collapse min-w-[600px]">
             <thead>
-              <tr className="border-b border-[#222222] text-[10px] uppercase font-bold text-[#666666] tracking-wider">
-                <th className="py-3 px-4">Criterion</th>
+              <tr className="border-b border-[#E8E5DF] text-[10px] uppercase font-bold text-[#8C909A] tracking-wider">
+                <th className="py-3 px-4">Evaluation Criterion</th>
                 {decision.options.map((opt) => (
                   <th key={opt.id} className="py-3 px-4">
                     {opt.title}
@@ -638,10 +767,10 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#222222] text-xs text-[#F5F5F0]">
+            <tbody className="divide-y divide-[#E8E5DF] text-xs text-[#18191C]">
               {decision.comparison.map((row, idx) => (
-                <tr key={idx} className="hover:bg-[#1A1A1A] transition-colors">
-                  <td className="py-3.5 px-4 font-serif italic text-[#D4AF37]">
+                <tr key={idx} className="hover:bg-[#FAF7F2] transition-colors">
+                  <td className="py-3.5 px-4 font-serif italic text-[#18191C] font-medium">
                     {row.criterion}
                   </td>
                   {decision.options.map((opt) => {
@@ -652,13 +781,13 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                         <div className="flex items-center gap-2">
                           <span
                             className={
-                              isWinner ? 'font-bold text-[#D4AF37]' : 'text-[#A0A0A0]'
+                              isWinner ? 'font-bold text-[#18191C]' : 'text-[#595E68]'
                             }
                           >
                             {scoreVal}
                           </span>
                           {isWinner && (
-                            <span className="px-1.5 py-0.5 text-[9px] font-bold font-mono uppercase bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30 rounded-sm">
+                            <span className="px-1.5 py-0.5 text-[9px] font-bold font-mono uppercase bg-[#18191C] text-[#C59B27] rounded">
                               Leader
                             </span>
                           )}
@@ -676,8 +805,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {/* 4. SWOT TAB */}
       {activeTab === 'swot' && (
         <div className="space-y-6 animate-fadeIn">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#666666]">
-            SWOT Analysis (Strengths, Weaknesses, Opportunities, Threats)
+          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#8C909A]">
+            SWOT Strategic Grid
           </h3>
 
           <div className="space-y-8">
@@ -693,19 +822,19 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={opt.id}
-                  className="bg-[#111111] border border-[#222222] rounded-lg p-6 space-y-4"
+                  className="bg-white border border-[#E8E5DF] rounded-xl p-6 space-y-4 shadow-xs"
                 >
-                  <h4 className="font-serif italic text-lg font-light text-[#F5F5F0] border-b border-[#222222] pb-3">
-                    {opt.title} — SWOT Grid
+                  <h4 className="font-serif italic text-lg text-[#18191C] border-b border-[#E8E5DF] pb-3">
+                    {opt.title} — SWOT Overview
                   </h4>
 
                   <div className="grid sm:grid-cols-2 gap-4">
                     {/* Strengths */}
-                    <div className="p-4 rounded-sm bg-[#0A0A0A] border-l-2 border-[#D4AF37] border-y border-r border-[#222222] space-y-2">
-                      <span className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-wider">
+                    <div className="p-4 rounded-lg bg-[#FAF7F2] border-l-2 border-[#B88E3D] border-y border-r border-[#E8E5DF] space-y-2">
+                      <span className="text-[10px] font-bold text-[#B88E3D] uppercase tracking-wider">
                         S — Strengths
                       </span>
-                      <ul className="text-xs text-[#F5F5F0] space-y-1 list-disc list-inside">
+                      <ul className="text-xs text-[#18191C] space-y-1.5 list-disc list-inside font-medium">
                         {swot.strengths.map((s, i) => (
                           <li key={i}>{s}</li>
                         ))}
@@ -713,11 +842,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     </div>
 
                     {/* Weaknesses */}
-                    <div className="p-4 rounded-sm bg-[#0A0A0A] border-l-2 border-[#666666] border-y border-r border-[#222222] space-y-2">
-                      <span className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-wider">
+                    <div className="p-4 rounded-lg bg-[#FAF7F2] border-l-2 border-[#8C909A] border-y border-r border-[#E8E5DF] space-y-2">
+                      <span className="text-[10px] font-bold text-[#8C909A] uppercase tracking-wider">
                         W — Weaknesses
                       </span>
-                      <ul className="text-xs text-[#F5F5F0] space-y-1 list-disc list-inside">
+                      <ul className="text-xs text-[#18191C] space-y-1.5 list-disc list-inside font-medium">
                         {swot.weaknesses.map((w, i) => (
                           <li key={i}>{w}</li>
                         ))}
@@ -725,11 +854,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     </div>
 
                     {/* Opportunities */}
-                    <div className="p-4 rounded-sm bg-[#0A0A0A] border-l-2 border-[#D4AF37] border-y border-r border-[#222222] space-y-2">
-                      <span className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-wider">
+                    <div className="p-4 rounded-lg bg-[#FAF7F2] border-l-2 border-[#B88E3D] border-y border-r border-[#E8E5DF] space-y-2">
+                      <span className="text-[10px] font-bold text-[#B88E3D] uppercase tracking-wider">
                         O — Opportunities
                       </span>
-                      <ul className="text-xs text-[#F5F5F0] space-y-1 list-disc list-inside">
+                      <ul className="text-xs text-[#18191C] space-y-1.5 list-disc list-inside font-medium">
                         {swot.opportunities.map((o, i) => (
                           <li key={i}>{o}</li>
                         ))}
@@ -737,11 +866,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     </div>
 
                     {/* Threats */}
-                    <div className="p-4 rounded-sm bg-[#0A0A0A] border-l-2 border-[#666666] border-y border-r border-[#222222] space-y-2">
-                      <span className="text-[10px] font-bold text-[#A0A0A0] uppercase tracking-wider">
+                    <div className="p-4 rounded-lg bg-[#FAF7F2] border-l-2 border-[#8C909A] border-y border-r border-[#E8E5DF] space-y-2">
+                      <span className="text-[10px] font-bold text-[#8C909A] uppercase tracking-wider">
                         T — Threats
                       </span>
-                      <ul className="text-xs text-[#F5F5F0] space-y-1 list-disc list-inside">
+                      <ul className="text-xs text-[#18191C] space-y-1.5 list-disc list-inside font-medium">
                         {swot.threats.map((t, i) => (
                           <li key={i}>{t}</li>
                         ))}
@@ -757,24 +886,24 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
       {/* 5. DECISION MATRIX TAB */}
       {activeTab === 'matrix' && (
-        <div className="bg-[#111111] border border-[#222222] rounded-lg p-6 sm:p-8 space-y-6 animate-fadeIn">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-white border border-[#E8E5DF] rounded-xl p-6 sm:p-8 space-y-6 animate-fadeIn shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E5DF] pb-4">
             <div>
-              <h3 className="text-base font-serif italic font-light text-[#F5F5F0] flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
+              <h3 className="text-base font-serif italic text-[#18191C] flex items-center gap-2 font-normal">
+                <TrendingUp className="w-4 h-4 text-[#B88E3D]" />
                 Interactive Weighted Decision Matrix
               </h3>
-              <p className="text-xs text-[#A0A0A0] mt-0.5">
-                Adjust criteria weights (%) and score options (1–10). Scores update in real time!
+              <p className="text-xs text-[#595E68] mt-0.5">
+                Adjust criteria weights (%) and score options (1–10) in real time.
               </p>
             </div>
 
             <button
               onClick={handleAddCriterion}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30 rounded-sm transition-colors self-start sm:self-auto"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider bg-[#FAF7F2] hover:bg-[#F4F1EA] text-[#18191C] border border-[#E8E5DF] rounded-lg transition-colors self-start sm:self-auto"
             >
-              <Plus className="w-3.5 h-3.5 text-[#D4AF37]" />
-              <span>Add Custom Criterion</span>
+              <Plus className="w-3.5 h-3.5 text-[#B88E3D]" />
+              <span>Add Priority</span>
             </button>
           </div>
 
@@ -787,24 +916,37 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={opt.id}
-                  className={`p-4 rounded-sm border flex items-center justify-between ${
+                  className={`p-4 rounded-xl border flex items-center justify-between ${
                     isLeader
-                      ? 'bg-[#1A1A1A] border-[#D4AF37]/50 shadow-md'
-                      : 'bg-[#0A0A0A] border-[#222222]'
+                      ? 'bg-[#18191C] text-white border-[#18191C] shadow-xs'
+                      : 'bg-[#FAF7F2] text-[#18191C] border-[#E8E5DF]'
                   }`}
                 >
                   <div>
-                    <span className="text-[10px] font-mono text-[#D4AF37] uppercase font-bold">
-                      {isLeader ? '🏆 Current Matrix Leader' : 'Calculated Total'}
+                    <span
+                      className={`text-[10px] font-mono uppercase font-bold ${
+                        isLeader ? 'text-[#C59B27]' : 'text-[#8C909A]'
+                      }`}
+                    >
+                      {isLeader ? '🏆 Matrix Leader' : 'Weighted Total'}
                     </span>
-                    <h4 className="font-serif italic text-sm font-light text-[#F5F5F0]">
+                    <h4 className="font-serif italic text-sm font-medium">
                       {opt.title}
                     </h4>
                   </div>
 
                   <div className="text-right font-mono">
-                    <span className="text-xl font-bold text-[#D4AF37]">{totalScore}</span>
-                    <span className="text-xs text-[#666666]"> / 10</span>
+                    <span
+                      className={`text-xl font-bold ${
+                        isLeader ? 'text-[#C59B27]' : 'text-[#18191C]'
+                      }`}
+                    >
+                      {totalScore}
+                    </span>
+                    <span className={isLeader ? 'text-white/60 text-xs' : 'text-[#8C909A] text-xs'}>
+                      {' '}
+                      / 10
+                    </span>
                   </div>
                 </div>
               );
@@ -812,33 +954,35 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
 
           {/* CRITERIA & SCORES SLIDERS TABLE */}
-          <div className="space-y-6 pt-4 border-t border-[#222222]">
+          <div className="space-y-6 pt-4 border-t border-[#E8E5DF]">
             {criteria.map((crit) => (
               <div
                 key={crit.id}
-                className="p-4 rounded-sm bg-[#0A0A0A] border border-[#222222] space-y-4"
+                className="p-5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-4"
               >
                 {/* Criterion Header & Weight Slider */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#222222] pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E8E5DF] pb-3">
                   <div>
-                    <h4 className="text-sm font-serif italic font-light text-[#D4AF37]">{crit.name}</h4>
+                    <h4 className="text-sm font-serif italic text-[#18191C] font-semibold">
+                      {crit.name}
+                    </h4>
                     {crit.description && (
-                      <p className="text-xs text-[#A0A0A0] mt-0.5">{crit.description}</p>
+                      <p className="text-xs text-[#595E68] mt-0.5">{crit.description}</p>
                     )}
                   </div>
 
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-[#666666] font-mono">Weight:</span>
+                      <span className="text-xs text-[#8C909A] font-mono">Weight:</span>
                       <input
                         type="range"
                         min={0}
                         max={100}
                         value={crit.weight}
                         onChange={(e) => handleWeightChange(crit.id, parseInt(e.target.value))}
-                        className="w-24 accent-[#D4AF37] cursor-pointer"
+                        className="w-24 accent-[#18191C] cursor-pointer"
                       />
-                      <span className="text-xs font-mono font-bold text-[#D4AF37] w-8">
+                      <span className="text-xs font-mono font-bold text-[#18191C] w-8">
                         {crit.weight}%
                       </span>
                     </div>
@@ -846,7 +990,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     {criteria.length > 1 && (
                       <button
                         onClick={() => handleRemoveCriterion(crit.id)}
-                        className="p-1 text-[#666666] hover:text-rose-400 transition-colors"
+                        className="p-1 text-[#8C909A] hover:text-rose-600 transition-colors"
                         title="Remove Criterion"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -862,13 +1006,13 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     return (
                       <div
                         key={opt.id}
-                        className="p-3 rounded-sm bg-[#111111] border border-[#222222] space-y-1.5"
+                        className="p-3.5 rounded-lg bg-white border border-[#E8E5DF] space-y-1.5 shadow-xs"
                       >
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-[#F5F5F0] font-serif italic truncate max-w-[180px]">
+                          <span className="text-[#18191C] font-serif italic truncate max-w-[180px]">
                             {opt.title}
                           </span>
-                          <span className="font-mono text-[#D4AF37] font-bold">
+                          <span className="font-mono text-[#18191C] font-bold">
                             {currentScore} / 10
                           </span>
                         </div>
@@ -880,7 +1024,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                           onChange={(e) =>
                             handleScoreChange(opt.id, crit.id, parseInt(e.target.value))
                           }
-                          className="w-full accent-[#D4AF37] cursor-pointer"
+                          className="w-full accent-[#18191C] cursor-pointer"
                         />
                       </div>
                     );
@@ -896,11 +1040,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {activeTab === 'risks' && (
         <div className="space-y-6 animate-fadeIn">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#666666]">
-              Risk Identification & Mitigation Plan
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#8C909A]">
+              Risk Assessment & Mitigation Strategy
             </h3>
-            <span className="text-xs text-[#666666]">
-              Evaluated probabilities and actionable safeguards
+            <span className="text-xs text-[#8C909A]">
+              Probability and actionable safeguards
             </span>
           </div>
 
@@ -910,33 +1054,33 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={risk.id}
-                  className="bg-[#111111] border border-[#222222] rounded-lg p-5 space-y-4"
+                  className="bg-white border border-[#E8E5DF] rounded-xl p-6 space-y-4 shadow-xs"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <span className="text-[10px] font-mono text-[#D4AF37] font-bold uppercase">
+                      <span className="text-[10px] font-mono text-[#B88E3D] font-bold uppercase">
                         Option: {opt?.title || 'General'}
                       </span>
-                      <h4 className="text-sm font-serif italic font-light text-[#F5F5F0] mt-1">
+                      <h4 className="text-sm font-serif italic text-[#18191C] mt-1 font-semibold">
                         {risk.risk}
                       </h4>
                     </div>
 
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <span
-                        className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold rounded-sm ${
+                        className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold rounded ${
                           risk.probability === 'High'
-                            ? 'bg-rose-950/60 text-rose-300 border border-rose-800'
-                            : 'bg-[#D4AF37]/20 text-[#D4AF37]'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-[#FAF7F2] text-[#18191C] border border-[#E8E5DF]'
                         }`}
                       >
                         Prob: {risk.probability}
                       </span>
                       <span
-                        className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold rounded-sm ${
+                        className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold rounded ${
                           risk.impact === 'High'
-                            ? 'bg-rose-950/60 text-rose-300 border border-rose-800'
-                            : 'bg-[#1A1A1A] text-[#A0A0A0]'
+                            ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                            : 'bg-[#FAF7F2] text-[#595E68] border border-[#E8E5DF]'
                         }`}
                       >
                         Impact: {risk.impact}
@@ -944,11 +1088,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-sm bg-[#0A0A0A] border border-[#222222] space-y-1">
-                    <span className="text-[10px] font-bold text-[#D4AF37] uppercase tracking-wider flex items-center gap-1">
-                      <Shield className="w-3 h-3 text-[#D4AF37]" /> Recommended Mitigation
+                  <div className="p-3.5 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
+                    <span className="text-[10px] font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1">
+                      <Shield className="w-3 h-3 text-[#B88E3D]" /> Recommended Safeguard
                     </span>
-                    <p className="text-xs text-[#F5F5F0] leading-normal">
+                    <p className="text-xs text-[#18191C] leading-normal font-medium">
                       {risk.mitigation}
                     </p>
                   </div>
@@ -962,8 +1106,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {/* 7. FUTURE SCENARIOS TAB */}
       {activeTab === 'future' && (
         <div className="space-y-6 animate-fadeIn">
-          <div className="p-4 rounded-sm bg-[#111111] border border-[#D4AF37]/30 text-xs text-[#D4AF37]">
-            💡 <strong>Note on Scenarios:</strong> These are plausible future possibilities based on current trends and trade-offs — not guaranteed predictions.
+          <div className="p-4 rounded-xl bg-white border border-[#E8E5DF] text-xs text-[#595E68] shadow-xs">
+            💡 <strong>Future Projections:</strong> Plausible trajectories based on trade-off trends — not guaranteed outcomes.
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6">
@@ -972,33 +1116,33 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={idx}
-                  className="bg-[#111111] border border-[#222222] rounded-lg p-6 space-y-4"
+                  className="bg-white border border-[#E8E5DF] rounded-xl p-6 space-y-4 shadow-xs"
                 >
-                  <h4 className="font-serif italic text-base font-light text-[#F5F5F0] border-b border-[#222222] pb-3">
+                  <h4 className="font-serif italic text-base text-[#18191C] border-b border-[#E8E5DF] pb-3">
                     {opt?.title || `Option ${idx + 1}`}
                   </h4>
 
                   <div className="space-y-3">
-                    <div className="p-3 rounded-sm bg-[#0A0A0A] border border-[#222222] space-y-1">
-                      <span className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-[#D4AF37]" /> Short-Term (1–6 Months)
+                    <div className="p-3.5 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
+                      <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-[#B88E3D]" /> Short-Term (1–6 Months)
                       </span>
-                      <p className="text-xs text-[#F5F5F0] leading-relaxed">
+                      <p className="text-xs text-[#18191C] leading-relaxed font-medium">
                         {sc.shortTerm}
                       </p>
                     </div>
 
-                    <div className="p-3 rounded-sm bg-[#0A0A0A] border border-[#222222] space-y-1">
-                      <span className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider flex items-center gap-1.5">
-                        <TrendingUp className="w-3.5 h-3.5 text-[#D4AF37]" /> Long-Term (1–5 Years)
+                    <div className="p-3.5 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
+                      <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
+                        <TrendingUp className="w-3.5 h-3.5 text-[#B88E3D]" /> Long-Term (1–5 Years)
                       </span>
-                      <p className="text-xs text-[#F5F5F0] leading-relaxed">
+                      <p className="text-xs text-[#18191C] leading-relaxed font-medium">
                         {sc.longTerm}
                       </p>
                     </div>
 
                     {sc.keyTurningPoint && (
-                      <div className="text-[11px] text-[#A0A0A0] font-mono italic">
+                      <div className="text-[11px] text-[#8C909A] font-mono italic pt-1">
                         Key Turning Point: {sc.keyTurningPoint}
                       </div>
                     )}
@@ -1013,28 +1157,28 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {/* 8. THINK DEEPER TAB & CHAT */}
       {activeTab === 'thinkDeeper' && (
         <div className="space-y-8 animate-fadeIn">
-          <div className="bg-[#111111] border border-[#222222] rounded-lg p-6 sm:p-8 space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#1A1A1A] border border-[#D4AF37]/30 flex items-center justify-center text-[#D4AF37]">
-                <Compass className="w-4 h-4 text-[#D4AF37]" />
+          <div className="bg-white border border-[#E8E5DF] rounded-xl p-6 sm:p-8 space-y-6 shadow-xs">
+            <div className="flex items-center gap-3 border-b border-[#E8E5DF] pb-4">
+              <div className="w-8 h-8 rounded-lg bg-[#18191C] text-[#C59B27] flex items-center justify-center">
+                <Compass className="w-4 h-4 text-[#C59B27]" />
               </div>
               <div>
-                <h3 className="font-serif italic text-xl font-light text-[#F5F5F0]">
-                  Help Me Think Deeper
+                <h3 className="font-serif italic text-xl text-[#18191C]">
+                  Cognitive Analysis & Blindspot Check
                 </h3>
-                <p className="text-xs text-[#A0A0A0]">
-                  Uncover hidden assumptions, cognitive biases, missing context, and research items.
+                <p className="text-xs text-[#595E68]">
+                  Uncover hidden assumptions, potential biases, and critical follow-up questions.
                 </p>
               </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
               {/* Assumptions */}
-              <div className="p-4 rounded-sm bg-[#0A0A0A] border border-[#222222] space-y-2">
-                <span className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider flex items-center gap-1.5">
-                  <Lightbulb className="w-3.5 h-3.5 text-[#D4AF37]" /> Hidden Assumptions
+              <div className="p-4 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+                <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
+                  <Lightbulb className="w-3.5 h-3.5 text-[#B88E3D]" /> Hidden Assumptions
                 </span>
-                <ul className="text-xs text-[#F5F5F0] space-y-1.5 list-disc list-inside">
+                <ul className="text-xs text-[#18191C] space-y-1.5 list-disc list-inside font-medium">
                   {decision.thinkDeeper?.assumptions?.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -1042,11 +1186,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </div>
 
               {/* Cognitive Biases */}
-              <div className="p-4 rounded-sm bg-[#0A0A0A] border border-[#222222] space-y-2">
-                <span className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-[#D4AF37]" /> Potential Biases
+              <div className="p-4 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+                <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-[#B88E3D]" /> Potential Biases
                 </span>
-                <ul className="text-xs text-[#F5F5F0] space-y-1.5 list-disc list-inside">
+                <ul className="text-xs text-[#18191C] space-y-1.5 list-disc list-inside font-medium">
                   {decision.thinkDeeper?.biases?.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -1054,11 +1198,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </div>
 
               {/* Blindspot Questions */}
-              <div className="p-4 rounded-sm bg-[#0A0A0A] border border-[#222222] space-y-2">
-                <span className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider flex items-center gap-1.5">
-                  <HelpCircle className="w-3.5 h-3.5 text-[#D4AF37]" /> Blindspot Questions
+              <div className="p-4 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+                <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
+                  <HelpCircle className="w-3.5 h-3.5 text-[#B88E3D]" /> Blindspot Questions
                 </span>
-                <ul className="text-xs text-[#F5F5F0] space-y-1.5 list-disc list-inside">
+                <ul className="text-xs text-[#18191C] space-y-1.5 list-disc list-inside font-medium">
                   {decision.thinkDeeper?.blindspotQuestions?.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -1066,11 +1210,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </div>
 
               {/* Questions to Ask Others */}
-              <div className="p-4 rounded-sm bg-[#0A0A0A] border border-[#222222] space-y-2">
-                <span className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-[#D4AF37]" /> Questions to Ask Others
+              <div className="p-4 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+                <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-[#B88E3D]" /> Questions to Ask Others
                 </span>
-                <ul className="text-xs text-[#F5F5F0] space-y-1.5 list-disc list-inside">
+                <ul className="text-xs text-[#18191C] space-y-1.5 list-disc list-inside font-medium">
                   {decision.thinkDeeper?.questionsToAskOthers?.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -1080,28 +1224,28 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
 
           {/* INTERACTIVE CHAT BOX WITH AI FOR FOLLOW-UP QUESTIONS */}
-          <div className="bg-[#111111] border border-[#222222] rounded-lg p-6 space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#666666] flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-              Ask Gemini Follow-up Questions About This Decision
+          <div className="bg-white border border-[#E8E5DF] rounded-xl p-6 space-y-4 shadow-xs">
+            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#8C909A] flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#B88E3D]" />
+              Follow-up Conversation with Decision AI
             </h4>
 
             {chatMessages.length > 0 && (
-              <div className="space-y-3 max-h-80 overflow-y-auto p-4 rounded-sm bg-[#0A0A0A] border border-[#222222]">
+              <div className="space-y-3 max-h-80 overflow-y-auto p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF]">
                 {chatMessages.map((m) => (
                   <div
                     key={m.id}
-                    className={`p-3 rounded-sm text-xs space-y-1 ${
+                    className={`p-3.5 rounded-lg text-xs space-y-1 ${
                       m.role === 'user'
-                        ? 'bg-[#1A1A1A] border border-[#D4AF37]/30 text-[#D4AF37] ml-8'
-                        : 'bg-[#111111] border border-[#222222] text-[#F5F5F0] mr-8'
+                        ? 'bg-[#18191C] text-white ml-8 shadow-xs'
+                        : 'bg-white border border-[#E8E5DF] text-[#18191C] mr-8 shadow-xs'
                     }`}
                   >
-                    <div className="flex justify-between font-mono text-[10px] text-[#666666]">
+                    <div className="flex justify-between font-mono text-[10px] opacity-70">
                       <span>{m.role === 'user' ? 'You' : 'The Tiebreaker AI'}</span>
                       <span>{m.timestamp}</span>
                     </div>
-                    <p className="leading-relaxed">{m.content}</p>
+                    <p className="leading-relaxed font-sans">{m.content}</p>
                   </div>
                 ))}
               </div>
@@ -1112,19 +1256,19 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="e.g. What if my startup option fails in 6 months? Or how do I negotiate a trial period?"
-                className="flex-1 px-4 py-2.5 rounded-sm bg-[#0A0A0A] border border-[#222222] text-xs text-[#F5F5F0] placeholder:text-[#666666] focus:outline-none focus:border-[#D4AF37]"
+                placeholder="Ask a follow-up question (e.g. What if my main assumption about remote work turns out false?)..."
+                className="flex-1 px-4 py-2.5 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-[#18191C] placeholder:text-[#8C909A] focus:outline-none focus:bg-white focus:border-[#C59B27]"
                 disabled={isSendingChat}
               />
               <button
                 type="submit"
                 disabled={isSendingChat || !chatInput.trim()}
-                className="px-5 py-2.5 rounded-sm bg-[#D4AF37] hover:bg-[#e0be48] text-[#0A0A0A] font-bold uppercase tracking-wider text-xs transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50"
+                className="px-5 py-2.5 rounded-lg bg-[#18191C] hover:bg-[#2A2D34] text-white font-semibold uppercase tracking-wider text-xs transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50"
               >
                 {isSendingChat ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#0A0A0A]" />
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#C59B27]" />
                 ) : (
-                  <Send className="w-3.5 h-3.5 text-[#0A0A0A]" />
+                  <Send className="w-3.5 h-3.5 text-[#C59B27]" />
                 )}
                 <span>Ask AI</span>
               </button>

@@ -1,7 +1,37 @@
+export type ReversibilityLevel =
+  | 'Easy to reverse'
+  | 'Somewhat reversible'
+  | 'Difficult to reverse'
+  | 'Nearly irreversible';
+
+export type TimeHorizon =
+  | 'Immediate'
+  | '3 months'
+  | '1 year'
+  | '3 years'
+  | '5+ years';
+
+export type DecisionCategory =
+  | 'Career'
+  | 'Job Offer'
+  | 'Education'
+  | 'Business'
+  | 'Technology'
+  | 'Purchase'
+  | 'Travel'
+  | 'Relocation'
+  | 'Relationships'
+  | 'Finance'
+  | 'Startup'
+  | 'Project'
+  | 'General';
+
 export interface Option {
   id: string;
   title: string;
   description: string;
+  source?: 'user' | 'ai_suggested';
+  addedAt?: string;
 }
 
 export interface ClarifyingQuestion {
@@ -9,6 +39,16 @@ export interface ClarifyingQuestion {
   question: string;
   suggestedAnswers: string[];
   userAnswer?: string;
+  whyItMatters?: string;
+}
+
+export interface ClarificationState {
+  decisionSummary: string;
+  optionsUnderstood: string[];
+  keyConstraints: string[];
+  assumptionsIdentified: string[];
+  missingInfo: string[];
+  confirmedByUser: boolean;
 }
 
 export interface ProConItem {
@@ -16,6 +56,7 @@ export interface ProConItem {
   text: string;
   weight: 'low' | 'medium' | 'high';
   details?: string;
+  source?: 'USER PROVIDED' | 'AI SUGGESTED';
 }
 
 export interface ProsConsOption {
@@ -67,6 +108,22 @@ export interface ScenarioItem {
   keyTurningPoint?: string;
 }
 
+export interface CaseScenario {
+  optionId: string;
+  bestCase: string;
+  expectedCase: string;
+  worstCase: string;
+}
+
+export interface LongTermImpact {
+  optionId: string;
+  financialImpact: string;
+  careerImpact: string;
+  timeImpact: string;
+  learningImpact: string;
+  opportunityCost: string;
+}
+
 export interface ThinkDeeper {
   assumptions: string[];
   missingInformation: string[];
@@ -76,21 +133,87 @@ export interface ThinkDeeper {
   researchItems: string[];
 }
 
+export interface AssumptionItem {
+  id: string;
+  text: string;
+  status: 'confirmed' | 'edited' | 'rejected';
+  userNote?: string;
+}
+
+export interface EvidenceItem {
+  id: string;
+  text: string;
+  category: 'FACT' | 'ASSUMPTION' | 'INTERPRETATION' | 'UNKNOWN';
+  source?: string;
+}
+
+export interface AISuggestedAlternative {
+  id: string;
+  title: string;
+  description: string;
+  reasoning: string;
+  isAdded?: boolean;
+}
+
 export interface Recommendation {
   recommendedOptionId: string;
   recommendedOptionTitle: string;
   mainReasons: string[];
   biggestConcern: string;
   missingInformation: string;
-  confidenceLevel: 'High' | 'Medium' | 'Moderate' | 'Low';
+  confidenceLevel: 'High' | 'Moderate' | 'Low';
+  confidenceReason?: string;
+  whyNotOptions?: Record<string, string>; // optionId -> reason lost
+  reversalConditions?: string[]; // "What would make you change your mind?"
+  opportunityCosts?: Record<string, string>; // optionId -> cost description
+}
+
+export interface SensitivityItem {
+  criterionId: string;
+  criterionName: string;
+  influenceRank: number;
+  explanation: string;
+}
+
+export interface JournalEntry {
+  id: string;
+  timestamp: string;
+  type: 'thought' | 'concern' | 'update' | 'final_reflection';
+  content: string;
+}
+
+export interface DecisionOutcome {
+  chosenOptionId?: string;
+  chosenDate?: string;
+  status?: 'Successful' | 'Mixed' | 'Unsuccessful';
+  notes?: string;
+  predictedVsActual?: {
+    correctPredictions: string[];
+    incorrectAssumptions: string[];
+    unexpectedEvents: string[];
+    lessonsLearned: string[];
+  };
+}
+
+export interface DecisionVersion {
+  id: string;
+  timestamp: string;
+  label: string;
+  criteria: Criterion[];
+  weightedScores: WeightedScores;
+  options: Option[];
 }
 
 export interface DecisionAnalysis {
   id: string;
   title: string;
   originalPrompt: string;
+  category: DecisionCategory;
+  reversibility: ReversibilityLevel;
+  timeHorizon: TimeHorizon;
   userPriorities: string[];
   options: Option[];
+  clarificationState?: ClarificationState;
   clarifyingQuestions: ClarifyingQuestion[];
   prosCons: ProsConsOption[];
   comparison: ComparisonRow[];
@@ -99,12 +222,22 @@ export interface DecisionAnalysis {
   weightedScores: WeightedScores;
   risks: RiskItem[];
   scenarios: ScenarioItem[];
+  caseScenarios?: CaseScenario[];
+  longTermImpacts?: LongTermImpact[];
   thinkDeeper: ThinkDeeper;
+  assumptionsList?: AssumptionItem[];
+  evidenceItems?: EvidenceItem[];
+  aiSuggestedAlternatives?: AISuggestedAlternative[];
   recommendation: Recommendation;
+  sensitivityAnalysis?: SensitivityItem[];
+  journalEntries?: JournalEntry[];
+  outcome?: DecisionOutcome;
+  versionHistory?: DecisionVersion[];
   createdAt: string;
   updatedAt: string;
-  status: 'draft' | 'analyzed' | 'decided';
+  status: 'draft' | 'clarifying' | 'analyzed' | 'decided';
   selectedOptionId?: string;
+  isFavorite?: boolean;
   customNotes?: string;
 }
 
@@ -114,3 +247,4 @@ export interface FollowUpMessage {
   content: string;
   timestamp: string;
 }
+

@@ -1,15 +1,41 @@
 import React, { useState } from 'react';
-import { Sparkles, Plus, Trash2, ArrowRight, CheckCircle2, SlidersHorizontal, Loader2 } from 'lucide-react';
+import {
+  Sparkles,
+  Plus,
+  Trash2,
+  ArrowRight,
+  Check,
+  SlidersHorizontal,
+  Loader2,
+  Clock,
+  RotateCcw,
+  BookOpen,
+  HelpCircle,
+  AlertCircle,
+  FileCheck2,
+} from 'lucide-react';
+import { DecisionCategory, ReversibilityLevel, TimeHorizon, ClarificationState } from '../types';
 
 interface DecisionWorkspaceProps {
   onRunAnalysis: (
     prompt: string,
     options: string[],
     priorities: string[],
-    clarifyingAnswers: Record<string, string>
+    clarifyingAnswers: Record<string, string>,
+    category: DecisionCategory,
+    reversibility: ReversibilityLevel,
+    timeHorizon: TimeHorizon,
+    clarificationState?: ClarificationState
   ) => Promise<void>;
   isAnalyzing: boolean;
   loadingStep: number; // 0, 1, 2
+  onOpenTemplates?: () => void;
+  initialPrompt?: string;
+  initialOptions?: string[];
+  initialPriorities?: string[];
+  initialCategory?: DecisionCategory;
+  initialReversibility?: ReversibilityLevel;
+  initialTimeHorizon?: TimeHorizon;
 }
 
 const DEFAULT_PRIORITIES = [
@@ -24,20 +50,58 @@ const DEFAULT_PRIORITIES = [
   'Health & Wellbeing',
 ];
 
+const CATEGORIES: DecisionCategory[] = [
+  'Career',
+  'Job Offer',
+  'Education',
+  'Business',
+  'Technology',
+  'Purchase',
+  'Travel',
+  'Relocation',
+  'Relationships',
+  'Finance',
+  'Startup',
+  'Project',
+  'General',
+];
+
+const REVERSIBILITY_OPTIONS: { level: ReversibilityLevel; description: string }[] = [
+  { level: 'Easy to reverse', description: 'Can easily return to previous state with low cost (e.g. trial subscription, reversible policy)' },
+  { level: 'Somewhat reversible', description: 'Can reverse but requires time, negotiation, or minor cost (e.g. job change, rental)' },
+  { level: 'Difficult to reverse', description: 'High cost or effort to undo (e.g. buying a house, major investment, relocation)' },
+  { level: 'Nearly irreversible', description: 'Permanent or nearly impossible to reverse (e.g. equity sale, major partnership)' },
+];
+
+const TIME_HORIZONS: TimeHorizon[] = ['Immediate', '3 months', '1 year', '3 years', '5+ years'];
+
 export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
   onRunAnalysis,
   isAnalyzing,
   loadingStep,
+  onOpenTemplates,
+  initialPrompt = '',
+  initialOptions = ['', ''],
+  initialPriorities = ['Career Growth', 'Money & Income', 'Time Flexibility'],
+  initialCategory = 'Career',
+  initialReversibility = 'Somewhat reversible',
+  initialTimeHorizon = '1 year',
 }) => {
-  const [prompt, setPrompt] = useState('');
-  const [options, setOptions] = useState<string[]>(['', '']);
-  const [selectedPriorities, setSelectedPriorities] = useState<string[]>([
-    'Career Growth',
-    'Money & Income',
-    'Time Flexibility',
-  ]);
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const [options, setOptions] = useState<string[]>(
+    initialOptions.length >= 2 ? initialOptions : ['', '']
+  );
+  const [selectedPriorities, setSelectedPriorities] = useState<string[]>(initialPriorities);
+  const [category, setCategory] = useState<DecisionCategory>(initialCategory);
+  const [reversibility, setReversibility] = useState<ReversibilityLevel>(initialReversibility);
+  const [timeHorizon, setTimeHorizon] = useState<TimeHorizon>(initialTimeHorizon);
+
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [workspaceStep, setWorkspaceStep] = useState<'input' | 'clarify'>('input');
   const [errorMessage, setErrorMessage] = useState('');
+
+  // AI Decision Clarification local state
+  const [clarification, setClarification] = useState<ClarificationState | null>(null);
 
   const handleAddOption = () => {
     if (options.length < 5) {
@@ -65,7 +129,7 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleProceedToClarification = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -74,204 +138,443 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
       return;
     }
 
+    const filteredOpts = options.map((o) => o.trim()).filter(Boolean);
+    const optionsUnderstood =
+      filteredOpts.length >= 2
+        ? filteredOpts
+        : ['Option A (Primary alternative)', 'Option B (Status quo / Secondary route)'];
+
+    // Generate smart clarification understanding locally before full AI run
+    const generatedClarification: ClarificationState = {
+      decisionSummary: prompt.trim(),
+      optionsUnderstood,
+      keyConstraints: [
+        `Time Horizon: ${timeHorizon}`,
+        `Reversibility: ${reversibility}`,
+        `Category: ${category}`,
+      ],
+      assumptionsIdentified: [
+        `Primary focus is maximizing outcome over ${timeHorizon} timeline`,
+        `Selected priority order reflects core evaluation metrics`,
+      ],
+      missingInfo: [
+        'Specific non-negotiable financial thresholds',
+        'Exact downside worst-case mitigation runway',
+      ],
+      confirmedByUser: false,
+    };
+
+    setClarification(generatedClarification);
+    setWorkspaceStep('clarify');
+  };
+
+  const handleConfirmAndRun = async () => {
+    if (!clarification) return;
+
     const filteredOptions = options.map((o) => o.trim()).filter(Boolean);
 
     await onRunAnalysis(
       prompt.trim(),
       filteredOptions,
       selectedPriorities,
-      {}
+      {},
+      category,
+      reversibility,
+      timeHorizon,
+      { ...clarification, confirmedByUser: true }
     );
   };
 
   const loadingSteps = [
-    'Understanding your decision context...',
-    'Evaluating trade-offs & option metrics...',
-    'Building structured analysis & score matrix...',
+    'Understanding your decision context & clarifying parameters...',
+    'Evaluating trade-offs, SWOT grid, and option metrics...',
+    'Building weighted score matrix, sensitivity analysis, & risk scenarios...',
   ];
 
   return (
     <div id="workspace" className="max-w-4xl mx-auto px-4 py-8 md:py-12">
-      <div className="bg-[#111111] border border-[#222222] rounded-lg p-6 sm:p-8 relative overflow-hidden shadow-2xl">
-        {/* Form Title */}
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#222222]">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full border border-[#D4AF37]/30 bg-[#1A1A1A] flex items-center justify-center text-[#D4AF37]">
-              <Sparkles className="w-4 h-4 text-[#D4AF37]" />
-            </div>
-            <div>
-              <h2 className="text-xl font-serif italic font-light text-[#F5F5F0]">
-                Analyze Your Decision
-              </h2>
-              <p className="text-xs text-[#A0A0A0]">
-                Describe your dilemma in plain English. AI will extract options, criteria, and risks.
-              </p>
-            </div>
+      <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 sm:p-10 relative overflow-hidden shadow-sm">
+        {/* Step Indicator Bar */}
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#E8E5DF]/60 text-xs font-mono">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span
+              className={`w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0 ${
+                workspaceStep === 'input'
+                  ? 'bg-[#18191C] text-[#C59B27]'
+                  : 'bg-[#FAF7F2] text-[#8C909A] border border-[#E8E5DF]/60'
+              }`}
+            >
+              1
+            </span>
+            <span className={`text-[11px] sm:text-xs ${workspaceStep === 'input' ? 'font-bold text-[#18191C]' : 'text-[#8C909A]'}`}>
+              1. Decision Inputs
+            </span>
           </div>
-          
-          <button
-            type="button"
-            onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-[#1A1A1A] hover:bg-[#222222] text-xs text-[#A0A0A0] hover:text-[#D4AF37] border border-[#222222] transition-colors"
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-[#D4AF37]" />
-            <span className="uppercase text-[10px] tracking-wider font-bold">{showAdvancedOptions ? 'Simple View' : 'Customize Options'}</span>
-          </button>
+
+          <div className="h-0.5 flex-1 mx-2 sm:mx-4 bg-[#E8E5DF]/60" />
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span
+              className={`w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0 ${
+                workspaceStep === 'clarify'
+                  ? 'bg-[#18191C] text-[#C59B27]'
+                  : 'bg-[#FAF7F2] text-[#8C909A] border border-[#E8E5DF]/60'
+              }`}
+            >
+              2
+            </span>
+            <span className={`text-[11px] sm:text-xs ${workspaceStep === 'clarify' ? 'font-bold text-[#18191C]' : 'text-[#8C909A]'}`}>
+              2. AI Clarification
+            </span>
+          </div>
         </div>
 
-        {/* Input Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Decision Prompt Text Area */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#666666] mb-2">
-              WHAT DECISION ARE YOU FACING? <span className="text-[#D4AF37]">*</span>
-            </label>
-            <textarea
-              rows={4}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g. Should I accept this $80k remote job offer from an early-stage startup, stay at my current corporate position, or go back to university full-time?"
-              className="w-full px-4 py-3.5 rounded-sm bg-[#0A0A0A] border border-[#222222] text-[#F5F5F0] placeholder:text-[#666666] text-sm focus:outline-none focus:border-[#D4AF37] transition-all resize-y font-sans leading-relaxed"
-              disabled={isAnalyzing}
-            />
-            {errorMessage && (
-              <p className="text-xs text-rose-400 mt-2 flex items-center gap-1 font-mono">
-                ⚠️ {errorMessage}
-              </p>
-            )}
-          </div>
-
-          {/* Core Priorities Checklist */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-[0.2em] text-[#666666] mb-2">
-              WHAT MATTERS MOST TO YOU? (SELECT CORE PRIORITIES)
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {DEFAULT_PRIORITIES.map((priority) => {
-                const isSelected = selectedPriorities.includes(priority);
-                return (
-                  <button
-                    key={priority}
-                    type="button"
-                    onClick={() => togglePriority(priority)}
-                    disabled={isAnalyzing}
-                    className={`px-3 py-1.5 rounded-sm text-xs font-medium transition-all flex items-center gap-1.5 border ${
-                      isSelected
-                        ? 'bg-[#D4AF37]/20 text-[#D4AF37] border-[#D4AF37]/50 font-bold'
-                        : 'bg-[#0A0A0A] text-[#A0A0A0] border-[#222222] hover:border-[#D4AF37]/30 hover:text-[#F5F5F0]'
-                    }`}
-                  >
-                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-[#D4AF37]" />}
-                    <span>{priority}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Optional Explicit Options Input */}
-          {showAdvancedOptions && (
-            <div className="p-4 rounded-sm bg-[#0A0A0A] border border-[#222222] space-y-3 animate-fadeIn">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#666666]">
-                  EXPLICIT OPTIONS (OPTIONAL)
-                </label>
-                <span className="text-[11px] text-[#666666]">
-                  Leave blank to let AI auto-detect options from your text.
+        {/* STEP 1: INPUT FORM */}
+        {workspaceStep === 'input' && (
+          <form onSubmit={handleProceedToClarification} className="space-y-8 animate-fadeIn">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#B88E3D] mb-1 block">
+                  Decision Intelligence Studio
                 </span>
+                <h2 className="text-2xl sm:text-3xl font-serif italic text-[#18191C] font-normal">
+                  What decision do you want to analyze?
+                </h2>
+                <p className="text-xs text-[#595E68] mt-1">
+                  Describe your dilemma in plain language. AI will structure options, trade-offs, and scores.
+                </p>
               </div>
 
-              <div className="space-y-2">
-                {options.map((opt, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-[#666666] w-5">
-                      #{index + 1}
-                    </span>
-                    <input
-                      type="text"
-                      value={opt}
-                      onChange={(e) => handleOptionChange(index, e.target.value)}
-                      placeholder={`e.g. ${index === 0 ? 'Accept Startup Offer' : 'Stay in Current Job'}`}
-                      className="flex-1 px-3 py-2 text-xs rounded-sm bg-[#111111] border border-[#222222] text-[#F5F5F0] placeholder:text-[#666666] focus:outline-none focus:border-[#D4AF37]"
-                      disabled={isAnalyzing}
-                    />
-                    {options.length > 2 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveOption(index)}
-                        className="p-2 text-[#666666] hover:text-rose-400 transition-colors"
-                        disabled={isAnalyzing}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {options.length < 5 && (
+              {onOpenTemplates && (
                 <button
                   type="button"
-                  onClick={handleAddOption}
-                  className="flex items-center gap-1.5 text-xs text-[#D4AF37] hover:underline font-bold tracking-wider uppercase text-[10px] mt-1 transition-colors"
-                  disabled={isAnalyzing}
+                  onClick={onOpenTemplates}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#FAF7F2] hover:bg-[#F4F1EA] text-xs font-semibold text-[#18191C] border border-[#E8E5DF] transition-colors shrink-0"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Another Option</span>
+                  <BookOpen className="w-3.5 h-3.5 text-[#B88E3D]" />
+                  <span>Use Decision Template</span>
                 </button>
               )}
             </div>
-          )}
 
-          {/* Loading Progress State */}
-          {isAnalyzing ? (
-            <div className="p-6 rounded-sm bg-[#0A0A0A] border border-[#D4AF37]/30 text-center space-y-4">
-              <div className="flex items-center justify-center gap-3">
-                <Loader2 className="w-6 h-6 text-[#D4AF37] animate-spin" />
-                <span className="font-serif italic text-lg font-light text-[#D4AF37]">
-                  {loadingSteps[loadingStep] || loadingSteps[0]}
-                </span>
+            {/* Dilemma Prompt */}
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-[#18191C]">
+                Describe Your Dilemma <span className="text-[#B88E3D]">*</span>
+              </label>
+              <textarea
+                rows={4}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="e.g. Should I accept this $900/month remote junior developer job, or spend 6 months upskilling MERN and AI for higher-paying international opportunities?"
+                className="w-full px-4 py-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-[#18191C] placeholder:text-[#8C909A] text-sm sm:text-base focus:outline-none focus:bg-white focus:border-[#C59B27] focus:ring-2 focus:ring-[#C59B27]/10 transition-all resize-y leading-relaxed font-sans"
+                disabled={isAnalyzing}
+              />
+              {errorMessage && (
+                <p className="text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-medium">
+                  ⚠️ {errorMessage}
+                </p>
+              )}
+            </div>
+
+            {/* Decision Parameters Grid (Category, Reversibility, Time Horizon) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF]">
+              {/* Category */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-[#18191C] flex items-center gap-1">
+                  <span>Category</span>
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as DecisionCategory)}
+                  className="w-full px-3 py-2 text-xs rounded-lg bg-white border border-[#E8E5DF] text-[#18191C] focus:outline-none focus:border-[#C59B27]"
+                  disabled={isAnalyzing}
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Progress Bar */}
-              <div className="w-full bg-[#222222] h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="bg-[#D4AF37] h-full transition-all duration-700 ease-out"
-                  style={{ width: `${((loadingStep + 1) / 3) * 100}%` }}
-                />
+              {/* Reversibility */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-[#18191C] flex items-center gap-1">
+                  <RotateCcw className="w-3.5 h-3.5 text-[#B88E3D]" />
+                  <span>Reversibility</span>
+                </label>
+                <select
+                  value={reversibility}
+                  onChange={(e) => setReversibility(e.target.value as ReversibilityLevel)}
+                  className="w-full px-3 py-2 text-xs rounded-lg bg-white border border-[#E8E5DF] text-[#18191C] focus:outline-none focus:border-[#C59B27]"
+                  disabled={isAnalyzing}
+                >
+                  {REVERSIBILITY_OPTIONS.map((r) => (
+                    <option key={r.level} value={r.level}>
+                      {r.level}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="flex justify-between text-[11px] text-[#A0A0A0] font-mono">
-                <span className={loadingStep >= 0 ? 'text-[#D4AF37] font-semibold' : ''}>
-                  1. Context
-                </span>
-                <span className={loadingStep >= 1 ? 'text-[#D4AF37] font-semibold' : ''}>
-                  2. Trade-offs
-                </span>
-                <span className={loadingStep >= 2 ? 'text-[#D4AF37] font-semibold' : ''}>
-                  3. Matrix & Risks
-                </span>
+              {/* Time Horizon */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-[#18191C] flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-[#B88E3D]" />
+                  <span>Time Horizon</span>
+                </label>
+                <select
+                  value={timeHorizon}
+                  onChange={(e) => setTimeHorizon(e.target.value as TimeHorizon)}
+                  className="w-full px-3 py-2 text-xs rounded-lg bg-white border border-[#E8E5DF] text-[#18191C] focus:outline-none focus:border-[#C59B27]"
+                  disabled={isAnalyzing}
+                >
+                  {TIME_HORIZONS.map((th) => (
+                    <option key={th} value={th}>
+                      {th}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
-          ) : (
-            /* Submit Button */
-            <div className="flex items-center justify-between pt-2">
-              <p className="text-xs text-[#666666] hidden sm:block">
-                ⚡ Returns structured options, SWOT, risk mitigation, and interactive weighted matrix.
+
+            {/* Core Priorities */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-[#18191C]">
+                  Core Priorities & Values
+                </label>
+                <span className="text-[11px] text-[#8C909A]">Select decision evaluation metrics</span>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {DEFAULT_PRIORITIES.map((priority) => {
+                  const isSelected = selectedPriorities.includes(priority);
+                  return (
+                    <button
+                      key={priority}
+                      type="button"
+                      onClick={() => togglePriority(priority)}
+                      disabled={isAnalyzing}
+                      className={`px-3.5 py-1.5 rounded-full text-xs transition-all flex items-center gap-1.5 border ${
+                        isSelected
+                          ? 'bg-[#18191C] text-white border-[#18191C] font-semibold shadow-xs'
+                          : 'bg-white text-[#595E68] border-[#E8E5DF] hover:border-[#C59B27]/50 hover:text-[#18191C]'
+                      }`}
+                    >
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[#C59B27]" />}
+                      <span>{priority}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Explicit Options Toggle */}
+            <div className="pt-2 flex items-center justify-between border-t border-[#E8E5DF]">
+              <button
+                type="button"
+                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                className="inline-flex items-center gap-1.5 text-xs text-[#B88E3D] hover:text-[#18191C] font-semibold transition-colors"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>{showAdvancedOptions ? 'Hide Custom Options' : 'Specify Options Explicitly (Optional)'}</span>
+              </button>
+            </div>
+
+            {showAdvancedOptions && (
+              <div className="p-5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-4 animate-fadeIn">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-[#18191C]">Explicit Options</label>
+                  <span className="text-[11px] text-[#8C909A]">
+                    Leave blank to auto-detect options from text
+                  </span>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {options.map((opt, index) => (
+                    <div
+                      key={index}
+                      className="p-3 rounded-lg bg-white border border-[#E8E5DF] space-y-1.5 shadow-xs"
+                    >
+                      <div className="flex items-center justify-between text-[11px] text-[#8C909A] font-medium">
+                        <span>Option {index + 1}</span>
+                        {options.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveOption(index)}
+                            className="text-[#8C909A] hover:text-rose-600 transition-colors p-0.5"
+                            disabled={isAnalyzing}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        value={opt}
+                        onChange={(e) => handleOptionChange(index, e.target.value)}
+                        placeholder={`e.g. ${
+                          index === 0 ? 'Accept $900/mo Remote Job' : 'Spend 6 Months Upskilling'
+                        }`}
+                        className="w-full px-3 py-1.5 text-xs rounded-md bg-[#FAF7F2] border border-[#E8E5DF] text-[#18191C] placeholder:text-[#8C909A] focus:outline-none focus:bg-white focus:border-[#C59B27]"
+                        disabled={isAnalyzing}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {options.length < 5 && (
+                  <button
+                    type="button"
+                    onClick={handleAddOption}
+                    className="inline-flex items-center gap-1.5 text-xs text-[#B88E3D] hover:text-[#18191C] font-semibold tracking-wider uppercase text-[10px] transition-colors"
+                    disabled={isAnalyzing}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Another Option</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Next Step Action */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+              <p className="text-xs text-[#8C909A]">
+                ⚡ AI will verify context before running full scoring & risk matrix.
               </p>
 
               <button
                 type="submit"
-                className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 text-xs font-bold uppercase tracking-widest text-[#0A0A0A] bg-[#D4AF37] hover:bg-[#e0be48] rounded-sm shadow-md transition-all group"
+                className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 text-xs font-bold uppercase tracking-widest text-white bg-[#18191C] hover:bg-[#2A2D34] rounded-lg shadow-sm transition-all group active:scale-[0.99]"
               >
-                <Sparkles className="w-4 h-4 text-[#0A0A0A]" />
-                <span>ANALYZE DECISION</span>
-                <ArrowRight className="w-4 h-4 text-[#0A0A0A] group-hover:translate-x-1 transition-transform" />
+                <span>CONTINUE TO AI CLARIFICATION</span>
+                <ArrowRight className="w-4 h-4 text-[#C59B27] group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
-          )}
-        </form>
+          </form>
+        )}
+
+        {/* STEP 2: AI DECISION CLARIFICATION */}
+        {workspaceStep === 'clarify' && clarification && (
+          <div className="space-y-6 animate-fadeIn">
+            <div className="p-5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-4">
+              <div className="flex items-center gap-3 border-b border-[#E8E5DF] pb-3">
+                <div className="w-8 h-8 rounded-lg bg-[#18191C] text-[#C59B27] flex items-center justify-center font-bold">
+                  <FileCheck2 className="w-4 h-4 text-[#C59B27]" />
+                </div>
+                <div>
+                  <h3 className="font-serif italic text-lg text-[#18191C] font-semibold">
+                    Here's What The AI Understands
+                  </h3>
+                  <p className="text-xs text-[#595E68]">
+                    Confirm or refine parameters before generating full decision intelligence analysis.
+                  </p>
+                </div>
+              </div>
+
+              {/* Options Understood */}
+              <div className="space-y-2">
+                <span className="text-xs font-bold text-[#18191C] uppercase tracking-wider block">
+                  Identified Decision Options ({clarification.optionsUnderstood.length})
+                </span>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {clarification.optionsUnderstood.map((optTitle, i) => (
+                    <div
+                      key={i}
+                      className="p-3 rounded-lg bg-white border border-[#E8E5DF] text-xs font-medium text-[#18191C] flex items-center justify-between shadow-xs"
+                    >
+                      <span>
+                        <strong className="text-[#B88E3D]">Option {i + 1}:</strong> {optTitle}
+                      </span>
+                      <Check className="w-3.5 h-3.5 text-[#B88E3D]" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Identified Constraints & Assumptions */}
+              <div className="grid md:grid-cols-2 gap-4 pt-2">
+                <div className="p-3.5 rounded-lg bg-white border border-[#E8E5DF] space-y-1.5 text-xs">
+                  <span className="font-bold text-[#18191C] flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-[#B88E3D]" /> Key Scope & Constraints
+                  </span>
+                  <ul className="space-y-1 text-[#595E68] list-disc list-inside">
+                    <li>Category: {category}</li>
+                    <li>Reversibility: {reversibility}</li>
+                    <li>Time Horizon: {timeHorizon}</li>
+                  </ul>
+                </div>
+
+                <div className="p-3.5 rounded-lg bg-white border border-[#E8E5DF] space-y-1.5 text-xs">
+                  <span className="font-bold text-[#18191C] flex items-center gap-1.5">
+                    <HelpCircle className="w-3.5 h-3.5 text-[#B88E3D]" /> Missing Info & Assumptions
+                  </span>
+                  <ul className="space-y-1 text-[#595E68] list-disc list-inside">
+                    {clarification.missingInfo.map((m, i) => (
+                      <li key={i}>{m}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Loading Indicator or Run Buttons */}
+            {isAnalyzing ? (
+              <div className="p-8 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-center space-y-4">
+                <div className="flex items-center justify-center gap-3">
+                  <Loader2 className="w-5 h-5 text-[#B88E3D] animate-spin" />
+                  <span className="font-serif italic text-lg font-normal text-[#18191C]">
+                    {loadingSteps[loadingStep] || loadingSteps[0]}
+                  </span>
+                </div>
+
+                <div className="w-full bg-[#E8E5DF] h-1.5 rounded-full overflow-hidden max-w-md mx-auto">
+                  <div
+                    className="bg-[#18191C] h-full transition-all duration-700 ease-out"
+                    style={{ width: `${((loadingStep + 1) / 3) * 100}%` }}
+                  />
+                </div>
+
+                <div className="flex justify-between max-w-md mx-auto text-[11px] text-[#8C909A] font-mono">
+                  <span className={loadingStep >= 0 ? 'text-[#18191C] font-bold' : ''}>
+                    1. Context Analysis
+                  </span>
+                  <span className={loadingStep >= 1 ? 'text-[#18191C] font-bold' : ''}>
+                    2. Trade-offs & SWOT
+                  </span>
+                  <span className={loadingStep >= 2 ? 'text-[#18191C] font-bold' : ''}>
+                    3. Weighted Matrix & Risks
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceStep('input')}
+                  className="px-4 py-2.5 rounded-lg bg-[#FAF7F2] hover:bg-[#F4F1EA] border border-[#E8E5DF] text-xs font-semibold text-[#595E68] hover:text-[#18191C] transition-colors"
+                >
+                  ← Edit Inputs
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConfirmAndRun}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 text-xs font-bold uppercase tracking-widest text-white bg-[#18191C] hover:bg-[#2A2D34] rounded-lg shadow-sm transition-all group active:scale-[0.99]"
+                >
+                  <Sparkles className="w-4 h-4 text-[#C59B27]" />
+                  <span>CONFIRM & GENERATE ANALYSIS</span>
+                  <ArrowRight className="w-4 h-4 text-[#C59B27] group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 };
+

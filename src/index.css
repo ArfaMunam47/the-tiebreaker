@@ -1,9 +1,17 @@
 @import "tailwindcss";
 
-body {
-  background-color: #0A0A0A;
-  color: #F5F5F0;
-  margin: 0;
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #FAF8F5;
+    color: #1A1C20;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .font-serif {
+    font-family: 'Newsreader', Georgia, Cambria, "Times New Roman", Times, serif;
+  }
 }
 
 @layer utilities {
@@ -21,7 +29,7 @@ body {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -32,3 +40,4 @@ body {
 .animate-fadeIn {
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+

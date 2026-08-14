@@ -61,6 +61,61 @@ export function getDecisionById(id: string): DecisionAnalysis | undefined {
   return list.find((d) => d.id === id);
 }
 
+export function duplicateDecision(id: string): DecisionAnalysis | undefined {
+  const original = getDecisionById(id);
+  if (!original) return undefined;
+
+  const copy: DecisionAnalysis = {
+    ...original,
+    id: "dec_" + Date.now() + "_" + Math.random().toString(36).substring(2, 5),
+    title: `${original.title} (Copy)`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    status: 'analyzed',
+  };
+
+  saveDecision(copy);
+  return copy;
+}
+
+export function toggleFavorite(id: string): DecisionAnalysis | undefined {
+  const original = getDecisionById(id);
+  if (!original) return undefined;
+
+  const updated: DecisionAnalysis = {
+    ...original,
+    isFavorite: !original.isFavorite,
+    updatedAt: new Date().toISOString(),
+  };
+
+  saveDecision(updated);
+  return updated;
+}
+
+export function addJournalEntry(
+  id: string,
+  entry: { content: string; type?: 'thought' | 'concern' | 'update' | 'final_reflection' }
+): DecisionAnalysis | undefined {
+  const original = getDecisionById(id);
+  if (!original) return undefined;
+
+  const newEntry = {
+    id: "j_" + Date.now(),
+    timestamp: new Date().toISOString(),
+    type: entry.type || 'thought',
+    content: entry.content,
+  };
+
+  const updated: DecisionAnalysis = {
+    ...original,
+    journalEntries: [newEntry, ...(original.journalEntries || [])],
+    updatedAt: new Date().toISOString(),
+  };
+
+  saveDecision(updated);
+  return updated;
+}
+
 export function exportDecisionsJSON(): string {
   const list = getSavedDecisions();
   return JSON.stringify(list, null, 2);
