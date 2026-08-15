@@ -9,6 +9,7 @@ import {
   FollowUpMessage,
 } from '../types';
 import { calculateWeightedTotalScore } from '../utils/storage';
+import { ExportReportModal } from './ExportReportModal';
 import {
   Check,
   AlertTriangle,
@@ -87,6 +88,18 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   const [copiedMatrix, setCopiedMatrix] = useState(false);
   const [newCompareCriterion, setNewCompareCriterion] = useState('');
 
+  // Export report modal state
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  // SWOT interactive state
+  const [swotData, setSwotData] = useState(decision.swot || []);
+  const [selectedSwotOptionId, setSelectedSwotOptionId] = useState<string>('all');
+  const [activeSwotInput, setActiveSwotInput] = useState<{
+    optId: string;
+    quadrant: 'strengths' | 'weaknesses' | 'opportunities' | 'threats';
+  } | null>(null);
+  const [swotInputText, setSwotInputText] = useState('');
+
   // Follow-up chat state for Think Deeper
   const [chatMessages, setChatMessages] = useState<FollowUpMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -97,6 +110,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     setScores(decision.weightedScores || {});
     setProsConsData(decision.prosCons || []);
     setComparisonRows(decision.comparison || []);
+    setSwotData(decision.swot || []);
   }, [decision]);
 
   // Robust comparison cell resolver
@@ -388,7 +402,55 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   };
 
   const handlePrintReport = () => {
-    window.print();
+    setIsExportModalOpen(true);
+  };
+
+  // SWOT manipulation handlers
+  const handleAddSwotBullet = (
+    optId: string,
+    quadrant: 'strengths' | 'weaknesses' | 'opportunities' | 'threats'
+  ) => {
+    if (!swotInputText.trim()) {
+      setActiveSwotInput(null);
+      return;
+    }
+    const currentSwot = [...(swotData || [])];
+    let optSwot = currentSwot.find((s) => s.optionId === optId);
+    if (!optSwot) {
+      optSwot = {
+        optionId: optId,
+        strengths: [],
+        weaknesses: [],
+        opportunities: [],
+        threats: [],
+      };
+      currentSwot.push(optSwot);
+    }
+    optSwot[quadrant] = [...(optSwot[quadrant] || []), swotInputText.trim()];
+    setSwotData(currentSwot);
+    setSwotInputText('');
+    setActiveSwotInput(null);
+    onUpdateDecision({
+      ...decision,
+      swot: currentSwot,
+    });
+  };
+
+  const handleDeleteSwotBullet = (
+    optId: string,
+    quadrant: 'strengths' | 'weaknesses' | 'opportunities' | 'threats',
+    index: number
+  ) => {
+    const currentSwot = [...(swotData || [])];
+    const optSwot = currentSwot.find((s) => s.optionId === optId);
+    if (optSwot && optSwot[quadrant]) {
+      optSwot[quadrant] = optSwot[quadrant].filter((_, i) => i !== index);
+      setSwotData(currentSwot);
+      onUpdateDecision({
+        ...decision,
+        swot: currentSwot,
+      });
+    }
   };
 
   const handleSendChat = async (e: React.FormEvent) => {
@@ -449,6 +511,20 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
     }
   });
 
+  // Losing options and reasons for why other options lost
+  const losingOptions = decision.options.filter((o) => o.id !== recommendedOpt?.id);
+  const losingOptionsWithReasons = losingOptions.map((opt) => {
+    let reason = decision.recommendation?.whyNotOptions?.[opt.id];
+    if (!reason && (decision.recommendation as any)?.whyNotOtherOptions) {
+      const found = (decision.recommendation as any).whyNotOtherOptions.find((w: any) => w.optionId === opt.id);
+      if (found) reason = found.reason;
+    }
+    if (!reason) {
+      reason = `${opt.title} presents greater operational trade-offs and lower alignment with top weighted evaluation criteria compared to the recommended path.`;
+    }
+    return { option: opt, reason };
+  });
+
   const tabList: { id: TabType; label: string; icon: React.ElementType }[] = [
     { id: 'overview', label: 'Executive Overview', icon: BarChart3 },
     { id: 'prosCons', label: 'Pros & Cons', icon: FileText },
@@ -489,7 +565,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 <div className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white border border-[#E8E5DF] text-stone-800 text-xs font-medium shadow-2xs">
                   <Award className="w-4 h-4 text-[#B88E3D]" />
                   <span>
-                    Recommended:{' '}
+                    You Should Choose:{' '}
                     <strong className="font-bold text-[#B88E3D]">{recommendedOpt.title}</strong>
                   </span>
                   <span className="ml-1 text-[11px] font-mono text-[#B88E3D] font-bold">
@@ -691,7 +767,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 relative overflow-hidden shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#B88E3D]">
-                  Primary Direction
+                  You Should Choose
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">
                   {decision.recommendation?.confidenceLevel || 'High'} Confidence
@@ -717,43 +793,55 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
 
           {/* Why Other Options Lost & Reversal Conditions */}
-          {(decision.recommendation?.whyNotOptions || (decision.recommendation?.reversalConditions && decision.recommendation.reversalConditions.length > 0)) && (
+          {(losingOptionsWithReasons.length > 0 || (decision.recommendation?.reversalConditions && decision.recommendation.reversalConditions.length > 0)) && (
             <div className="grid md:grid-cols-2 gap-6">
               {/* Why Other Options Lost */}
-              {decision.recommendation?.whyNotOptions && (
-                <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-3 shadow-2xs">
-                  <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-stone-500 flex items-center gap-2">
-                    <Scale className="w-4 h-4 text-[#B88E3D]" />
-                    Why Other Options Lost
-                  </h4>
-                  <div className="space-y-2 text-xs">
-                    {Object.entries(decision.recommendation.whyNotOptions).map(([optId, reason]) => {
-                      const opt = decision.options.find((o) => o.id === optId);
-                      return (
-                        <div key={optId} className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
-                          <span className="font-serif italic text-stone-900 font-bold block">
-                            {opt?.title || optId}
+              {losingOptionsWithReasons.length > 0 && (
+                <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#B88E3D] flex items-center gap-2">
+                      <Scale className="w-4 h-4 text-[#B88E3D]" />
+                      Why Other Options Lost
+                    </h4>
+                    <span className="text-[10px] font-mono text-stone-500 font-semibold">
+                      {losingOptionsWithReasons.length} {losingOptionsWithReasons.length === 1 ? 'Option' : 'Options'} Evaluated
+                    </span>
+                  </div>
+                  <div className="space-y-3 text-xs">
+                    {losingOptionsWithReasons.map(({ option, reason }) => (
+                      <div key={option.id} className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-1.5 shadow-2xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-serif italic text-stone-900 font-bold block text-sm">
+                            {option.title}
                           </span>
-                          <p className="text-stone-700 leading-relaxed">{reason}</p>
+                          <span className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-stone-200 text-stone-700">
+                            Trade-Off Profile
+                          </span>
                         </div>
-                      );
-                    })}
+                        <p className="text-stone-700 leading-relaxed font-sans">{reason}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
               {/* Conditions that would change the recommendation */}
               {decision.recommendation?.reversalConditions && decision.recommendation.reversalConditions.length > 0 && (
-                <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-3 shadow-2xs">
-                  <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-stone-500 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-rose-600" />
-                    Conditions That Would Flip Recommendation
-                  </h4>
-                  <ul className="space-y-2 text-xs">
+                <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-rose-700 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-rose-600" />
+                      Conditions That Would Flip Recommendation
+                    </h4>
+                    <span className="text-[10px] font-mono text-rose-600 font-bold">
+                      Reversal Triggers
+                    </span>
+                  </div>
+                  <ul className="space-y-2.5 text-xs">
                     {decision.recommendation.reversalConditions.map((cond, idx) => (
-                      <li key={idx} className="p-3.5 rounded-xl bg-rose-50/50 border border-rose-200 text-stone-800 flex items-start gap-2">
-                        <span className="text-rose-600 font-bold">•</span>
-                        <span>{cond}</span>
+                      <li key={idx} className="p-3.5 rounded-xl bg-rose-50/60 border border-rose-200 text-stone-800 flex items-start gap-2.5 shadow-2xs">
+                        <span className="text-rose-600 font-bold text-sm leading-none">•</span>
+                        <span className="leading-relaxed">{cond}</span>
                       </li>
                     ))}
                   </ul>
@@ -1108,105 +1196,393 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {/* 4. SWOT TAB */}
       {activeTab === 'swot' && (
         <div className="space-y-6 animate-fadeIn">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-            SWOT Strategic Grid
-          </h3>
+          {/* Header and Option Switcher */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E5DF] pb-4">
+            <div>
+              <h3 className="text-base font-serif italic text-stone-900 flex items-center gap-2 font-bold">
+                <Grid2X2 className="w-4 h-4 text-[#B88E3D]" />
+                Interactive SWOT Strategic Matrix
+              </h3>
+              <p className="text-xs text-stone-600 mt-0.5">
+                Analyze internal strengths/weaknesses and external opportunities/threats. Add or edit strategic points.
+              </p>
+            </div>
+
+            {/* Option Filter Pills */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[#FAF7F2] border border-[#E8E5DF] rounded-xl self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setSelectedSwotOptionId('all')}
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                  selectedSwotOptionId === 'all'
+                    ? 'bg-[#2C221E] text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                All Options
+              </button>
+              {decision.options.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setSelectedSwotOptionId(opt.id)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                    selectedSwotOptionId === opt.id
+                      ? 'bg-[#2C221E] text-white shadow-2xs'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  {opt.title}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="space-y-8">
-            {decision.options.map((opt) => {
-              const swot = decision.swot.find((s) => s.optionId === opt.id) || {
-                optionId: opt.id,
-                strengths: [],
-                weaknesses: [],
-                opportunities: [],
-                threats: [],
-              };
+            {decision.options
+              .filter((opt) => selectedSwotOptionId === 'all' || selectedSwotOptionId === opt.id)
+              .map((opt) => {
+                const optSwot = (swotData || []).find((s) => s.optionId === opt.id) || {
+                  optionId: opt.id,
+                  strengths: [`Direct alignment with stated goals for ${opt.title}`],
+                  weaknesses: [`Requires dedicated transition focus`],
+                  opportunities: [`Compounding career and strategic upside`],
+                  threats: [`Execution velocity risk`],
+                };
 
-              return (
-                <div
-                  key={opt.id}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-md"
-                >
-                  <h4 className="font-serif italic text-lg text-white border-b border-slate-800 pb-3 font-bold">
-                    {opt.title} — SWOT Overview
-                  </h4>
+                const isRecommended = opt.id === decision.recommendation?.recommendedOptionId;
 
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    {/* Strengths */}
-                    <div className="p-4 rounded-xl bg-slate-950 border-l-2 border-amber-500 border-y border-r border-slate-800 space-y-2">
-                      <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">
-                        S — Strengths
+                return (
+                  <div
+                    key={opt.id}
+                    className="bg-white border border-[#E8E5DF] rounded-2xl p-6 sm:p-7 space-y-6 shadow-2xs"
+                  >
+                    {/* Option Header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E8E5DF] pb-3">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-serif italic text-lg text-stone-900 font-bold">
+                          {opt.title} — Strategic SWOT Profile
+                        </h4>
+                        {isRecommended && (
+                          <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase bg-[#2C221E] text-white rounded">
+                            ★ Primary Recommendation
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded bg-[#FAF7F2] text-stone-700 border border-[#E8E5DF] self-start sm:self-auto">
+                        2x2 Strategic Matrix
                       </span>
-                      <ul className="text-xs text-slate-200 space-y-1.5 list-disc list-inside font-medium">
-                        {swot.strengths.map((s, i) => (
-                          <li key={i}>{s}</li>
-                        ))}
-                      </ul>
                     </div>
 
-                    {/* Weaknesses */}
-                    <div className="p-4 rounded-xl bg-slate-950 border-l-2 border-rose-500 border-y border-r border-slate-800 space-y-2">
-                      <span className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">
-                        W — Weaknesses
-                      </span>
-                      <ul className="text-xs text-slate-200 space-y-1.5 list-disc list-inside font-medium">
-                        {swot.weaknesses.map((w, i) => (
-                          <li key={i}>{w}</li>
-                        ))}
-                      </ul>
+                    {/* 2x2 SWOT Grid */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {/* S — Strengths (Internal / Positive) */}
+                      <div className="p-4 rounded-xl bg-[#FAF7F2] border-l-3 border-emerald-600 border-y border-r border-[#E8E5DF] space-y-3 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between pb-2 border-b border-[#E8E5DF]/70">
+                            <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
+                              <Check className="w-3.5 h-3.5 text-emerald-600" /> S — Internal Strengths
+                            </span>
+                            <span className="text-[10px] text-stone-600 font-medium">Internal Advantage</span>
+                          </div>
+                          <ul className="text-xs text-stone-800 space-y-2 mt-3 font-medium">
+                            {optSwot.strengths?.map((s, i) => (
+                              <li key={i} className="flex items-start justify-between gap-2 group">
+                                <span className="flex-1 leading-relaxed">• {s}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSwotBullet(opt.id, 'strengths', i)}
+                                  className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-rose-600 p-0.5 transition-all cursor-pointer"
+                                  title="Delete point"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Add bullet input */}
+                        {activeSwotInput?.optId === opt.id && activeSwotInput?.quadrant === 'strengths' ? (
+                          <div className="pt-2 flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={swotInputText}
+                              onChange={(e) => setSwotInputText(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleAddSwotBullet(opt.id, 'strengths')}
+                              placeholder="Type strength and press Enter..."
+                              autoFocus
+                              className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#E8E5DF] rounded-lg focus:outline-none focus:border-[#B88E3D]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleAddSwotBullet(opt.id, 'strengths')}
+                              className="px-2.5 py-1.5 text-xs font-bold bg-[#2C221E] text-white rounded-lg cursor-pointer"
+                            >
+                              Add
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveSwotInput(null)}
+                              className="px-2 py-1.5 text-xs text-stone-500 hover:text-stone-800 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveSwotInput({ optId: opt.id, quadrant: 'strengths' });
+                              setSwotInputText('');
+                            }}
+                            className="pt-2 text-[11px] font-semibold text-emerald-800 hover:text-emerald-950 flex items-center gap-1 cursor-pointer self-start"
+                          >
+                            <Plus className="w-3 h-3" /> Add Strength
+                          </button>
+                        )}
+                      </div>
+
+                      {/* W — Weaknesses (Internal / Negative) */}
+                      <div className="p-4 rounded-xl bg-[#FAF7F2] border-l-3 border-rose-500 border-y border-r border-[#E8E5DF] space-y-3 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between pb-2 border-b border-[#E8E5DF]/70">
+                            <span className="text-[11px] font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
+                              <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> W — Internal Weaknesses
+                            </span>
+                            <span className="text-[10px] text-stone-600 font-medium">Internal Limitation</span>
+                          </div>
+                          <ul className="text-xs text-stone-800 space-y-2 mt-3 font-medium">
+                            {optSwot.weaknesses?.map((w, i) => (
+                              <li key={i} className="flex items-start justify-between gap-2 group">
+                                <span className="flex-1 leading-relaxed">• {w}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSwotBullet(opt.id, 'weaknesses', i)}
+                                  className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-rose-600 p-0.5 transition-all cursor-pointer"
+                                  title="Delete point"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Add bullet input */}
+                        {activeSwotInput?.optId === opt.id && activeSwotInput?.quadrant === 'weaknesses' ? (
+                          <div className="pt-2 flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={swotInputText}
+                              onChange={(e) => setSwotInputText(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleAddSwotBullet(opt.id, 'weaknesses')}
+                              placeholder="Type weakness and press Enter..."
+                              autoFocus
+                              className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#E8E5DF] rounded-lg focus:outline-none focus:border-[#B88E3D]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleAddSwotBullet(opt.id, 'weaknesses')}
+                              className="px-2.5 py-1.5 text-xs font-bold bg-[#2C221E] text-white rounded-lg cursor-pointer"
+                            >
+                              Add
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveSwotInput(null)}
+                              className="px-2 py-1.5 text-xs text-stone-500 hover:text-stone-800 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveSwotInput({ optId: opt.id, quadrant: 'weaknesses' });
+                              setSwotInputText('');
+                            }}
+                            className="pt-2 text-[11px] font-semibold text-rose-800 hover:text-rose-950 flex items-center gap-1 cursor-pointer self-start"
+                          >
+                            <Plus className="w-3 h-3" /> Add Weakness
+                          </button>
+                        )}
+                      </div>
+
+                      {/* O — Opportunities (External / Positive) */}
+                      <div className="p-4 rounded-xl bg-[#FAF7F2] border-l-3 border-[#B88E3D] border-y border-r border-[#E8E5DF] space-y-3 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between pb-2 border-b border-[#E8E5DF]/70">
+                            <span className="text-[11px] font-bold text-[#8A631E] uppercase tracking-wider flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-[#B88E3D]" /> O — External Opportunities
+                            </span>
+                            <span className="text-[10px] text-stone-600 font-medium">Market / Upside Potential</span>
+                          </div>
+                          <ul className="text-xs text-stone-800 space-y-2 mt-3 font-medium">
+                            {optSwot.opportunities?.map((o, i) => (
+                              <li key={i} className="flex items-start justify-between gap-2 group">
+                                <span className="flex-1 leading-relaxed">• {o}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSwotBullet(opt.id, 'opportunities', i)}
+                                  className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-rose-600 p-0.5 transition-all cursor-pointer"
+                                  title="Delete point"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Add bullet input */}
+                        {activeSwotInput?.optId === opt.id && activeSwotInput?.quadrant === 'opportunities' ? (
+                          <div className="pt-2 flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={swotInputText}
+                              onChange={(e) => setSwotInputText(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleAddSwotBullet(opt.id, 'opportunities')}
+                              placeholder="Type opportunity and press Enter..."
+                              autoFocus
+                              className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#E8E5DF] rounded-lg focus:outline-none focus:border-[#B88E3D]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleAddSwotBullet(opt.id, 'opportunities')}
+                              className="px-2.5 py-1.5 text-xs font-bold bg-[#2C221E] text-white rounded-lg cursor-pointer"
+                            >
+                              Add
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveSwotInput(null)}
+                              className="px-2 py-1.5 text-xs text-stone-500 hover:text-stone-800 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveSwotInput({ optId: opt.id, quadrant: 'opportunities' });
+                              setSwotInputText('');
+                            }}
+                            className="pt-2 text-[11px] font-semibold text-[#8A631E] hover:text-[#5B4012] flex items-center gap-1 cursor-pointer self-start"
+                          >
+                            <Plus className="w-3 h-3" /> Add Opportunity
+                          </button>
+                        )}
+                      </div>
+
+                      {/* T — Threats & Risks (External / Negative) */}
+                      <div className="p-4 rounded-xl bg-[#FAF7F2] border-l-3 border-amber-600 border-y border-r border-[#E8E5DF] space-y-3 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between pb-2 border-b border-[#E8E5DF]/70">
+                            <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                              <Shield className="w-3.5 h-3.5 text-amber-700" /> T — External Threats & Risks
+                            </span>
+                            <span className="text-[10px] text-stone-600 font-medium">External Risk</span>
+                          </div>
+                          <ul className="text-xs text-stone-800 space-y-2 mt-3 font-medium">
+                            {optSwot.threats?.map((t, i) => (
+                              <li key={i} className="flex items-start justify-between gap-2 group">
+                                <span className="flex-1 leading-relaxed">• {t}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSwotBullet(opt.id, 'threats', i)}
+                                  className="opacity-0 group-hover:opacity-100 text-stone-400 hover:text-rose-600 p-0.5 transition-all cursor-pointer"
+                                  title="Delete point"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Add bullet input */}
+                        {activeSwotInput?.optId === opt.id && activeSwotInput?.quadrant === 'threats' ? (
+                          <div className="pt-2 flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={swotInputText}
+                              onChange={(e) => setSwotInputText(e.target.value)}
+                              onKeyDown={(e) => e.key === 'Enter' && handleAddSwotBullet(opt.id, 'threats')}
+                              placeholder="Type threat/risk and press Enter..."
+                              autoFocus
+                              className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#E8E5DF] rounded-lg focus:outline-none focus:border-[#B88E3D]"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleAddSwotBullet(opt.id, 'threats')}
+                              className="px-2.5 py-1.5 text-xs font-bold bg-[#2C221E] text-white rounded-lg cursor-pointer"
+                            >
+                              Add
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setActiveSwotInput(null)}
+                              className="px-2 py-1.5 text-xs text-stone-500 hover:text-stone-800 cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveSwotInput({ optId: opt.id, quadrant: 'threats' });
+                              setSwotInputText('');
+                            }}
+                            className="pt-2 text-[11px] font-semibold text-amber-900 hover:text-amber-950 flex items-center gap-1 cursor-pointer self-start"
+                          >
+                            <Plus className="w-3 h-3" /> Add Threat / Risk
+                          </button>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Opportunities */}
-                    <div className="p-4 rounded-xl bg-slate-950 border-l-2 border-amber-400 border-y border-r border-slate-800 space-y-2">
-                      <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">
-                        O — Opportunities
+                    {/* Strategic Synthesis Card */}
+                    <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2 text-xs">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#B88E3D] flex items-center gap-1.5">
+                        <Award className="w-3.5 h-3.5 text-[#B88E3D]" /> Strategic Takeaway for {opt.title}
                       </span>
-                      <ul className="text-xs text-slate-200 space-y-1.5 list-disc list-inside font-medium">
-                        {swot.opportunities.map((o, i) => (
-                          <li key={i}>{o}</li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Threats */}
-                    <div className="p-4 rounded-xl bg-slate-950 border-l-2 border-indigo-400 border-y border-r border-slate-800 space-y-2">
-                      <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-wider">
-                        T — Threats
-                      </span>
-                      <ul className="text-xs text-slate-200 space-y-1.5 list-disc list-inside font-medium">
-                        {swot.threats.map((t, i) => (
-                          <li key={i}>{t}</li>
-                        ))}
-                      </ul>
+                      <p className="text-stone-700 leading-relaxed font-medium">
+                        {isRecommended
+                          ? `You should choose ${opt.title} by leveraging its core Strengths (${optSwot.strengths?.[0] || 'primary advantages'}) to seize high-upside Opportunities, while actively setting safeguards against identified Weaknesses and Threats.`
+                          : `If executing ${opt.title}, deploy strict risk controls to ensure its Weaknesses do not compound under external Threats.`}
+                      </p>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </div>
       )}
 
       {/* 5. DECISION MATRIX TAB */}
       {activeTab === 'matrix' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 animate-fadeIn shadow-md">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 sm:p-8 space-y-6 animate-fadeIn shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E5DF] pb-4">
             <div>
-              <h3 className="text-base font-serif italic text-white flex items-center gap-2 font-bold">
-                <TrendingUp className="w-4 h-4 text-amber-400" />
+              <h3 className="text-base font-serif italic text-stone-900 flex items-center gap-2 font-bold">
+                <SlidersHorizontal className="w-4 h-4 text-[#B88E3D]" />
                 Interactive Weighted Decision Matrix
               </h3>
-              <p className="text-xs text-slate-300 mt-0.5">
-                Adjust criteria weights (%) and score options (1–10) in real time.
+              <p className="text-xs text-stone-600 mt-0.5">
+                Adjust criteria weights (%) and score options (1–10) in real time to test decision sensitivity.
               </p>
             </div>
 
             <button
               onClick={handleAddCriterion}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider bg-slate-950 hover:bg-slate-800 text-amber-300 border border-slate-800 rounded-lg transition-colors self-start sm:self-auto cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider bg-[#2C221E] hover:bg-[#3D312B] text-white border border-[#2C221E] rounded-lg transition-colors self-start sm:self-auto cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5 text-amber-400" />
-              <span>Add Priority</span>
+              <Plus className="w-3.5 h-3.5 text-[#D4A338] stroke-[3]" />
+              <span className="text-[#D4A338]">Add Priority</span>
             </button>
           </div>
 
@@ -1219,37 +1595,34 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={opt.id}
-                  className={`p-4 rounded-2xl border flex items-center justify-between ${
+                  className={`p-5 rounded-2xl border flex items-center justify-between transition-all ${
                     isLeader
-                      ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/10 text-white border-amber-500/60 shadow-md'
-                      : 'bg-slate-950 text-slate-200 border-slate-800'
+                      ? 'bg-amber-50/70 text-stone-900 border-[#B88E3D] shadow-xs'
+                      : 'bg-[#FAF7F2] text-stone-800 border-[#E8E5DF]'
                   }`}
                 >
                   <div>
                     <span
                       className={`text-[10px] font-mono uppercase font-bold ${
-                        isLeader ? 'text-amber-400' : 'text-slate-400'
+                        isLeader ? 'text-[#B88E3D]' : 'text-stone-500'
                       }`}
                     >
-                      {isLeader ? '🏆 Matrix Leader' : 'Weighted Total'}
+                      {isLeader ? '★ Matrix Leader' : 'Weighted Total'}
                     </span>
-                    <h4 className="font-serif italic text-sm font-bold text-white">
+                    <h4 className="font-serif italic text-base font-bold text-stone-900">
                       {opt.title}
                     </h4>
                   </div>
 
                   <div className="text-right font-mono">
                     <span
-                      className={`text-xl font-bold ${
-                        isLeader ? 'text-amber-400' : 'text-slate-200'
+                      className={`text-2xl font-bold ${
+                        isLeader ? 'text-[#B88E3D]' : 'text-stone-900'
                       }`}
                     >
                       {totalScore}
                     </span>
-                    <span className={isLeader ? 'text-amber-300/80 text-xs' : 'text-slate-400 text-xs'}>
-                      {' '}
-                      / 10
-                    </span>
+                    <span className="text-stone-500 text-xs font-semibold"> / 10</span>
                   </div>
                 </div>
               );
@@ -1257,35 +1630,35 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
 
           {/* CRITERIA & SCORES SLIDERS TABLE */}
-          <div className="space-y-6 pt-4 border-t border-slate-800">
+          <div className="space-y-4 pt-4 border-t border-[#E8E5DF]">
             {criteria.map((crit) => (
               <div
                 key={crit.id}
-                className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-4"
+                className="p-5 rounded-2xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-4 shadow-2xs"
               >
                 {/* Criterion Header & Weight Slider */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E8E5DF] pb-3">
                   <div>
-                    <h4 className="text-sm font-serif italic text-white font-bold">
+                    <h4 className="text-sm font-serif italic text-stone-900 font-bold">
                       {crit.name}
                     </h4>
                     {crit.description && (
-                      <p className="text-xs text-slate-400 mt-0.5">{crit.description}</p>
+                      <p className="text-xs text-stone-600 mt-0.5">{crit.description}</p>
                     )}
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-400 font-mono">Weight:</span>
+                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-[#E8E5DF]">
+                      <span className="text-xs text-stone-500 font-mono">Weight:</span>
                       <input
                         type="range"
                         min={0}
                         max={100}
                         value={crit.weight}
                         onChange={(e) => handleWeightChange(crit.id, parseInt(e.target.value))}
-                        className="w-24 accent-amber-400 cursor-pointer"
+                        className="w-24 accent-[#B88E3D] cursor-pointer"
                       />
-                      <span className="text-xs font-mono font-bold text-amber-400 w-8">
+                      <span className="text-xs font-mono font-bold text-[#B88E3D] w-8">
                         {crit.weight}%
                       </span>
                     </div>
@@ -1293,7 +1666,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     {criteria.length > 1 && (
                       <button
                         onClick={() => handleRemoveCriterion(crit.id)}
-                        className="p-1 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                        className="p-1.5 text-stone-400 hover:text-rose-600 transition-colors cursor-pointer rounded-md hover:bg-rose-50"
                         title="Remove Criterion"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1303,19 +1676,19 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 </div>
 
                 {/* Option Score Sliders for this Criterion */}
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {decision.options.map((opt) => {
                     const currentScore = scores[opt.id]?.[crit.id] ?? 5;
                     return (
                       <div
                         key={opt.id}
-                        className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5 shadow-xs"
+                        className="p-3.5 rounded-xl bg-white border border-[#E8E5DF] space-y-2 shadow-2xs"
                       >
                         <div className="flex justify-between items-center text-xs">
-                          <span className="text-slate-200 font-serif italic truncate max-w-[180px]">
+                          <span className="text-stone-900 font-serif italic truncate max-w-[180px] font-semibold">
                             {opt.title}
                           </span>
-                          <span className="font-mono text-amber-400 font-bold">
+                          <span className="font-mono text-[#B88E3D] font-bold">
                             {currentScore} / 10
                           </span>
                         </div>
@@ -1327,7 +1700,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                           onChange={(e) =>
                             handleScoreChange(opt.id, crit.id, parseInt(e.target.value))
                           }
-                          className="w-full accent-amber-400 cursor-pointer"
+                          className="w-full accent-[#B88E3D] cursor-pointer"
                         />
                       </div>
                     );
@@ -1343,10 +1716,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {activeTab === 'risks' && (
         <div className="space-y-6 animate-fadeIn">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#B88E3D] flex items-center gap-2">
+              <Shield className="w-4 h-4 text-[#B88E3D]" />
               Risk Assessment & Mitigation Strategy
             </h3>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-stone-500">
               Probability and actionable safeguards
             </span>
           </div>
@@ -1357,14 +1731,14 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={risk.id}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-md"
+                  className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <span className="text-[10px] font-mono text-amber-400 font-bold uppercase">
+                      <span className="text-[10px] font-mono text-[#B88E3D] font-bold uppercase">
                         Option: {opt?.title || 'General'}
                       </span>
-                      <h4 className="text-sm font-serif italic text-white mt-1 font-bold">
+                      <h4 className="text-sm font-serif italic text-stone-900 mt-1 font-bold">
                         {risk.risk}
                       </h4>
                     </div>
@@ -1373,8 +1747,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                       <span
                         className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold rounded ${
                           risk.probability === 'High'
-                            ? 'bg-rose-950/60 text-rose-300 border border-rose-800'
-                            : 'bg-slate-950 text-slate-300 border border-slate-800'
+                            ? 'bg-rose-100 text-rose-900 border border-rose-300'
+                            : 'bg-[#FAF7F2] text-stone-700 border border-[#E8E5DF]'
                         }`}
                       >
                         Prob: {risk.probability}
@@ -1382,8 +1756,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                       <span
                         className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold rounded ${
                           risk.impact === 'High'
-                            ? 'bg-rose-950/60 text-rose-300 border border-rose-800'
-                            : 'bg-slate-950 text-slate-400 border border-slate-800'
+                            ? 'bg-rose-100 text-rose-900 border border-rose-300'
+                            : 'bg-[#FAF7F2] text-stone-700 border border-[#E8E5DF]'
                         }`}
                       >
                         Impact: {risk.impact}
@@ -1391,11 +1765,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                    <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                      <Shield className="w-3 h-3 text-amber-400" /> Recommended Safeguard
+                  <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
+                    <span className="text-[10px] font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1">
+                      <Shield className="w-3 h-3 text-[#B88E3D]" /> Recommended Safeguard
                     </span>
-                    <p className="text-xs text-slate-200 leading-normal font-medium">
+                    <p className="text-xs text-stone-800 leading-normal font-medium">
                       {risk.mitigation}
                     </p>
                   </div>
@@ -1409,8 +1783,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {/* 7. FUTURE SCENARIOS TAB */}
       {activeTab === 'future' && (
         <div className="space-y-6 animate-fadeIn">
-          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 shadow-xs">
-            💡 <strong className="text-amber-400">Future Projections:</strong> Plausible trajectories based on trade-off trends — not guaranteed outcomes.
+          <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-stone-700 shadow-2xs flex items-center gap-2">
+            <Clock className="w-4 h-4 text-[#B88E3D] shrink-0" />
+            <span>
+              <strong className="text-stone-900 font-bold">Future Projections:</strong> Plausible trajectories based on trade-off models to stress-test your decision horizon.
+            </span>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6">
@@ -1419,34 +1796,40 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={idx}
-                  className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-md"
+                  className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs"
                 >
-                  <h4 className="font-serif italic text-base text-white border-b border-slate-800 pb-3 font-bold">
-                    {opt?.title || `Option ${idx + 1}`}
-                  </h4>
+                  <div className="flex items-center justify-between border-b border-[#E8E5DF] pb-3">
+                    <h4 className="font-serif italic text-base text-stone-900 font-bold">
+                      {opt?.title || `Option ${idx + 1}`}
+                    </h4>
+                    <span className="text-[10px] font-mono text-stone-500 font-semibold uppercase">
+                      Timeline Projection
+                    </span>
+                  </div>
 
                   <div className="space-y-3">
-                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-amber-400" /> Short-Term (1–6 Months)
+                    <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
+                      <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-[#B88E3D]" /> Short-Term (1–6 Months)
                       </span>
-                      <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                      <p className="text-xs text-stone-800 leading-relaxed font-medium">
                         {sc.shortTerm}
                       </p>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <TrendingUp className="w-3.5 h-3.5 text-amber-400" /> Long-Term (1–5 Years)
+                    <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
+                      <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <TrendingUp className="w-3.5 h-3.5 text-[#B88E3D]" /> Long-Term (1–5 Years)
                       </span>
-                      <p className="text-xs text-slate-200 leading-relaxed font-medium">
+                      <p className="text-xs text-stone-800 leading-relaxed font-medium">
                         {sc.longTerm}
                       </p>
                     </div>
 
                     {sc.keyTurningPoint && (
-                      <div className="text-[11px] text-amber-300/80 font-mono italic pt-1">
-                        Key Turning Point: {sc.keyTurningPoint}
+                      <div className="text-[11px] text-[#B88E3D] font-mono italic pt-1 flex items-center gap-1">
+                        <span>Key Turning Point:</span>
+                        <span className="font-bold">{sc.keyTurningPoint}</span>
                       </div>
                     )}
                   </div>
@@ -1460,16 +1843,16 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {/* 8. THINK DEEPER TAB & CHAT */}
       {activeTab === 'thinkDeeper' && (
         <div className="space-y-8 animate-fadeIn">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-md">
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-4">
-              <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0">
-                <Compass className="w-5 h-5 text-slate-950" />
+          <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xs">
+            <div className="flex items-center gap-3 border-b border-[#E8E5DF] pb-4">
+              <div className="w-9 h-9 rounded-xl bg-[#2C221E] text-white flex items-center justify-center shrink-0 border border-[#2C221E]">
+                <Compass className="w-5 h-5 text-[#D4A338]" />
               </div>
               <div>
-                <h3 className="font-serif italic text-xl text-white font-bold">
+                <h3 className="font-serif italic text-xl text-stone-900 font-bold">
                   Cognitive Analysis & Blindspot Check
                 </h3>
-                <p className="text-xs text-slate-300">
+                <p className="text-xs text-stone-600">
                   Uncover hidden assumptions, potential biases, and critical follow-up questions.
                 </p>
               </div>
@@ -1477,11 +1860,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
             <div className="grid md:grid-cols-2 gap-4">
               {/* Assumptions */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Lightbulb className="w-3.5 h-3.5 text-amber-400" /> Hidden Assumptions
+              <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+                <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
+                  <Lightbulb className="w-3.5 h-3.5 text-[#B88E3D]" /> Hidden Assumptions
                 </span>
-                <ul className="text-xs text-slate-200 space-y-1.5 list-disc list-inside font-medium">
+                <ul className="text-xs text-stone-800 space-y-1.5 list-disc list-inside font-medium">
                   {decision.thinkDeeper?.assumptions?.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -1489,11 +1872,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </div>
 
               {/* Cognitive Biases */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Potential Biases
+              <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+                <span className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Potential Biases
                 </span>
-                <ul className="text-xs text-slate-200 space-y-1.5 list-disc list-inside font-medium">
+                <ul className="text-xs text-stone-800 space-y-1.5 list-disc list-inside font-medium">
                   {decision.thinkDeeper?.biases?.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -1501,11 +1884,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </div>
 
               {/* Blindspot Questions */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <HelpCircle className="w-3.5 h-3.5 text-amber-400" /> Blindspot Questions
+              <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+                <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
+                  <HelpCircle className="w-3.5 h-3.5 text-[#B88E3D]" /> Blindspot Questions
                 </span>
-                <ul className="text-xs text-slate-200 space-y-1.5 list-disc list-inside font-medium">
+                <ul className="text-xs text-stone-800 space-y-1.5 list-disc list-inside font-medium">
                   {decision.thinkDeeper?.blindspotQuestions?.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -1513,11 +1896,11 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </div>
 
               {/* Questions to Ask Others */}
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-amber-400" /> Questions to Ask Others
+              <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+                <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-[#B88E3D]" /> Questions to Ask Others
                 </span>
-                <ul className="text-xs text-slate-200 space-y-1.5 list-disc list-inside font-medium">
+                <ul className="text-xs text-stone-800 space-y-1.5 list-disc list-inside font-medium">
                   {decision.thinkDeeper?.questionsToAskOthers?.map((item, i) => (
                     <li key={i}>{item}</li>
                   ))}
@@ -1527,21 +1910,26 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
 
           {/* INTERACTIVE CHAT BOX WITH AI FOR FOLLOW-UP QUESTIONS */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-md">
-            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-300 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              Follow-up Conversation with Decision AI
-            </h4>
+          <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs">
+            <div className="flex items-center justify-between border-b border-[#E8E5DF] pb-3">
+              <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#B88E3D] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#B88E3D]" />
+                Follow-up Conversation with Decision AI
+              </h4>
+              <span className="text-[10px] font-mono text-stone-500 font-semibold">
+                Interactive Advisor
+              </span>
+            </div>
 
             {chatMessages.length > 0 && (
-              <div className="space-y-3 max-h-80 overflow-y-auto p-4 rounded-xl bg-slate-950 border border-slate-800">
+              <div className="space-y-3 max-h-80 overflow-y-auto p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF]">
                 {chatMessages.map((m) => (
                   <div
                     key={m.id}
                     className={`p-3.5 rounded-xl text-xs space-y-1 ${
                       m.role === 'user'
-                        ? 'bg-amber-500 text-slate-950 font-medium ml-8 shadow-xs'
-                        : 'bg-slate-900 border border-slate-800 text-slate-100 mr-8 shadow-xs'
+                        ? 'bg-[#2C221E] text-white font-medium ml-8 shadow-2xs'
+                        : 'bg-white border border-[#E8E5DF] text-stone-900 mr-8 shadow-2xs'
                     }`}
                   >
                     <div className="flex justify-between font-mono text-[10px] opacity-80">
@@ -1560,25 +1948,32 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Ask a follow-up question (e.g. What if my main assumption about remote work turns out false?)..."
-                className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-400"
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B88E3D]"
                 disabled={isSendingChat}
               />
               <button
                 type="submit"
                 disabled={isSendingChat || !chatInput.trim()}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold uppercase tracking-wider text-xs transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-[#2C221E] hover:bg-[#3D312B] text-white font-bold uppercase tracking-wider text-xs transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer border border-[#2C221E]"
               >
                 {isSendingChat ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-950" />
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#D4A338]" />
                 ) : (
-                  <Send className="w-3.5 h-3.5 text-slate-950 stroke-[2.5]" />
+                  <Send className="w-3.5 h-3.5 text-[#D4A338] stroke-[2.5]" />
                 )}
-                <span>Ask AI</span>
+                <span className="text-[#D4A338]">Ask AI</span>
               </button>
             </form>
           </div>
         </div>
       )}
+
+      {/* EXPORT REPORT MODAL */}
+      <ExportReportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        decision={decision}
+      />
     </div>
   );
 };

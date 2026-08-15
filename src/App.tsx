@@ -1,29 +1,42 @@
-import { useState, useEffect } from 'react';
-import { DecisionAnalysis } from './types';
+import { useState, useEffect, useRef } from 'react';
+import { DecisionAnalysis, User, AuthResponse } from './types';
 import { SAMPLE_DECISIONS } from './data/sampleDecisions';
 import {
-  getSavedDecisions,
-  saveDecision,
-  deleteDecision,
+  apiGetMe,
+  apiLoginDemo,
+  apiLogout,
+  apiGetDecisions,
+  apiSaveDecision,
+  apiDeleteDecision,
+  apiAnalyzeDecision,
+  getStoredToken,
+} from './utils/api';
+import {
   exportDecisionsJSON,
   importDecisionsJSON,
 } from './utils/storage';
 import { Header } from './components/Header';
-import { Hero } from './components/Hero';
 import { DecisionWorkspace } from './components/DecisionWorkspace';
 import { ResultsDashboard, TabType } from './components/ResultsDashboard';
 import { DecisionHistory } from './components/DecisionHistory';
 import { HowItWorksModal } from './components/HowItWorksModal';
+import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
 import { Sidebar } from './components/Sidebar';
 import { Sparkles, ArrowRight, X } from 'lucide-react';
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [savedDecisions, setSavedDecisions] = useState<DecisionAnalysis[]>([]);
   const [currentDecision, setCurrentDecision] = useState<DecisionAnalysis | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+
+  // Request cancellation and race condition tracking
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const currentRequestIdRef = useRef<number>(0);
 
   // Mobile sidebar drawer state
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -33,11 +46,63 @@ export default function App() {
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [showSamplePicker, setShowSamplePicker] = useState(false);
 
-  // Load saved decisions on mount
+  // Initialize Authentication and User Decision Library on Mount
   useEffect(() => {
-    const list = getSavedDecisions();
-    setSavedDecisions(list);
+    const initAuth = async () => {
+      const token = getStoredToken();
+      if (token) {
+        try {
+          const { user } = await apiGetMe();
+          // Wipe any stale demo token or legacy Alex session so user starts in fresh Guest mode
+          if (!user || user.id?.startsWith('demo_') || user.name?.toLowerCase().includes('alex')) {
+            apiLogout();
+            setCurrentUser(null);
+            setSavedDecisions([]);
+            return;
+          }
+          setCurrentUser(user);
+          const decisions = await apiGetDecisions();
+          setSavedDecisions(decisions);
+          return;
+        } catch (err) {
+          console.warn('Existing session invalid or expired:', err);
+          apiLogout();
+        }
+      }
+
+      // Default to clean unauthenticated state (Guest mode)
+      setCurrentUser(null);
+      setSavedDecisions([]);
+    };
+
+    initAuth();
   }, []);
+
+  // Reload user decisions library
+  const refreshUserDecisions = async () => {
+    try {
+      const list = await apiGetDecisions();
+      setSavedDecisions(list);
+    } catch (err) {
+      console.error('Failed to refresh user decisions:', err);
+    }
+  };
+
+  // Auth Handlers
+  const handleAuthSuccess = async (auth: AuthResponse) => {
+    setCurrentUser(auth.user);
+    // Reset active decision to ensure clean isolation
+    setCurrentDecision(null);
+    const decisions = await apiGetDecisions();
+    setSavedDecisions(decisions);
+  };
+
+  const handleLogout = () => {
+    apiLogout();
+    setCurrentUser(null);
+    setCurrentDecision(null);
+    setSavedDecisions([]);
+  };
 
   // Handle running AI Analysis
   const handleRunAnalysis = async (
@@ -50,17 +115,24 @@ export default function App() {
     timeHorizon?: any,
     clarificationState?: any
   ) => {
+    // 1. Cancel previous in-flight analysis request if any
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    const requestId = ++currentRequestIdRef.current;
+
     setIsAnalyzing(true);
     setLoadingStep(0);
 
-    const stepTimer1 = setTimeout(() => setLoadingStep(1), 1400);
-    const stepTimer2 = setTimeout(() => setLoadingStep(2), 2800);
+    const stepTimer1 = setTimeout(() => setLoadingStep(1), 1200);
+    const stepTimer2 = setTimeout(() => setLoadingStep(2), 2400);
 
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const analysisResult = await apiAnalyzeDecision(
+        {
           prompt,
           options,
           priorities,
@@ -69,103 +141,43 @@ export default function App() {
           reversibility,
           timeHorizon,
           clarificationState,
-        }),
-      });
+        },
+        abortController.signal
+      );
 
-      if (!response.ok) {
-        throw new Error(`Server returned status ${response.status}`);
+      // Check if this is still the active request
+      if (requestId !== currentRequestIdRef.current) {
+        console.warn('Discarding stale analysis response');
+        return;
       }
 
-      const analysisResult: DecisionAnalysis = await response.json();
+      // Save to database library
+      try {
+        await apiSaveDecision(analysisResult);
+      } catch (err) {
+        console.warn('Note: Auto-save to server:', err);
+      }
 
-      saveDecision(analysisResult);
-      setSavedDecisions(getSavedDecisions());
+      await refreshUserDecisions();
       setCurrentDecision(analysisResult);
       setActiveTab('overview');
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (error) {
-      console.error('Analysis failed, using resilient fallback analysis:', error);
-      const fallbackResult: DecisionAnalysis = {
-        id: 'dec_' + Date.now(),
-        title: prompt.length > 50 ? prompt.slice(0, 47) + '...' : prompt,
-        originalPrompt: prompt,
-        category: category || 'Career',
-        reversibility: reversibility || 'Somewhat reversible',
-        timeHorizon: timeHorizon || '1 year',
-        userPriorities: priorities.length > 0 ? priorities : ['Career Growth', 'Financial Outcome'],
-        options: options.length >= 2 ? options.map((o, idx) => ({ id: `opt${idx + 1}`, title: o, description: `Option path: ${o}` })) : [
-          { id: 'opt1', title: options[0] || 'Option 1: Change Path', description: 'Pursue proactive change with potential higher upside.' },
-          { id: 'opt2', title: options[1] || 'Option 2: Status Quo', description: 'Maintain current path for predictability.' },
-        ],
-        clarificationState,
-        clarifyingQuestions: [
-          { id: 'q1', question: 'What is your non-negotiable factor in this decision?', suggestedAnswers: ['Income level', 'Work-life balance', 'Growth potential'] }
-        ],
-        prosCons: [
-          {
-            optionId: 'opt1',
-            pros: [{ text: 'High long-term upside', weight: 'high' }],
-            cons: [{ text: 'Initial transition friction', weight: 'medium' }],
-          },
-          {
-            optionId: 'opt2',
-            pros: [{ text: 'Predictable baseline', weight: 'high' }],
-            cons: [{ text: 'Opportunity cost', weight: 'medium' }],
-          },
-        ],
-        comparison: [
-          { criterion: 'Long-term Potential', scores: { opt1: 'High', opt2: 'Moderate' }, winnerOptionId: 'opt1' }
-        ],
-        swot: [
-          { optionId: 'opt1', strengths: ['High upside'], weaknesses: ['Initial stress'], opportunities: ['Expanded career market'], threats: ['Pacing risk'] },
-          { optionId: 'opt2', strengths: ['Low risk'], weaknesses: ['Slower growth'], opportunities: ['Free mental bandwidth'], threats: ['Market obsolescence'] },
-        ],
-        criteria: [
-          { id: 'crit1', name: priorities[0] || 'Growth Potential', weight: 40 },
-          { id: 'crit2', name: priorities[1] || 'Financial Benefit', weight: 30 },
-          { id: 'crit3', name: priorities[2] || 'Stability & Risk', weight: 30 },
-        ],
-        weightedScores: {
-          opt1: { crit1: 9, crit2: 8, crit3: 6 },
-          opt2: { crit1: 5, crit2: 6, crit3: 9 },
-        },
-        risks: [
-          { id: 'r1', optionId: 'opt1', risk: 'Transition workload surge', probability: 'Medium', impact: 'High', mitigation: 'Establish clear 30-day reviews.' }
-        ],
-        scenarios: [
-          { optionId: 'opt1', shortTerm: 'Months 1-6: Initial onboarding, building momentum.', longTerm: 'Years 1-3: Higher performance baseline.' },
-          { optionId: 'opt2', shortTerm: 'Months 1-6: Steady operations.', longTerm: 'Years 1-3: Predictable incremental progress.' },
-        ],
-        thinkDeeper: {
-          assumptions: ['Assuming workload stabilizes after onboarding phase.'],
-          missingInformation: ['Exact long-term financial parameters.'],
-          biases: ['Status Quo Bias: Overvaluing current path due to comfort.'],
-          blindspotQuestions: ['What is the worst case scenario and could you handle it?'],
-          questionsToAskOthers: ['Ask a mentor: What surprised you when taking a similar leap?'],
-          researchItems: ['Review market benchmarks.'],
-        },
-        recommendation: {
-          recommendedOptionId: 'opt1',
-          recommendedOptionTitle: options[0] || 'Option 1',
-          mainReasons: ['Stronger alignment with long-term growth priorities.'],
-          biggestConcern: 'Managing short-term transition pacing.',
-          missingInformation: 'Firm confirmation on timeline flexibility.',
-          confidenceLevel: 'High',
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        status: 'analyzed',
-      };
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Analysis request aborted by user');
+        return;
+      }
 
-      saveDecision(fallbackResult);
-      setSavedDecisions(getSavedDecisions());
-      setCurrentDecision(fallbackResult);
-      setActiveTab('overview');
+      console.error('Analysis failed, using resilient fallback analysis:', error);
+      // Fallback result will have been saved by server or can be structured here
+      await refreshUserDecisions();
     } finally {
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
-      setIsAnalyzing(false);
+      if (requestId === currentRequestIdRef.current) {
+        setIsAnalyzing(false);
+      }
     }
   };
 
@@ -176,6 +188,9 @@ export default function App() {
   };
 
   const handleNewDecision = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     setCurrentDecision(null);
     setTimeout(() => {
       const workspaceEl = document.getElementById('workspace');
@@ -185,18 +200,25 @@ export default function App() {
     }, 100);
   };
 
-  const handleUpdateDecision = (updated: DecisionAnalysis) => {
+  const handleUpdateDecision = async (updated: DecisionAnalysis) => {
     setCurrentDecision(updated);
-    saveDecision(updated);
-    setSavedDecisions(getSavedDecisions());
+    try {
+      await apiSaveDecision(updated);
+      await refreshUserDecisions();
+    } catch (err) {
+      console.error('Failed to update decision on server:', err);
+    }
   };
 
-  const handleDeleteDecision = (id: string) => {
-    deleteDecision(id);
-    const updatedList = getSavedDecisions();
-    setSavedDecisions(updatedList);
-    if (currentDecision?.id === id) {
-      setCurrentDecision(null);
+  const handleDeleteDecision = async (id: string) => {
+    try {
+      await apiDeleteDecision(id);
+      await refreshUserDecisions();
+      if (currentDecision?.id === id) {
+        setCurrentDecision(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete decision on server:', err);
     }
   };
 
@@ -215,19 +237,23 @@ export default function App() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/json';
-    input.onchange = (e: any) => {
+    input.onchange = async (e: any) => {
       const file = e.target.files?.[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const content = event.target?.result as string;
         if (content) {
-          const success = importDecisionsJSON(content);
-          if (success) {
-            const list = getSavedDecisions();
-            setSavedDecisions(list);
-            alert('Decisions successfully imported!');
-          } else {
+          try {
+            const parsed = JSON.parse(content);
+            if (Array.isArray(parsed)) {
+              for (const d of parsed) {
+                await apiSaveDecision(d);
+              }
+              await refreshUserDecisions();
+              alert('Decisions successfully imported into your library!');
+            }
+          } catch (err) {
             alert('Invalid JSON file format.');
           }
         }
@@ -255,6 +281,8 @@ export default function App() {
     <div className="min-h-screen bg-[#FAF8F5] text-stone-900 font-sans selection:bg-amber-200 selection:text-amber-950 flex flex-col overflow-x-hidden">
       {/* HEADER */}
       <Header
+        currentUser={currentUser}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
         onNewDecision={handleNewDecision}
         onOpenHistory={() => setShowHistory(true)}
         onOpenHowItWorks={() => setShowHowItWorks(true)}
@@ -286,42 +314,48 @@ export default function App() {
         />
       )}
 
-      {/* MAIN CONTENT AREA WITH PERSISTENT APPLICATION SIDEBAR SHELL */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[300px_1fr] w-full max-w-[1536px] mx-auto min-h-[calc(100vh-65px)]">
-        {/* Persistent Desktop Sidebar Shell */}
-        <aside className="hidden lg:block border-r border-[#E8E5DF] bg-white sticky top-[65px] h-[calc(100vh-65px)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0">
-          <Sidebar
-            currentDecision={currentDecision}
-            savedDecisions={savedDecisions}
-            activeTab={activeTab}
-            onSelectTab={(tab) => setActiveTab(tab)}
-            onSelectDecision={handleSelectDecision}
-            onNewDecision={handleNewDecision}
-            onOpenHistory={() => setShowHistory(true)}
-            onOpenHowItWorks={() => setShowHowItWorks(true)}
-            onSelectSample={() => handleSelectSample()}
-            savedCount={savedDecisions.length}
-            onExport={handleExport}
-            onImport={handleImport}
-          />
-        </aside>
+      {/* MAIN CONTENT AREA */}
+      <div className="w-full max-w-[1880px] mx-auto px-3 sm:px-5 lg:px-7 xl:px-8 py-4 sm:py-6 flex-1">
+        {currentDecision ? (
+          /* RESULTS DASHBOARD VIEW WITH DEDICATED DESKTOP SIDEBAR */
+          <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] xl:grid-cols-[280px_1fr] gap-6 min-h-[calc(100vh-120px)] items-start">
+            {/* Desktop Navigation Sidebar for Active Decision */}
+            <aside className="hidden lg:block bg-white rounded-2xl border border-[#E8E5DF] sticky top-[80px] h-[calc(100vh-110px)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 shadow-2xs">
+              <Sidebar
+                currentDecision={currentDecision}
+                savedDecisions={savedDecisions}
+                activeTab={activeTab}
+                onSelectTab={(tab) => setActiveTab(tab)}
+                onSelectDecision={handleSelectDecision}
+                onNewDecision={handleNewDecision}
+                onOpenHistory={() => setShowHistory(true)}
+                onOpenHowItWorks={() => setShowHowItWorks(true)}
+                onSelectSample={() => handleSelectSample()}
+                savedCount={savedDecisions.length}
+                onExport={handleExport}
+                onImport={handleImport}
+              />
+            </aside>
 
-        {/* Main Application Workspace */}
-        <main className="flex-1 min-w-0 max-w-full overflow-x-hidden bg-[#FAF8F5] p-4 sm:p-6 lg:p-7">
-          {currentDecision ? (
-            /* RESULTS DASHBOARD VIEW */
-            <ResultsDashboard
-              decision={currentDecision}
-              onUpdateDecision={handleUpdateDecision}
-              onSave={() => {
-                saveDecision(currentDecision);
-                setSavedDecisions(getSavedDecisions());
-              }}
-              onNewDecision={handleNewDecision}
-              initialTab={activeTab}
-            />
-          ) : (
-            /* HOMEPAGE & DECISION WORKSPACE VIEW */
+            {/* Results Canvas */}
+            <main className="flex-1 min-w-0 max-w-full overflow-x-hidden">
+              <ResultsDashboard
+                decision={currentDecision}
+                onUpdateDecision={handleUpdateDecision}
+                onSave={async () => {
+                  if (currentDecision) {
+                    await apiSaveDecision(currentDecision);
+                    await refreshUserDecisions();
+                  }
+                }}
+                onNewDecision={handleNewDecision}
+                initialTab={activeTab}
+              />
+            </main>
+          </div>
+        ) : (
+          /* HOMEPAGE & DECISION STUDIO WORKSPACE */
+          <main className="w-full min-w-0 max-w-full overflow-x-hidden">
             <DecisionWorkspace
               onRunAnalysis={handleRunAnalysis}
               isAnalyzing={isAnalyzing}
@@ -333,12 +367,21 @@ export default function App() {
               onDeleteDecision={handleDeleteDecision}
               onOpenHistory={() => setShowHistory(true)}
             />
-          )}
-        </main>
+          </main>
+        )}
       </div>
 
       {/* FOOTER */}
       <Footer />
+
+      {/* AUTHENTICATION & MULTI-USER PROFILE MODAL */}
+      <AuthModal
+        currentUser={currentUser}
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
+        onLogout={handleLogout}
+      />
 
       {/* DECISION HISTORY DRAWER */}
       {showHistory && (
@@ -414,5 +457,3 @@ export default function App() {
     </div>
   );
 }
-
-

@@ -25,7 +25,15 @@ import {
   Calendar,
   ExternalLink,
 } from 'lucide-react';
-import { DecisionAnalysis, DecisionCategory, ReversibilityLevel, TimeHorizon, ClarificationState } from '../types';
+import {
+  DecisionAnalysis,
+  DecisionCategory,
+  ReversibilityLevel,
+  TimeHorizon,
+  ClarificationState,
+  ClarifyingQuestion,
+} from '../types';
+import { extractAlternativesFromQuestionClient } from '../utils/optionExtractor';
 
 interface DecisionWorkspaceProps {
   onRunAnalysis: (
@@ -125,6 +133,9 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
 
   // AI Decision Clarification local state
   const [clarification, setClarification] = useState<ClarificationState | null>(null);
+  const [clarifyingQuestions, setClarifyingQuestions] = useState<ClarifyingQuestion[]>([]);
+  const [clarifyingAnswers, setClarifyingAnswers] = useState<Record<string, string>>({});
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
   // Interactive Trade-Off Simulator State
   const [simWeights, setSimWeights] = useState({
@@ -176,7 +187,7 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
     }
   };
 
-  const handleProceedToClarification = (e: React.FormEvent) => {
+  const handleProceedToClarification = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -186,32 +197,98 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
     }
 
     const filteredOpts = options.map((o) => o.trim()).filter(Boolean);
-    const optionsUnderstood =
-      filteredOpts.length >= 2
-        ? filteredOpts
-        : ['Option A (Primary alternative)', 'Option B (Status quo / Secondary route)'];
-
-    const generatedClarification: ClarificationState = {
-      decisionSummary: prompt.trim(),
-      optionsUnderstood,
-      keyConstraints: [
-        `Time Horizon: ${timeHorizon}`,
-        `Reversibility: ${reversibility}`,
-        `Category: ${category}`,
-      ],
-      assumptionsIdentified: [
-        `Primary focus is maximizing outcome over ${timeHorizon} timeline`,
-        `Selected priority order reflects core evaluation metrics`,
-      ],
-      missingInfo: [
-        'Specific non-negotiable financial thresholds',
-        'Exact downside worst-case mitigation runway',
-      ],
-      confirmedByUser: false,
-    };
-
-    setClarification(generatedClarification);
+    setIsGeneratingQuestions(true);
     setWorkspaceStep('clarify');
+
+    try {
+      const response = await fetch('/api/clarify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          options: filteredOpts,
+          category,
+          reversibility,
+          timeHorizon,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setClarification(data.clarificationState || {
+          decisionSummary: prompt.trim(),
+          optionsUnderstood: data.options?.map((o: any) => o.title) || (filteredOpts.length >= 2 ? filteredOpts : extractAlternativesFromQuestionClient(prompt.trim())),
+          keyConstraints: [
+            `Time Horizon: ${timeHorizon}`,
+            `Reversibility: ${reversibility}`,
+            `Category: ${category}`,
+          ],
+          assumptionsIdentified: [
+            `Primary focus is maximizing outcome over ${timeHorizon} timeline`,
+            `Selected priority order reflects core evaluation metrics`,
+          ],
+          missingInfo: [],
+          confirmedByUser: false,
+        });
+        setClarifyingQuestions(data.clarifyingQuestions || []);
+        // Initialize default answers if provided
+        const initialAnswers: Record<string, string> = {};
+        (data.clarifyingQuestions || []).forEach((q: ClarifyingQuestion) => {
+          if (q.defaultValue) {
+            initialAnswers[q.id] = q.defaultValue;
+          }
+        });
+        setClarifyingAnswers(initialAnswers);
+      } else {
+        throw new Error('Fallback to local clarification');
+      }
+    } catch (err) {
+      const optionsUnderstood =
+        filteredOpts.length >= 2
+          ? filteredOpts
+          : extractAlternativesFromQuestionClient(prompt.trim());
+
+      const fallbackClarification: ClarificationState = {
+        decisionSummary: prompt.trim(),
+        optionsUnderstood,
+        keyConstraints: [
+          `Time Horizon: ${timeHorizon}`,
+          `Reversibility: ${reversibility}`,
+          `Category: ${category}`,
+        ],
+        assumptionsIdentified: [
+          `Primary focus is maximizing outcome over ${timeHorizon} timeline`,
+          `Selected priority order reflects core evaluation metrics`,
+        ],
+        missingInfo: [
+          'Specific non-negotiable financial thresholds',
+          'Exact downside worst-case mitigation runway',
+        ],
+        confirmedByUser: false,
+      };
+
+      const fallbackQuestions: ClarifyingQuestion[] = [
+        {
+          id: 'q1',
+          question: `What is your single most important priority between ${optionsUnderstood[0] || 'Option 1'} and ${optionsUnderstood[1] || 'Option 2'}?`,
+          type: 'single_select',
+          suggestedAnswers: ['Long-term upside potential', 'Immediate financial safety', 'Autonomy & freedom', 'Skill mastery & learning'],
+          whyItMatters: 'Directly anchors the weighted decision matrix conviction score.',
+        },
+        {
+          id: 'q2',
+          question: 'What is your current risk tolerance or financial runway?',
+          type: 'single_select',
+          suggestedAnswers: ['High (6+ months runway)', 'Moderate (2-5 months runway)', 'Low (Need immediate cash flow)'],
+          whyItMatters: 'Weights the probability and impact of downside operational scenarios.',
+        },
+      ];
+
+      setClarification(fallbackClarification);
+      setClarifyingQuestions(fallbackQuestions);
+    } finally {
+      setIsGeneratingQuestions(false);
+    }
   };
 
   const handleConfirmAndRun = async () => {
@@ -223,7 +300,7 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
       prompt.trim(),
       filteredOptions,
       selectedPriorities,
-      {},
+      clarifyingAnswers,
       category,
       reversibility,
       timeHorizon,
@@ -290,21 +367,69 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
       <div className="bg-white border border-[#E8E5DF] rounded-2xl shadow-sm overflow-hidden text-stone-900">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 divide-y md:divide-y-0 lg:divide-x divide-[#E8E5DF] items-stretch">
           
-          {/* PANEL 1: DECISION CONFIGURATION (Mobile: full, Tablet: col-span-1, Laptop: col-span-3) */}
-          <div className="md:col-span-1 lg:col-span-3 bg-[#FAF7F2] p-5 space-y-5 border-b md:border-b-0 md:border-r border-[#E8E5DF]">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E8E5DF]">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-[#B88E3D]" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2C221E]">
-                  Configuration
+          {/* PANEL 1: DECISION SETUP & CONFIGURATION (Mobile: full, Tablet: col-span-1, Laptop: col-span-3) */}
+          <div className="md:col-span-1 lg:col-span-3 bg-[#FAF7F2] p-5 sm:p-6 space-y-6 border-b md:border-b-0 md:border-r border-[#E8E5DF]">
+            {/* Studio Navigation & Library */}
+            <div className="space-y-2 pb-4 border-b border-[#E8E5DF]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">
+                  Studio Quick Nav
+                </span>
+                <span className="text-[10px] font-mono text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-bold">
+                  v3.7 AI
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-bold">
-                Setup
-              </span>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPrompt('');
+                    setOptions(['', '']);
+                    setSelectedPriorities(['Career Growth', 'Money & Income', 'Time Flexibility']);
+                    setCategory('Career');
+                    setReversibility('Somewhat reversible');
+                    setTimeHorizon('1 year');
+                    setWorkspaceStep('input');
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white hover:bg-[#FAF7F2] border border-[#E8E5DF] hover:border-[#B88E3D] text-xs font-bold text-stone-800 transition-all shadow-2xs cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 text-[#B88E3D]" />
+                  <span>New Dilemma</span>
+                </button>
+
+                {onOpenHistory && (
+                  <button
+                    type="button"
+                    onClick={onOpenHistory}
+                    className="flex items-center justify-between px-3 py-2 rounded-xl bg-white hover:bg-[#FAF7F2] border border-[#E8E5DF] hover:border-[#B88E3D] text-xs font-bold text-stone-800 transition-all shadow-2xs cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <History className="w-3.5 h-3.5 text-[#B88E3D] shrink-0" />
+                      <span className="truncate">Saved</span>
+                    </div>
+                    {savedDecisions && savedDecisions.length > 0 && (
+                      <span className="text-[10px] font-mono font-bold bg-[#2C221E] text-[#D4A338] px-1.5 py-0.2 rounded-full ml-1">
+                        {savedDecisions.length}
+                      </span>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
 
+            {/* Decision Configuration */}
             <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 text-[#B88E3D]" />
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2C221E]">
+                    Context & Scope
+                  </span>
+                </div>
+                <span className="text-[10px] text-stone-400 font-mono">Parameters</span>
+              </div>
+
               {/* Category */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-stone-800">
@@ -564,107 +689,357 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
               )}
 
               {/* STEP 2: AI DECISION CLARIFICATION */}
-              {workspaceStep === 'clarify' && clarification && (
+              {workspaceStep === 'clarify' && (
                 <div className="space-y-6 animate-fadeIn">
-                  <div className="p-5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-4">
-                    <div className="flex items-center gap-3 border-b border-[#E8E5DF] pb-3">
-                      <div className="w-8 h-8 rounded-lg bg-[#2C221E] text-[#D4A338] flex items-center justify-center font-bold shrink-0">
-                        <FileCheck2 className="w-4 h-4 text-[#D4A338]" />
-                      </div>
-                      <div>
-                        <h3 className="font-serif italic text-lg text-[#2C221E] font-bold">
-                          AI Parameters Verified
-                        </h3>
-                        <p className="text-xs text-stone-500">
-                          Confirm or refine parameters before generating full decision intelligence analysis.
+                  {/* Loading State when AI is preparing questions */}
+                  {isGeneratingQuestions ? (
+                    <div className="p-8 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-center space-y-4 shadow-2xs">
+                      <Loader2 className="w-8 h-8 text-[#B88E3D] animate-spin mx-auto" />
+                      <div className="space-y-1">
+                        <h4 className="font-serif italic text-base font-bold text-[#2C221E]">
+                          Formulating Clarifying Questions...
+                        </h4>
+                        <p className="text-xs text-stone-500 max-w-sm mx-auto">
+                          Analyzing options, trade-offs, and critical parameters for "{prompt.slice(0, 40)}..."
                         </p>
                       </div>
                     </div>
-
-                    {/* Options Understood */}
-                    <div className="space-y-2">
-                      <span className="text-xs font-bold text-stone-900 uppercase tracking-wider block">
-                        Identified Options ({clarification.optionsUnderstood.length})
-                      </span>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {clarification.optionsUnderstood.map((optTitle, i) => (
-                          <div
-                            key={i}
-                            className="p-3 rounded-lg bg-white border border-[#E8E5DF] text-xs font-medium text-stone-800 flex items-center justify-between shadow-2xs"
-                          >
-                            <span>
-                              <strong className="text-[#B88E3D]">Option {i + 1}:</strong> {optTitle}
-                            </span>
-                            <Check className="w-3.5 h-3.5 text-[#B88E3D]" />
+                  ) : clarification ? (
+                    <div className="space-y-6">
+                      {/* Summary Header */}
+                      <div className="p-5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-4">
+                        <div className="flex items-center gap-3 border-b border-[#E8E5DF] pb-3">
+                          <div className="w-8 h-8 rounded-lg bg-[#2C221E] text-[#D4A338] flex items-center justify-center font-bold shrink-0">
+                            <FileCheck2 className="w-4 h-4 text-[#D4A338]" />
                           </div>
-                        ))}
+                          <div>
+                            <h3 className="font-serif italic text-lg text-[#2C221E] font-bold">
+                              AI Parameters & Identified Options
+                            </h3>
+                            <p className="text-xs text-stone-500">
+                              Answer the key clarifying questions below to sharpen recommendation conviction, or proceed immediately.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Options Understood */}
+                        <div className="space-y-2">
+                          <span className="text-[10px] font-bold text-stone-900 uppercase tracking-wider block">
+                            Alternatives Understood ({clarification.optionsUnderstood.length})
+                          </span>
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {clarification.optionsUnderstood.map((optTitle, i) => (
+                              <div
+                                key={i}
+                                className="p-3 rounded-lg bg-white border border-[#E8E5DF] text-xs font-medium text-stone-800 flex items-center justify-between shadow-2xs"
+                              >
+                                <span>
+                                  <strong className="text-[#B88E3D]">Option {i + 1}:</strong> {optTitle}
+                                </span>
+                                <Check className="w-3.5 h-3.5 text-[#B88E3D]" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Key Parameters */}
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <span className="px-2.5 py-1 rounded-md bg-white border border-[#E8E5DF] text-[11px] text-stone-700 font-medium">
+                            📁 <strong>Category:</strong> {category}
+                          </span>
+                          <span className="px-2.5 py-1 rounded-md bg-white border border-[#E8E5DF] text-[11px] text-stone-700 font-medium">
+                            ↺ <strong>Reversibility:</strong> {reversibility}
+                          </span>
+                          <span className="px-2.5 py-1 rounded-md bg-white border border-[#E8E5DF] text-[11px] text-stone-700 font-medium">
+                            ⏱ <strong>Time Horizon:</strong> {timeHorizon}
+                          </span>
+                        </div>
                       </div>
+
+                      {/* Interactive Clarifying Questions Section */}
+                      {clarifyingQuestions.length > 0 && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <HelpCircle className="w-4 h-4 text-[#B88E3D]" />
+                              <span className="text-xs font-bold uppercase tracking-wider text-[#2C221E]">
+                                Clarifying Questions ({clarifyingQuestions.length})
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-mono text-stone-400">
+                              Optional Context
+                            </span>
+                          </div>
+
+                          <div className="space-y-4">
+                            {clarifyingQuestions.map((q, idx) => {
+                              const currentVal = clarifyingAnswers[q.id] || '';
+                              const selectedMulti = currentVal ? currentVal.split(', ').filter(Boolean) : [];
+
+                              return (
+                                <div
+                                  key={q.id || idx}
+                                  className="p-4 sm:p-5 rounded-xl bg-white border border-[#E8E5DF] hover:border-[#B88E3D]/50 transition-all space-y-3 shadow-2xs"
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#FAF7F2] text-[#B88E3D] border border-[#E8E5DF]">
+                                          Q{idx + 1}
+                                        </span>
+                                        <h4 className="text-xs sm:text-sm font-bold text-stone-900">
+                                          {q.question}
+                                        </h4>
+                                      </div>
+                                      {q.whyItMatters && (
+                                        <p className="text-[11px] text-stone-500 italic pl-8">
+                                          💡 {q.whyItMatters}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Render Input Based on Question Type */}
+                                  <div className="pl-0 sm:pl-8 space-y-2 pt-1">
+                                    {/* Type: single_select (Default) */}
+                                    {(!q.type || q.type === 'single_select') && q.suggestedAnswers && q.suggestedAnswers.length > 0 && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {q.suggestedAnswers.map((ans, aIdx) => {
+                                          const isSelected = currentVal === ans;
+                                          return (
+                                            <button
+                                              key={aIdx}
+                                              type="button"
+                                              onClick={() =>
+                                                setClarifyingAnswers((prev) => ({
+                                                  ...prev,
+                                                  [q.id]: isSelected ? '' : ans,
+                                                }))
+                                              }
+                                              className={`flex items-center justify-between p-3 rounded-lg border text-xs font-medium transition-all text-left cursor-pointer ${
+                                                isSelected
+                                                  ? 'bg-[#2C221E] text-white border-[#2C221E] shadow-2xs font-semibold'
+                                                  : 'bg-[#FAF7F2] hover:bg-white text-stone-800 border-[#E8E5DF] hover:border-[#B88E3D]'
+                                              }`}
+                                            >
+                                              <span className={isSelected ? 'text-[#D4A338]' : ''}>{ans}</span>
+                                              {isSelected && <Check className="w-4 h-4 text-[#D4A338] shrink-0" />}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+
+                                    {/* Type: multi_select */}
+                                    {q.type === 'multi_select' && q.suggestedAnswers && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {q.suggestedAnswers.map((ans, aIdx) => {
+                                          const isSelected = selectedMulti.includes(ans);
+                                          return (
+                                            <button
+                                              key={aIdx}
+                                              type="button"
+                                              onClick={() => {
+                                                const next = isSelected
+                                                  ? selectedMulti.filter((item) => item !== ans)
+                                                  : [...selectedMulti, ans];
+                                                setClarifyingAnswers((prev) => ({
+                                                  ...prev,
+                                                  [q.id]: next.join(', '),
+                                                }));
+                                              }}
+                                              className={`flex items-center justify-between p-3 rounded-lg border text-xs font-medium transition-all text-left cursor-pointer ${
+                                                isSelected
+                                                  ? 'bg-[#2C221E] text-white border-[#2C221E] shadow-2xs font-semibold'
+                                                  : 'bg-[#FAF7F2] hover:bg-white text-stone-800 border-[#E8E5DF] hover:border-[#B88E3D]'
+                                              }`}
+                                            >
+                                              <span className={isSelected ? 'text-[#D4A338]' : ''}>{ans}</span>
+                                              <div
+                                                className={`w-4 h-4 rounded flex items-center justify-center border text-[10px] ${
+                                                  isSelected
+                                                    ? 'bg-[#B88E3D] border-[#B88E3D] text-white'
+                                                    : 'border-stone-300 bg-white'
+                                                }`}
+                                              >
+                                                {isSelected && '✓'}
+                                              </div>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+
+                                    {/* Type: boolean_yes_no */}
+                                    {q.type === 'boolean_yes_no' && (
+                                      <div className="flex items-center gap-3">
+                                        {['Yes', 'No'].map((opt) => {
+                                          const isSelected = currentVal.toLowerCase() === opt.toLowerCase();
+                                          return (
+                                            <button
+                                              key={opt}
+                                              type="button"
+                                              onClick={() =>
+                                                setClarifyingAnswers((prev) => ({
+                                                  ...prev,
+                                                  [q.id]: opt,
+                                                }))
+                                              }
+                                              className={`px-5 py-2.5 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                                                isSelected
+                                                  ? 'bg-[#2C221E] text-[#D4A338] border-[#2C221E] shadow-2xs'
+                                                  : 'bg-[#FAF7F2] hover:bg-white text-stone-800 border-[#E8E5DF] hover:border-[#B88E3D]'
+                                              }`}
+                                            >
+                                              {opt}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+
+                                    {/* Type: numeric */}
+                                    {q.type === 'numeric' && (
+                                      <div className="flex items-center gap-2 max-w-xs">
+                                        <input
+                                          type="number"
+                                          min={q.validation?.min ?? 0}
+                                          max={q.validation?.max ?? 1000000}
+                                          step={q.validation?.step ?? 1}
+                                          placeholder={q.placeholder || 'e.g. 20'}
+                                          value={currentVal}
+                                          onChange={(e) =>
+                                            setClarifyingAnswers((prev) => ({
+                                              ...prev,
+                                              [q.id]: e.target.value,
+                                            }))
+                                          }
+                                          className="w-full px-3.5 py-2 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-bold text-stone-900 focus:outline-none focus:border-[#B88E3D]"
+                                        />
+                                        {q.unit && (
+                                          <span className="text-xs font-semibold text-stone-600 shrink-0">
+                                            {q.unit}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+
+                                    {/* Type: currency */}
+                                    {q.type === 'currency' && (
+                                      <div className="relative max-w-xs">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">
+                                          $
+                                        </span>
+                                        <input
+                                          type="text"
+                                          placeholder={q.placeholder || 'e.g. 5,000 / month'}
+                                          value={currentVal}
+                                          onChange={(e) =>
+                                            setClarifyingAnswers((prev) => ({
+                                              ...prev,
+                                              [q.id]: e.target.value,
+                                            }))
+                                          }
+                                          className="w-full pl-8 pr-3.5 py-2 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-bold text-stone-900 focus:outline-none focus:border-[#B88E3D]"
+                                        />
+                                      </div>
+                                    )}
+
+                                    {/* Type: text / short_text / long_text */}
+                                    {(q.type === 'short_text' || q.type === 'long_text') && (
+                                      <input
+                                        type="text"
+                                        placeholder={q.placeholder || 'Type your specific detail here...'}
+                                        value={currentVal}
+                                        onChange={(e) =>
+                                          setClarifyingAnswers((prev) => ({
+                                            ...prev,
+                                            [q.id]: e.target.value,
+                                          }))
+                                        }
+                                        className="w-full px-3.5 py-2 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-medium text-stone-900 focus:outline-none focus:border-[#B88E3D]"
+                                      />
+                                    )}
+
+                                    {/* Custom answer option for single_select */}
+                                    {(!q.type || q.type === 'single_select') && (
+                                      <div className="pt-1">
+                                        <input
+                                          type="text"
+                                          placeholder="Or enter custom answer..."
+                                          value={
+                                            q.suggestedAnswers?.includes(currentVal)
+                                              ? ''
+                                              : currentVal
+                                          }
+                                          onChange={(e) =>
+                                            setClarifyingAnswers((prev) => ({
+                                              ...prev,
+                                              [q.id]: e.target.value,
+                                            }))
+                                          }
+                                          className="w-full px-3 py-1.5 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] text-[11px] text-stone-800 placeholder-stone-400 focus:outline-none focus:border-[#B88E3D]"
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Loading State or Submit Button */}
+                      {isAnalyzing ? (
+                        <div className="p-6 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-center space-y-4">
+                          <div className="flex items-center justify-center gap-3">
+                            <Loader2 className="w-5 h-5 text-[#B88E3D] animate-spin" />
+                            <span className="font-serif italic text-base font-medium text-[#2C221E]">
+                              {loadingSteps[loadingStep] || loadingSteps[0]}
+                            </span>
+                          </div>
+
+                          <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden max-w-md mx-auto">
+                            <div
+                              className="bg-[#B88E3D] h-full transition-all duration-700 ease-out"
+                              style={{ width: `${((loadingStep + 1) / 3) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setWorkspaceStep('input')}
+                            className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-white hover:bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-semibold text-stone-700 hover:text-stone-900 transition-colors cursor-pointer"
+                          >
+                            ← Edit Inputs
+                          </button>
+
+                          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
+                            <button
+                              type="button"
+                              onClick={handleConfirmAndRun}
+                              className="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-white hover:bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-bold text-stone-800 hover:text-[#B88E3D] transition-colors cursor-pointer"
+                            >
+                              Skip Questions & Analyze
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={handleConfirmAndRun}
+                              className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 text-xs font-bold uppercase tracking-widest text-white bg-[#2C221E] hover:bg-[#3D312B] rounded-xl shadow-md transition-all group active:scale-[0.99] cursor-pointer border border-[#2C221E]"
+                            >
+                              <Sparkles className="w-4 h-4 text-[#D4A338]" />
+                              <span className="text-[#D4A338]">GENERATE DECISION INTELLIGENCE</span>
+                              <ArrowRight className="w-4 h-4 text-[#D4A338] stroke-[3] group-hover:translate-x-1 transition-transform" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-
-                    {/* Constraints & Missing Info */}
-                    <div className="grid sm:grid-cols-2 gap-3 pt-1">
-                      <div className="p-3 rounded-lg bg-white border border-[#E8E5DF] space-y-1 text-xs">
-                        <span className="font-bold text-stone-900 flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-[#B88E3D]" /> Key Scope
-                        </span>
-                        <ul className="space-y-0.5 text-stone-600 text-[11px]">
-                          <li>• Category: {category}</li>
-                          <li>• Reversibility: {reversibility}</li>
-                          <li>• Horizon: {timeHorizon}</li>
-                        </ul>
-                      </div>
-
-                      <div className="p-3 rounded-lg bg-white border border-[#E8E5DF] space-y-1 text-xs">
-                        <span className="font-bold text-stone-900 flex items-center gap-1">
-                          <HelpCircle className="w-3.5 h-3.5 text-[#B88E3D]" /> Assumptions
-                        </span>
-                        <ul className="space-y-0.5 text-stone-600 text-[11px]">
-                          {clarification.missingInfo.map((m, i) => (
-                            <li key={i}>• {m}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Loading State or Submit Button */}
-                  {isAnalyzing ? (
-                    <div className="p-6 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-center space-y-4">
-                      <div className="flex items-center justify-center gap-3">
-                        <Loader2 className="w-5 h-5 text-[#B88E3D] animate-spin" />
-                        <span className="font-serif italic text-base font-medium text-[#2C221E]">
-                          {loadingSteps[loadingStep] || loadingSteps[0]}
-                        </span>
-                      </div>
-
-                      <div className="w-full bg-stone-200 h-1.5 rounded-full overflow-hidden max-w-md mx-auto">
-                        <div
-                          className="bg-[#B88E3D] h-full transition-all duration-700 ease-out"
-                          style={{ width: `${((loadingStep + 1) / 3) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setWorkspaceStep('input')}
-                        className="px-4 py-2.5 rounded-lg bg-white hover:bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-semibold text-stone-700 hover:text-stone-900 transition-colors cursor-pointer"
-                      >
-                        ← Edit Inputs
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleConfirmAndRun}
-                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 text-xs font-bold uppercase tracking-widest text-white bg-[#2C221E] hover:bg-[#3D312B] rounded-xl shadow-md transition-all group active:scale-[0.99] cursor-pointer border border-[#2C221E]"
-                      >
-                        <Sparkles className="w-4 h-4 text-[#D4A338]" />
-                        <span className="text-[#D4A338]">GENERATE DECISION INTELLIGENCE</span>
-                        <ArrowRight className="w-4 h-4 text-[#D4A338] stroke-[3] group-hover:translate-x-1 transition-transform" />
-                      </button>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               )}
             </div>

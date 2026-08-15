@@ -9,9 +9,14 @@ import {
   Menu,
   X,
   SlidersHorizontal,
+  User as UserIcon,
+  ShieldCheck,
 } from 'lucide-react';
+import { User } from '../types';
 
 interface HeaderProps {
+  currentUser: User | null;
+  onOpenAuth: () => void;
   onNewDecision: () => void;
   onOpenHistory: () => void;
   onOpenHowItWorks: () => void;
@@ -24,6 +29,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  currentUser,
+  onOpenAuth,
   onNewDecision,
   onOpenHistory,
   onOpenHowItWorks,
@@ -38,12 +45,13 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md text-stone-900 border-b border-[#E8E5DF] px-4 sm:px-6 lg:px-8 py-3 transition-all shadow-xs">
-        <div className="max-w-[1800px] mx-auto flex items-center justify-between gap-4">
-          {/* Left Section: Mobile Toggle + Logo & Workspace Indicator */}
-          <div className="flex items-center gap-3.5 min-w-0">
-            {/* Mobile Menu Toggle Button */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md text-stone-900 border-b border-[#E8E5DF] px-3.5 sm:px-6 lg:px-8 py-2.5 sm:py-3 transition-all shadow-xs">
+        <div className="max-w-[1800px] mx-auto flex items-center justify-between gap-2 sm:gap-4">
+          {/* Left Section: Mobile Menu Toggle + Logo & Brand */}
+          <div className="flex items-center gap-2 sm:gap-3.5 min-w-0">
+            {/* Mobile Menu Toggle Button (44px min touch area) */}
             <button
+              type="button"
               onClick={() => {
                 if (onToggleMobileSidebar) {
                   onToggleMobileSidebar();
@@ -51,8 +59,8 @@ export const Header: React.FC<HeaderProps> = ({
                   setMobileMenuOpen(!mobileMenuOpen);
                 }
               }}
-              className="p-1.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg lg:hidden transition-colors shrink-0 cursor-pointer"
-              title="Toggle Menu"
+              className="w-10 h-10 flex items-center justify-center text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-xl lg:hidden transition-colors shrink-0 cursor-pointer"
+              title="Navigation Menu"
               aria-label="Toggle navigation menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -60,27 +68,28 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Logo & Brand Name */}
             <button
+              type="button"
               onClick={onNewDecision}
-              className="flex items-center gap-3 group text-left focus:outline-none shrink-0 cursor-pointer"
+              className="flex items-center gap-2.5 sm:gap-3 group text-left focus:outline-none min-w-0 cursor-pointer"
             >
-              <div className="w-9 h-9 rounded-xl bg-[#2C221E] text-[#D4A338] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-all">
-                <span className="font-serif italic font-extrabold text-xl leading-none">T</span>
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#2C221E] text-[#D4A338] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-all">
+                <span className="font-serif italic font-extrabold text-lg sm:text-xl leading-none">T</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-serif italic text-base sm:text-xl font-bold tracking-tight text-[#2C221E] group-hover:text-[#B88E3D] transition-colors">
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <span className="font-serif italic text-base sm:text-xl font-bold tracking-tight text-[#2C221E] group-hover:text-[#B88E3D] transition-colors truncate">
                   Tie Breaker
                 </span>
-                <span className="hidden xs:inline-block px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-widest bg-amber-100 text-amber-900 border border-amber-300 rounded-md">
+                <span className="hidden xs:inline-block px-1.5 sm:px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-widest bg-amber-100 text-amber-900 border border-amber-300 rounded-md shrink-0">
                   Studio
                 </span>
               </div>
             </button>
 
-            {/* Active Workspace Title Indicator if available (Tablet & Desktop) */}
+            {/* Active Workspace Title Indicator (Tablet & Desktop only) */}
             {currentDecisionTitle && (
               <div className="hidden md:flex items-center gap-2 pl-4 ml-1 border-l border-[#E8E5DF] min-w-0">
                 <SlidersHorizontal className="w-3.5 h-3.5 text-[#B88E3D] shrink-0" />
-                <span className="text-xs font-serif italic text-stone-700 font-medium max-w-[200px] lg:max-w-md truncate">
+                <span className="text-xs font-serif italic text-stone-700 font-medium max-w-[180px] lg:max-w-md truncate">
                   {currentDecisionTitle}
                 </span>
               </div>
@@ -88,9 +97,10 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Right Action Controls */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            {/* Samples (Hidden on mobile) */}
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            {/* Desktop Only: Samples */}
             <button
+              type="button"
               onClick={onSelectSample}
               className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-[#FAF7F2] hover:bg-[#F4F1EA] border border-[#E8E5DF] rounded-xl transition-all shadow-2xs cursor-pointer"
             >
@@ -98,8 +108,9 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Samples</span>
             </button>
 
-            {/* Methodology (Hidden on mobile) */}
+            {/* Desktop Only: Methodology */}
             <button
+              type="button"
               onClick={onOpenHowItWorks}
               className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-[#FAF7F2] hover:bg-[#F4F1EA] border border-[#E8E5DF] rounded-xl transition-all shadow-2xs cursor-pointer"
             >
@@ -107,14 +118,15 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Methodology</span>
             </button>
 
-            {/* Library / History Button */}
+            {/* Desktop Only: Library */}
             <button
+              type="button"
               onClick={onOpenHistory}
-              className="relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-[#FAF7F2] hover:bg-[#F4F1EA] border border-[#E8E5DF] rounded-xl transition-all shadow-2xs cursor-pointer"
+              className="hidden sm:flex relative items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-[#FAF7F2] hover:bg-[#F4F1EA] border border-[#E8E5DF] rounded-xl transition-all shadow-2xs cursor-pointer"
               title="Saved Decision Library"
             >
               <History className="w-3.5 h-3.5 text-[#B88E3D]" />
-              <span className="hidden sm:inline">Library</span>
+              <span>Library</span>
               {savedCount > 0 && (
                 <span className="bg-[#2C221E] text-[#D4A338] font-mono font-extrabold px-1.5 py-0.2 rounded-full text-[10px] min-w-[18px] text-center">
                   {savedCount}
@@ -122,9 +134,10 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
-            {/* Backup / Export Import (Desktop) */}
-            <div className="hidden lg:flex items-center border-l border-[#E8E5DF] pl-2 ml-0.5 gap-1">
+            {/* Backup / Export Import (Large Desktop) */}
+            <div className="hidden xl:flex items-center border-l border-[#E8E5DF] pl-2 ml-0.5 gap-1">
               <button
+                type="button"
                 onClick={onExport}
                 title="Export Decisions JSON"
                 className="p-1.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
@@ -132,6 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <Download className="w-3.5 h-3.5" />
               </button>
               <button
+                type="button"
                 onClick={onImport}
                 title="Import Decisions JSON"
                 className="p-1.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors cursor-pointer"
@@ -140,46 +154,84 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
 
-            {/* New Decision Button */}
+            {/* User Account / Multi-User Switcher (Comfortable >=44px mobile touch target) */}
             <button
+              type="button"
+              onClick={onOpenAuth}
+              className="flex items-center justify-center gap-2 min-h-[40px] px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-xl border border-[#E8E5DF] bg-[#FAF7F2] hover:bg-[#F4F1EA] hover:border-[#B88E3D] text-stone-800 transition-all cursor-pointer shadow-2xs"
+              title="Account Profile & Switcher"
+              aria-label="Account and Profile"
+            >
+              <div className="w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-[#2C221E] text-[#D4A338] flex items-center justify-center text-[10px] font-bold shrink-0">
+                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : <UserIcon className="w-3.5 h-3.5 sm:w-3 sm:h-3 text-[#D4A338]" />}
+              </div>
+              <span className="hidden sm:inline max-w-[100px] lg:max-w-[130px] truncate">
+                {currentUser?.name ? currentUser.name.split(' ')[0] : 'Sign In'}
+              </span>
+              <ShieldCheck className="w-3.5 h-3.5 text-[#B88E3D] hidden md:inline shrink-0" />
+            </button>
+
+            {/* Desktop Only: New Decision Primary Action */}
+            <button
+              type="button"
               onClick={onNewDecision}
-              className="flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 bg-[#2C221E] hover:bg-[#3D312B] text-white rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-xs active:scale-[0.98] group cursor-pointer border border-[#2C221E]"
+              className="hidden sm:flex items-center gap-1.5 px-3.5 sm:px-4 py-2 bg-[#2C221E] hover:bg-[#3D312B] text-white rounded-xl font-bold text-xs tracking-wider uppercase transition-all shadow-xs active:scale-[0.98] group cursor-pointer border border-[#2C221E]"
             >
               <Plus className="w-3.5 h-3.5 text-[#D4A338] stroke-[3] group-hover:rotate-90 transition-transform duration-300" />
-              <span className="hidden sm:inline">New Decision</span>
-              <span className="sm:hidden">New</span>
+              <span>New Decision</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Mobile Dropdown Menu Sheet (if mobileMenuOpen is true and sidebar toggle wasn't supplied) */}
+      {/* Mobile Dropdown Menu Drawer */}
       {mobileMenuOpen && !onToggleMobileSidebar && (
-        <div className="lg:hidden fixed inset-x-0 top-[53px] z-20 bg-white/98 backdrop-blur-md border-b border-[#E8E5DF] shadow-xl p-4 animate-fadeIn">
-          <div className="space-y-2">
+        <div className="lg:hidden fixed inset-x-0 top-[55px] z-40 bg-white border-b border-[#E8E5DF] shadow-2xl p-4 animate-fadeIn">
+          <div className="space-y-2.5 max-w-lg mx-auto">
+            {/* Primary Mobile Action: New Decision */}
             <button
+              type="button"
               onClick={() => {
                 onNewDecision();
                 setMobileMenuOpen(false);
               }}
-              className="w-full flex items-center justify-between p-3 rounded-xl bg-[#2C221E] text-white font-bold text-xs uppercase tracking-wider shadow-xs"
+              className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#2C221E] text-white font-bold text-xs uppercase tracking-wider shadow-sm active:scale-[0.99] cursor-pointer border border-[#2C221E]"
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2.5">
                 <Plus className="w-4 h-4 text-[#D4A338] stroke-[3]" />
-                New Decision
+                <span className="text-[#D4A338]">Start New Decision</span>
               </span>
+              <span className="text-[10px] text-stone-300 font-mono">Workspace</span>
             </button>
 
+            {/* User Account Profile */}
             <button
+              type="button"
+              onClick={() => {
+                onOpenAuth();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200 text-stone-900 font-bold text-xs cursor-pointer"
+            >
+              <span className="flex items-center gap-2.5">
+                <UserIcon className="w-4 h-4 text-[#B88E3D]" />
+                {currentUser?.name ? `Account: ${currentUser.name}` : 'Sign In / Register'}
+              </span>
+              <span className="text-[10px] text-[#B88E3D] font-mono font-semibold">Private Library</span>
+            </button>
+
+            {/* Decision Library */}
+            <button
+              type="button"
               onClick={() => {
                 onOpenHistory();
                 setMobileMenuOpen(false);
               }}
-              className="w-full flex items-center justify-between p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-semibold text-stone-800 hover:text-stone-900"
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-semibold text-stone-800 hover:text-stone-900 cursor-pointer"
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2.5">
                 <History className="w-4 h-4 text-[#B88E3D]" />
-                Saved Decision Library
+                Saved Decisions
               </span>
               {savedCount > 0 && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#2C221E] text-[#D4A338]">
@@ -188,49 +240,58 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </button>
 
+            {/* Prebuilt Samples */}
             <button
+              type="button"
               onClick={() => {
                 onSelectSample();
                 setMobileMenuOpen(false);
               }}
-              className="w-full flex items-center gap-2 p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-semibold text-stone-800 hover:text-stone-900"
+              className="w-full flex items-center justify-between p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-semibold text-stone-800 hover:text-stone-900 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-[#B88E3D]" />
-              Sample Analyses
+              <span className="flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-[#B88E3D]" />
+                Sample Scenarios
+              </span>
+              <span className="text-[10px] font-mono text-stone-500">4 pre-built</span>
             </button>
 
+            {/* Decision Methodology */}
             <button
+              type="button"
               onClick={() => {
                 onOpenHowItWorks();
                 setMobileMenuOpen(false);
               }}
-              className="w-full flex items-center gap-2 p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-semibold text-stone-800 hover:text-stone-900"
+              className="w-full flex items-center gap-2.5 p-3 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-semibold text-stone-800 hover:text-stone-900 cursor-pointer"
             >
               <HelpCircle className="w-4 h-4 text-stone-500" />
-              Decision Methodology
+              <span>Decision Methodology (MCDA)</span>
             </button>
 
-            <div className="pt-2 flex items-center justify-between border-t border-[#E8E5DF] text-xs text-stone-700">
+            {/* Export / Import Mobile Controls */}
+            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#E8E5DF]">
               <button
+                type="button"
                 onClick={() => {
                   onExport();
                   setMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] font-semibold text-stone-800 hover:text-stone-900"
+                className="flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white border border-[#E8E5DF] text-[11px] font-semibold text-stone-700 cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5 text-[#B88E3D]" />
-                Export JSON
+                <Download className="w-3.5 h-3.5 text-stone-500" />
+                <span>Export JSON</span>
               </button>
-
               <button
+                type="button"
                 onClick={() => {
                   onImport();
                   setMobileMenuOpen(false);
                 }}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] font-semibold text-stone-800 hover:text-stone-900"
+                className="flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-white border border-[#E8E5DF] text-[11px] font-semibold text-stone-700 cursor-pointer"
               >
-                <Upload className="w-3.5 h-3.5 text-[#B88E3D]" />
-                Import JSON
+                <Upload className="w-3.5 h-3.5 text-stone-500" />
+                <span>Import JSON</span>
               </button>
             </div>
           </div>
@@ -239,5 +300,3 @@ export const Header: React.FC<HeaderProps> = ({
     </>
   );
 };
-
-

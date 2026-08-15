@@ -34,12 +34,39 @@ export interface Option {
   addedAt?: string;
 }
 
+export type ClarifyingQuestionType =
+  | 'single_select'
+  | 'multi_select'
+  | 'yes_no'
+  | 'numeric'
+  | 'currency'
+  | 'short_text'
+  | 'long_text';
+
+export interface ClarifyingQuestionOption {
+  id: string;
+  label: string;
+  description?: string;
+}
+
 export interface ClarifyingQuestion {
   id: string;
   question: string;
-  suggestedAnswers: string[];
-  userAnswer?: string;
+  type?: ClarifyingQuestionType;
+  options?: ClarifyingQuestionOption[] | string[];
+  suggestedAnswers?: string[]; // for backward compatibility
+  userAnswer?: string | string[];
   whyItMatters?: string;
+  unit?: string;
+  min?: number;
+  max?: number;
+  placeholder?: string;
+  defaultValue?: string;
+  validation?: {
+    min?: number;
+    max?: number;
+    step?: number;
+  };
 }
 
 export interface ClarificationState {
@@ -48,6 +75,8 @@ export interface ClarificationState {
   keyConstraints: string[];
   assumptionsIdentified: string[];
   missingInfo: string[];
+  clarifyingQuestions?: ClarifyingQuestion[];
+  clarifyingAnswers?: Record<string, string | string[]>;
   confirmedByUser: boolean;
 }
 
@@ -155,6 +184,14 @@ export interface AISuggestedAlternative {
   isAdded?: boolean;
 }
 
+export interface ReconsiderationTrigger {
+  id?: string;
+  factor: string;
+  condition: string;
+  impact: string;
+  urgency?: 'Immediate' | 'Within 30 days' | 'Quarterly Review';
+}
+
 export interface Recommendation {
   recommendedOptionId: string;
   recommendedOptionTitle: string;
@@ -164,7 +201,8 @@ export interface Recommendation {
   confidenceLevel: 'High' | 'Moderate' | 'Low';
   confidenceReason?: string;
   whyNotOptions?: Record<string, string>; // optionId -> reason lost
-  reversalConditions?: string[]; // "What would make you change your mind?"
+  reversalConditions?: string[]; // "When should you reconsider?"
+  reconsiderationTriggers?: ReconsiderationTrigger[];
   opportunityCosts?: Record<string, string>; // optionId -> cost description
 }
 
@@ -241,10 +279,23 @@ export interface DecisionAnalysis {
   customNotes?: string;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
+
 export interface FollowUpMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
 }
+
 

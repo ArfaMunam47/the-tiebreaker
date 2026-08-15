@@ -12,17 +12,16 @@
 
 ## Overview
 
-The Tiebreaker helps users make better decisions through systematic, AI-driven analysis. It evaluates options, identifies biases, assesses risks, and reveals hidden assumptions—without making the decision for you.
+The Tiebreaker is a sophisticated decision intelligence platform that helps users make better choices through systematic, AI-driven analysis. It evaluates options, identifies biases, assesses risks, and reveals hidden assumptions—without making the decision for you.
 
 **Core Principle:** "Don't decide for me. Help me decide better."
 
 ---
 
-## Features
+## Key Features
 
 ### Decision Analysis
 - Multi-option evaluation with weighted decision matrices
-- Decision metadata (category, reversibility, time horizon)
 - AI-generated clarifying questions with suggested answers
 - Evidence classification (FACT, ASSUMPTION, INTERPRETATION, UNKNOWN)
 - Comprehensive pros/cons analysis with weighted factors
@@ -46,6 +45,7 @@ The Tiebreaker helps users make better decisions through systematic, AI-driven a
 - Confidence level evaluation based on information completeness
 
 ### Decision Management
+- Multi-user authentication with persistent accounts
 - Local storage with persistent history
 - Journal entries and outcome tracking
 - Version history for decision iterations
@@ -53,7 +53,6 @@ The Tiebreaker helps users make better decisions through systematic, AI-driven a
 - Status tracking (draft, clarifying, analyzed, decided)
 - Decision pattern analysis across saved decisions
 - Sample decision library for learning
-- Favorite decisions and custom notes
 
 ---
 
@@ -74,9 +73,9 @@ The Tiebreaker helps users make better decisions through systematic, AI-driven a
 │                    │ Navigation    │                   │
 │                    └───────────────┘                   │
 └─────────────────────────────────────────────────────────┘
-                             │
-                             │ HTTP/REST API
-                             ▼
+                              │
+                              │ HTTP/REST API
+                              ▼
 ┌─────────────────────────────────────────────────────────┐
 │              Backend (Express + TypeScript)              │
 │  ┌────────────────┐  ┌──────────────────────────┐      │
@@ -194,7 +193,7 @@ npm run clean    # Clean build directory
    - Review AI-suggested alternatives
 
 5. **Track and Iterate**
-   - Save decisions to local history
+   - Save decisions to your personal library
    - Add journal entries and track outcomes
    - Export/import decisions as JSON
    - Update outcomes and lessons learned
@@ -462,5 +461,3 @@ If you have questions, feedback, or need help:
 - Powered by [Google Gemini AI](https://ai.google.dev/)
 - Styled with [Tailwind CSS](https://tailwindcss.com/)
 - Icons by [Lucide](https://lucide.dev/)
-
----
