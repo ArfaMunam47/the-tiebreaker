@@ -12,6 +12,7 @@ import {
   BookOpen,
   HelpCircle,
   AlertCircle,
+  AlertTriangle,
   FileCheck2,
   Shield,
   BarChart3,
@@ -48,6 +49,8 @@ interface DecisionWorkspaceProps {
   ) => Promise<void>;
   isAnalyzing: boolean;
   loadingStep: number; // 0, 1, 2
+  analysisError?: string | null;
+  onClearAnalysisError?: () => void;
   onOpenTemplates?: () => void;
   onOpenHowItWorks?: () => void;
   onSelectSample?: (sampleId?: string) => void;
@@ -104,6 +107,8 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
   onRunAnalysis,
   isAnalyzing,
   loadingStep,
+  analysisError,
+  onClearAnalysisError,
   onOpenTemplates,
   onOpenHowItWorks,
   onSelectSample,
@@ -986,6 +991,37 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
                                 </div>
                               );
                             })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Error Alert with Try Again */}
+                      {analysisError && !isAnalyzing && (
+                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-stone-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn">
+                          <div className="flex items-start gap-2.5">
+                            <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-xs font-bold text-amber-900">Analysis Notice</p>
+                              <p className="text-xs text-amber-800">{analysisError}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                            {onClearAnalysisError && (
+                              <button
+                                type="button"
+                                onClick={onClearAnalysisError}
+                                className="px-3 py-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer"
+                              >
+                                Dismiss
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={handleConfirmAndRun}
+                              className="px-4 py-1.5 text-xs font-bold text-white bg-[#2C221E] hover:bg-[#3D312B] rounded-lg shadow-xs transition-colors cursor-pointer"
+                            >
+                              Try Again
+                            </button>
                           </div>
                         </div>
                       )}

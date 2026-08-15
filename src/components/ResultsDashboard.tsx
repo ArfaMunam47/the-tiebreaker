@@ -607,9 +607,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             </button>
 
             <button
-              onClick={handlePrintReport}
+              onClick={() => setIsExportModalOpen(true)}
               className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider bg-white hover:bg-[#FAF7F2] text-stone-800 border border-[#E8E5DF] hover:border-[#B88E3D] rounded-lg transition-all shadow-2xs cursor-pointer"
-              title="Print or Export PDF"
+              title="Print or Export PDF / Markdown / HTML"
             >
               <Printer className="w-4 h-4 text-stone-500" />
               <span className="hidden sm:inline">Export Report</span>

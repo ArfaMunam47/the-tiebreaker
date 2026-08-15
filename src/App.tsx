@@ -33,6 +33,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   // Request cancellation and race condition tracking
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -126,6 +127,7 @@ export default function App() {
 
     setIsAnalyzing(true);
     setLoadingStep(0);
+    setAnalysisError(null);
 
     const stepTimer1 = setTimeout(() => setLoadingStep(1), 1200);
     const stepTimer2 = setTimeout(() => setLoadingStep(2), 2400);
@@ -161,6 +163,7 @@ export default function App() {
       await refreshUserDecisions();
       setCurrentDecision(analysisResult);
       setActiveTab('overview');
+      setAnalysisError(null);
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error: any) {
@@ -169,8 +172,8 @@ export default function App() {
         return;
       }
 
-      console.error('Analysis failed, using resilient fallback analysis:', error);
-      // Fallback result will have been saved by server or can be structured here
+      console.error('Analysis failed:', error);
+      setAnalysisError(error.message || 'Failed to complete analysis. Please try again.');
       await refreshUserDecisions();
     } finally {
       clearTimeout(stepTimer1);
@@ -360,6 +363,8 @@ export default function App() {
               onRunAnalysis={handleRunAnalysis}
               isAnalyzing={isAnalyzing}
               loadingStep={loadingStep}
+              analysisError={analysisError}
+              onClearAnalysisError={() => setAnalysisError(null)}
               onOpenHowItWorks={() => setShowHowItWorks(true)}
               onSelectSample={handleSelectSample}
               savedDecisions={savedDecisions}

@@ -453,15 +453,16 @@ export async function analyzeDecisionWithProviders(input: AnalysisInput): Promis
       const systemPrompt = `You are "The Tiebreaker", an elite decision intelligence engine.
 Analyze the user's dilemma with rigorous multi-criteria decision analysis (MCDA).
 CRITICAL DIRECTIVES:
-1. PRESCRIPTIVE RECOMMENDATION: You MUST ALWAYS formulate the recommendation using clear, direct guidance: "You should choose [Option] because..." or "Based on your stated priorities, you should choose [Option]...".
+1. PRESCRIPTIVE RECOMMENDATION: You MUST ALWAYS formulate the recommendation using clear, direct guidance: "You should choose [Option Title] because..." or "Based on your stated priorities, you should choose [Option Title]...".
 2. ABSOLUTE PROHIBITION OF FIRST-PERSON PRONOUNS: You are STRICTLY FORBIDDEN from using the first-person pronoun "I", "my", "me", "we", or "our" anywhere in your generated text. (Never say "I recommend", "I think", "I suggest", "I believe", "In my opinion", "I analyzed", etc.). Speak with objective, authoritative second-person analysis ("You should choose...", "Your primary advantage is...", "This option provides you with...").
-3. NO HALLUCINATED OR UNVERIFIABLE PREDICTIONS: Ground all analysis, scoring, SWOT, and risk assessments strictly in the user's dilemma, options, constraints, and answers.
-4. Always evaluate the specific extracted options: ${JSON.stringify(derived.map((d) => d.title))}.
-5. Use the user's clarifying answers: ${JSON.stringify(input.clarifyingAnswers || {})}.
-6. Calculate honest, differentiated weighted scores (1-10) reflecting real trade-offs.
-7. Provide contextual pros and cons directly tied to their specific situation, not generic filler.
-8. In reversalConditions & reconsiderationTriggers, express clear, actionable triggers in plain language (e.g. "If weekly study hours fall below 15", "If cash runway dips under $3,000").
-9. In mainReasons, start with: "You should choose [Option] because..."`;
+3. NEVER REPEAT THE DILEMMA / FULL QUESTION AS THE RECOMMENDATION: recommendedOptionTitle MUST be the exact short title of ONE specific choice (e.g., "${derived[0]?.title || 'Option 1'}" or "${derived[1]?.title || 'Option 2'}"), NEVER the full user dilemma question.
+4. NO HALLUCINATED OR UNVERIFIABLE PREDICTIONS: Ground all analysis, scoring, SWOT, and risk assessments strictly in the user's dilemma, options, constraints, and answers.
+5. Always evaluate the specific extracted options: ${JSON.stringify(derived.map((d) => d.title))}.
+6. Use the user's clarifying answers: ${JSON.stringify(input.clarifyingAnswers || {})}.
+7. Calculate honest, differentiated weighted scores (1-10) reflecting real trade-offs.
+8. Provide contextual pros and cons directly tied to their specific situation, not generic filler.
+9. In reversalConditions & reconsiderationTriggers, express clear, actionable triggers in plain language (e.g. "If weekly study hours fall below 15", "If cash runway dips under $3,000").
+10. In mainReasons, start with: "You should choose [Option Title] because..."`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-3.7-flash',
@@ -501,6 +502,24 @@ Time Horizon: ${input.timeHorizon || '1 year'}`,
         const matchedRecOpt = parsedOptions.find((o: any) => o.id === recId) || parsedOptions[0];
         rec.recommendedOptionId = matchedRecOpt.id;
         rec.recommendedOptionTitle = matchedRecOpt.title;
+
+        // Sanitize mainReasons to remove any accidental first-person speech or prompt repetition
+        if (Array.isArray(rec.mainReasons) && rec.mainReasons.length > 0) {
+          rec.mainReasons = rec.mainReasons.map((reason: string) => {
+            let sanitized = String(reason)
+              .replace(/\b(I recommend|I think|I suggest|I believe|In my opinion|I analyzed|I have determined|we recommend|we suggest)\b/gi, 'You should choose')
+              .replace(/\b(my recommendation is|our recommendation is)\b/gi, 'your optimal choice is');
+            if (cleanPrompt.length > 15 && sanitized.includes(cleanPrompt)) {
+              sanitized = sanitized.split(cleanPrompt).join(matchedRecOpt.title);
+            }
+            return sanitized;
+          });
+        } else {
+          rec.mainReasons = [
+            `You should choose ${matchedRecOpt.title} because it delivers the strongest alignment with your core priorities and highest long-term trajectory.`,
+            `Multi-criteria analysis indicates ${matchedRecOpt.title} maximizes upside while maintaining sustainable operational risk over a ${input.timeHorizon || '1 year'} horizon.`
+          ];
+        }
 
         // Build whyNotOptions map
         const whyNotMap: Record<string, string> = {};

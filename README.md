@@ -46,13 +46,14 @@ The Tiebreaker is a sophisticated decision intelligence platform that helps user
 
 ### Decision Management
 - Multi-user authentication with persistent accounts
-- Local storage with persistent history
+- Personal decision library with persistent storage
 - Journal entries and outcome tracking
 - Version history for decision iterations
 - Export/Import JSON backup
 - Status tracking (draft, clarifying, analyzed, decided)
 - Decision pattern analysis across saved decisions
 - Sample decision library for learning
+- Demo mode for instant exploration
 
 ---
 
@@ -73,21 +74,31 @@ The Tiebreaker is a sophisticated decision intelligence platform that helps user
 │                    │ Navigation    │                   │
 │                    └───────────────┘                   │
 └─────────────────────────────────────────────────────────┘
-                              │
-                              │ HTTP/REST API
-                              ▼
+                               │
+                               │ HTTP/REST API
+                               ▼
 ┌─────────────────────────────────────────────────────────┐
 │              Backend (Express + TypeScript)              │
 │  ┌────────────────┐  ┌──────────────────────────┐      │
 │  │  /api/analyze  │  │  /api/think-deeper-chat  │      │
 │  │  (AI Analysis) │  │  (Follow-up Exploration) │      │
 │  └────────────────┘  └──────────────────────────┘      │
+│  ┌────────────────┐  ┌──────────────────────────┐      │
+│  │ /api/clarify   │  │    /api/options          │      │
+│  │ (Questions)    │  │  (Option Extraction)     │      │
+│  └────────────────┘  └──────────────────────────┘      │
+│                            │                            │
+│  ┌──────────────────────────────────────────┐          │
+│  │  Authentication & Decision Library API   │          │
+│  │  - /api/auth/register, login, demo       │          │
+│  │  - /api/decisions (CRUD operations)      │          │
+│  └──────────────────────────────────────────┘          │
 │                            │                            │
 │                            ▼                            │
 │                  ┌──────────────────┐                   │
 │                  │  Google Gemini   │                   │
 │                  │   AI (gemini-    │                   │
-│                  │    3.6-flash)    │                   │
+│                  │    3.7-flash)    │                   │
 │                  └──────────────────┘                   │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -106,9 +117,10 @@ The Tiebreaker is a sophisticated decision intelligence platform that helps user
 
 ### Backend
 - **Express.js 4.21** - REST API server
-- **Google Gemini AI** - LLM for decision analysis (gemini-3.6-flash)
+- **Google Gemini AI** - LLM for decision analysis (gemini-3.7-flash)
 - **TypeScript** - Type-safe server code
 - **Vite** - Development middleware integration
+- **SQLite** - Local database for user decisions
 
 ---
 
@@ -212,7 +224,87 @@ The application includes pre-built sample analyses to help you understand the pl
 
 ## API Documentation
 
-### Endpoints
+### Authentication Endpoints
+
+#### `POST /api/auth/register`
+Create a new user account.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword",
+  "name": "John Doe"
+}
+```
+
+**Response:**
+```json
+{
+  "user": {
+    "id": "user_123",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "createdAt": "2025-01-15T10:30:00.000Z"
+  },
+  "token": "jwt_token_here"
+}
+```
+
+#### `POST /api/auth/login`
+Authenticate user and receive session token.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword"
+}
+```
+
+#### `POST /api/auth/demo`
+Instant demo login for exploration.
+
+**Request Body:**
+```json
+{
+  "profile": "user_a"
+}
+```
+
+#### `GET /api/auth/users`
+List all demo users for quick switching.
+
+### Decision Management Endpoints
+
+#### `GET /api/decisions`
+Get all decisions for authenticated user.
+
+**Headers:** `Authorization: Bearer <token>`
+
+#### `GET /api/decisions/:id`
+Get specific decision by ID.
+
+#### `POST /api/decisions`
+Save a new decision analysis.
+
+**Request Body:**
+```json
+{
+  "analysis": {
+    "id": "dec_1234567890_abc123",
+    "title": "Career Path Decision",
+    "summary": "Executive summary...",
+    "options": [...],
+    "recommendation": {...}
+  }
+}
+```
+
+#### `DELETE /api/decisions/:id`
+Delete a decision by ID.
+
+### Analysis Endpoints
 
 #### `POST /api/analyze`
 Performs comprehensive AI-powered decision analysis.
@@ -263,6 +355,37 @@ Performs comprehensive AI-powered decision analysis.
   "createdAt": "2025-01-15T10:30:00.000Z",
   "updatedAt": "2025-01-15T10:30:00.000Z",
   "status": "analyzed"
+}
+```
+
+#### `POST /api/clarify`
+Generate clarifying questions for a decision.
+
+**Request Body:**
+```json
+{
+  "prompt": "Should I accept a startup offer?",
+  "options": ["Join Startup", "CS Degree"],
+  "category": "Career",
+  "reversibility": "Somewhat reversible",
+  "timeHorizon": "2 years"
+}
+```
+
+#### `POST /api/options`
+Extract options from a decision question.
+
+**Request Body:**
+```json
+{
+  "question": "Should I work at a startup or big tech?"
+}
+```
+
+**Response:**
+```json
+{
+  "options": ["Work at Startup", "Work at Big Tech Company"]
 }
 ```
 
@@ -327,26 +450,36 @@ Health check endpoint.
 the-tiebreaker/
 ├── src/
 │   ├── components/          # React components
-│   │   ├── Header.tsx
-│   │   ├── Hero.tsx
-│   │   ├── DecisionWorkspace.tsx
-│   │   ├── ResultsDashboard.tsx
-│   │   ├── DecisionHistory.tsx
-│   │   ├── HowItWorksModal.tsx
-│   │   ├── Sidebar.tsx
-│   │   └── Footer.tsx
+│   │   ├── AuthModal.tsx           # User authentication modal
+│   │   ├── DecisionWorkspace.tsx   # Main decision input interface
+│   │   ├── ResultsDashboard.tsx    # Analysis results display
+│   │   ├── DecisionHistory.tsx     # Saved decisions library
+│   │   ├── ExportReportModal.tsx   # Export functionality
+│   │   ├── Header.tsx              # Application header
+│   │   ├── Hero.tsx                # Landing page hero
+│   │   ├── HowItWorksModal.tsx     # Tutorial modal
+│   │   ├── Sidebar.tsx             # Navigation sidebar
+│   │   └── Footer.tsx              # Application footer
 │   ├── data/               # Sample data and constants
-│   │   ├── sampleDecisions.ts
-│   │   └── decisionTemplates.ts
+│   │   ├── sampleDecisions.ts      # Pre-built decision examples
+│   │   └── decisionTemplates.ts    # Decision templates
 │   ├── utils/              # Utility functions
-│   │   ├── storage.ts      # Local storage management
-│   │   └── decisionEngine.ts # Scoring, sensitivity, confidence calculations
+│   │   ├── api.ts                  # API client functions
+│   │   ├── decisionEngine.ts       # Scoring, sensitivity, confidence
+│   │   ├── optionExtractor.ts      # Option extraction logic
+│   │   └── storage.ts              # Local storage management
 │   ├── types.ts            # TypeScript type definitions
 │   ├── App.tsx             # Main application component
 │   ├── main.tsx            # Application entry point
 │   └── index.css           # Global styles
+├── server/                 # Backend server modules
+│   ├── aiProvider.ts       # Google Gemini AI integration
+│   ├── db.ts               # SQLite database operations
+│   └── optionExtractor.ts  # Option extraction service
 ├── assets/                 # Static assets
-├── server.ts               # Express backend server
+├── data/                   # Data storage
+│   └── database.json       # SQLite database file
+├── server.ts               # Express backend server entry
 ├── package.json            # Dependencies and scripts
 ├── tsconfig.json           # TypeScript configuration
 ├── vite.config.ts          # Vite configuration
@@ -395,6 +528,9 @@ We welcome contributions! Please follow these steps:
 - [ ] Test sensitivity analysis
 - [ ] Test on mobile viewport
 - [ ] Verify fallback analysis when API is unavailable
+- [ ] Test user registration and login
+- [ ] Test demo mode instant login
+- [ ] Test decision persistence across sessions
 
 ---
 
@@ -413,6 +549,10 @@ We welcome contributions! Please follow these steps:
 - **Solution**: Check your API key validity and internet connection
 - Review server logs for detailed error messages
 
+**Issue**: Decisions not persisting
+- **Solution**: Ensure you're logged in (decisions are user-specific)
+- Check that the `data/database.json` file is writable
+
 ---
 
 ## Roadmap
@@ -426,6 +566,8 @@ We welcome contributions! Please follow these steps:
 - [ ] Team decision workflows
 - [ ] Historical outcome tracking and learning
 - [ ] Decision pattern insights and recommendations
+- [ ] Offline mode with local AI models
+- [ ] Decision sharing and collaboration
 
 ---
 
