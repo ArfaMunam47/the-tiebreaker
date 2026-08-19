@@ -335,3 +335,183 @@ wc -l README.md
 13 | - **Reversal Test**: Evaluate decisions from the lens of option removal
 14 | - **Risk Analysis**: Breakdown of uncertainties, consequences, and mitigation
 15 | - **Export Options**: JSON export
+16 | - **Actionable Next Steps**: Clear action items with deadlines
+
+---
+
+## Quick Start 💨
+
+### Prerequisites
+- Node.js 18+ (Node 20+ recommended)
+- npm or yarn
+
+### 1. Clone & Install
+
+```bash
+# Clone the repository
+git clone git@github.com:your-repo/the-tiebreaker.git
+cd the-tiebreaker
+
+# Install dependencies
+npm install
+```
+
+### 2. Set up your Gemini API key
+
+Create a `.env.local` file in the project root with your Gemini API key:
+
+```
+GEMINI_API_KEY=your_gemini_api_key_here
+PORT=3000
+```
+
+### 3. Run the development server
+- `npm run dev`
+
+This starts both:
+- **Vite dev server** on http://localhost:5173
+- **Backend API** on http://localhost:3001
+
+3. **Open the app** at http://localhost:5173
+
+## Project Structure
+
+```
+the-tiebreaker/
+├── server/
+│   ├── gemini.ts          # Gemini AI integration
+│   ├── analysis.ts        # Decision analysis logic
+│   └── index.ts           # Express server entry
+├── src/
+│   ├── components/
+│   │   ├── DecisionWorkspace.tsx
+│   │   ├── ResultsDashboard.tsx
+│   │   ├── AnalysisPanel.tsx
+│   │   ├── UserHistory.tsx
+│   │   └── ...
+│   ├── lib/
+│   │   ├── analysis.ts
+│   │   └── gemini.ts
+│   └── ...
+├── public/
+│   └── index.html
+├── server/
+│   ├── index.ts
+│   └── ...
+├── data/
+│   └── decisions.json
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
+```
+
+Now let me check what's in the config files to understand the setup:
+
+<read_file>
+<path>tsconfig.json</path>
+</read_file>
+
+<read_file>
+<path>vite.config.ts</path>
+</read_file>
+
+<read_file>
+<path>src</path>
+</read_file>
+</tool_calls>
+
+<write_to_file>
+# {Product Name}
+
+{Product tagline or short description}
+
+## Overview
+
+{One-paragraph overview of your app}
+
+## Features
+
+- **Feature 1**: Description
+- **Feature 2**: Description
+- **Feature 3**: Description
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js
+- `GEMINI_API_KEY` in `.env.local`
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <your-repo-url>
+   cd <your-project-directory>
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env.local
+   echo "GEMINI_API_KEY=your_key_here" >> .env.local
+   ```
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+Open http://localhost:5173 in your browser.
+
+## Project Structure
+
+```
+├── src/
+│   ├── components/     # UI components
+│   ├── data/           # Static data & types
+│   ├── lib/            # Utility functions & AI clients
+│   ├── server/         # Backend API
+│   └── App.tsx         # Main app
+├── server/
+│   └── index.ts        # Express server entry
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
+```
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Vite dev server with API |
+| `npm run build` | Build the production bundle |
+| `npm run preview` | Preview the production build |
+| `npm run typecheck` | Run TypeScript type checking |
+
+## Tech Stack
+
+- **Frontend:** React + TypeScript + Vite
+- **Backend:** Express + TypeScript (Node.js)
+- **Styling:** Tailwind CSS
+- **AI Integration:** Google Gemini API
+
+## API Endpoints
+- `POST /api/analyze` – Run full decision analysis
+- `GET /api/health` – Health check
+- `POST /api/think-deeper` – Get AI follow-up analysis
+
+## Setup
+
+1. Clone the repository
+2. Run `npm install`
+3. Copy `.env.example` to `.env.local` and add your Gemini API key
+4. Run `npm run dev`
+
+## License
+
+Private project.
