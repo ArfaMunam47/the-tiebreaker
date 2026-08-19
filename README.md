@@ -19,39 +19,6 @@
 - **Conversations** – Multi-message clarification with AI.
 - **Samples & Templates** – Pre-built examples to understand analysis quality.
 
-## 🚀 Quick Start
-
-### Prerequisites
-- **Node.js 18+** (developed with Node 22)
-- npm or yarn
-
-### Installation
-
-```bash
-# 1. Clone the repository
-git clone <your-repo-url>
-cd tie-breaker
-
-# 2. Install dependencies
-npm install
-
-# 3. Set up environment variables
-# Create a .env file in the project root with:
-# GEMINI_API_KEY=your_gemini_api_key_here
-
-# 4. Start the development server
-npm run dev
-```
-
-The server will start on `http://localhost:3000` and the Vite dev server will be available.
-
-## Usage
-
-1. **Open the app** in your browser at `http://localhost:5173`
-2. **Create a decision** by describing your dilemma
-3. **Add decision options** to compare
-4. **Add criteria** that matter to you
-5. Click **Generate Analysis** to see ties broken by priorities
 
 ## Key Features
 
@@ -140,28 +107,7 @@ Let me write a comprehensive README that accurately documents this project.
 <write_to_file>
 <file_path>README.md</file_path>
 <file_content>
-# The Tiebreaker — AI-Powered Decision Analysis
 
-A sophisticated decision intelligence tool that combines AI-powered analysis with structured reasoning frameworks to help you make better choices. Instead of just giving you an answer, The Tiebreaker helps you think better: it identifies hidden assumptions, challenges your attachment to alternatives, reframes problems, scores options against your own priorities, simulates outcomes, and provides a clear, confidence-rated recommendation with rationale.
-
-## ✨ Features
-
-- **🤖 Gemini AI-powered analysis** — Leverages Google's Gemini API for deep, domain-aware decision analysis.
-- **🔍 Multi-method decision frameworks** — Core Matrix, Opportunity Cost, Regret Minimization, Expected Value, and Reversal analysis.
-- **💬 Clarifying questions** — The AI asks smart questions to surface hidden assumptions before analysis.
-- **🔄 Reframing assistance** — "What if I don't have to choose at all?" reframing to challenge binary thinking.
-- **🔧 Custom criteria & weights** — Score decisions against your own success criteria. (Future)
-- **🧠 Memory & context** — Remembers your answers from clarifying questions in follow-up analyses.
-- **📊 Full Results Dashboard** — structured JSON output with scores and visualizations.
-- **📚 Saved Decisions Library** — store and compare past decisions.
-- **📈 JSON export/import** — backup and share your analysis. 🎯 Insight generation.
-- **🤝 Follow-up Question Assistant** — ask Gemini questions about your decision.
-- **📊 Crowd behavior signals** — shows what others typically choose.
-- **✍️ Decision Journal** — log your decision rationale.
-- **🔔 Decision reminders** — smart follow-up nudges.
-- **🎯 Optional:** Export & Re-import capability
-- **⚡ Real-time AI streaming** for fast, responsive analysis.
-- **🎨 Gold-standard UI polish** with a cohesive amber-tinted design language across all components.
 
 **Prerequisites:** Node.js 18+ (v20+ recommended), npm or yarn.
 
@@ -186,8 +132,6 @@ After downloading this app:
    ```bash
    npm run dev
    ```
-
-4. Open the displayed local URL (typically http://localhost:5173) to use the app.
 
 ## Demo Mode
 
@@ -368,11 +312,6 @@ PORT=3000
 ### 3. Run the development server
 - `npm run dev`
 
-This starts both:
-- **Vite dev server** on http://localhost:5173
-- **Backend API** on http://localhost:3001
-
-3. **Open the app** at http://localhost:5173
 
 ## Project Structure
 
