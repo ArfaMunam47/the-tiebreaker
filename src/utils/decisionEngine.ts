@@ -68,7 +68,7 @@ export function calculateSensitivityAnalysis(
       criterionName: crit.name,
       delta: marginDelta,
       influenceRank: 0,
-      explanation: `Changing ${crit.name}'s weight shift the leading margin by ${marginDelta.toFixed(
+      explanation: `Changing ${crit.name}'s weight shifts the leading margin by ${marginDelta.toFixed(
         1
       )} points. ${
         marginDelta > 0.8

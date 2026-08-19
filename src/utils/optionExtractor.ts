@@ -10,12 +10,33 @@ export function extractAlternativesFromQuestionClient(question: string): string[
   }
 
   const clean = question.trim();
+  const lower = clean.toLowerCase();
+
+  // Special cases for common natural dilemmas
+  if (lower.includes('tired') && (lower.includes('rest') || lower.includes('sleep') || lower.includes('nap'))) {
+    return ['Rest & Recharge Now', 'Push Through & Keep Going'];
+  }
+
+  if (lower.match(/should\s+i\s+quit\b/) && !lower.includes(' or ') && !lower.includes(' vs ')) {
+    return ['Quit / Step Away', 'Stay & Continue with Adjustments'];
+  }
 
   // Strip leading question framing phrases
   let stripped = clean
     .replace(/^[\s]*(should\s+i|should\s+we|is\s+it\s+better\s+to|do\s+i|would\s+it\s+be\s+better\s+to|deciding\s+between|i\s+am\s+trying\s+to\s+decide\s+(between|whether\s+to)?|whether\s+to)\s+/i, '')
     .replace(/\?+$/, '')
     .trim();
+
+  // If there are multiple sentences, find the question part with alternatives
+  if (stripped.includes('.') && (stripped.toLowerCase().includes(' or ') || stripped.toLowerCase().includes(' vs '))) {
+    const sentences = stripped.split(/[.!?]\s+/);
+    const questionSentence = sentences.find(s => s.toLowerCase().includes(' or ') || s.toLowerCase().includes(' vs '));
+    if (questionSentence) {
+      stripped = questionSentence
+        .replace(/^[\s]*(should\s+i|should\s+we|is\s+it\s+better\s+to|do\s+i|would\s+it\s+be\s+better\s+to|deciding\s+between|whether\s+to)\s+/i, '')
+        .trim();
+    }
+  }
 
   let parts: string[] = [];
 
@@ -31,7 +52,7 @@ export function extractAlternativesFromQuestionClient(question: string): string[
 
   const cleanTitle = (raw: string): string => {
     let t = raw
-      .replace(/^(\s*to\s+|\s*a\s+|\s*an\s+|\s*the\s+)/i, '')
+      .replace(/^[\s]*(should\s+i|should\s+we|can\s+i|could\s+i|do\s+i|would\s+it\s+be\s+better\s+to|is\s+it\s+better\s+to|to\s+|a\s+|an\s+|the\s+)/i, '')
       .replace(/\s+/g, ' ')
       .trim();
 

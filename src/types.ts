@@ -12,16 +12,20 @@ export type TimeHorizon =
   | '5+ years';
 
 export type DecisionCategory =
+  | 'Lifestyle'
   | 'Career'
   | 'Job Offer'
   | 'Education'
+  | 'Shopping'
+  | 'Purchase'
+  | 'Finance'
+  | 'Relationships'
+  | 'Health'
+  | 'Personal'
   | 'Business'
   | 'Technology'
-  | 'Purchase'
   | 'Travel'
   | 'Relocation'
-  | 'Relationships'
-  | 'Finance'
   | 'Startup'
   | 'Project'
   | 'General';
@@ -200,6 +204,9 @@ export interface Recommendation {
   missingInformation: string;
   confidenceLevel: 'High' | 'Moderate' | 'Low';
   confidenceReason?: string;
+  tradeOff?: string;
+  bottomLine?: string;
+  domain?: string;
   whyNotOptions?: Record<string, string>; // optionId -> reason lost
   reversalConditions?: string[]; // "When should you reconsider?"
   reconsiderationTriggers?: ReconsiderationTrigger[];

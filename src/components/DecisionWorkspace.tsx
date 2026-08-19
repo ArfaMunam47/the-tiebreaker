@@ -67,28 +67,31 @@ interface DecisionWorkspaceProps {
 }
 
 const DEFAULT_PRIORITIES = [
-  'Career Growth',
-  'Money & Income',
-  'Time Flexibility',
-  'Long-term Stability',
-  'Freedom & Autonomy',
+  'Personal Enjoyment & Fun',
+  'Rest, Health & Wellbeing',
+  'Career Growth & Trajectory',
+  'Money, Income & Savings',
+  'Time Flexibility & Autonomy',
+  'Long-term Stability & Peace of Mind',
   'Learning & Mastery',
   'Family & Relationships',
-  'Risk Tolerance',
-  'Health & Wellbeing',
+  'Risk & Uncertainty Tolerance',
 ];
 
 const CATEGORIES: DecisionCategory[] = [
+  'Lifestyle',
   'Career',
   'Job Offer',
   'Education',
+  'Shopping',
+  'Finance',
+  'Relationships',
+  'Health',
+  'Personal',
   'Business',
   'Technology',
-  'Purchase',
   'Travel',
   'Relocation',
-  'Relationships',
-  'Finance',
   'Startup',
   'Project',
   'General',
@@ -118,10 +121,10 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
   onOpenHistory,
   initialPrompt = '',
   initialOptions = ['', ''],
-  initialPriorities = ['Career Growth', 'Money & Income', 'Time Flexibility'],
-  initialCategory = 'Career',
+  initialPriorities = ['Personal Enjoyment & Fun', 'Rest, Health & Wellbeing', 'Time Flexibility & Autonomy'],
+  initialCategory = 'Lifestyle',
   initialReversibility = 'Somewhat reversible',
-  initialTimeHorizon = '1 year',
+  initialTimeHorizon = 'Immediate',
 }) => {
   const [prompt, setPrompt] = useState(initialPrompt);
   const [options, setOptions] = useState<string[]>(
@@ -129,8 +132,78 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
   );
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>(initialPriorities);
   const [category, setCategory] = useState<DecisionCategory>(initialCategory);
+  const [userCustomizedCategory, setUserCustomizedCategory] = useState(false);
   const [reversibility, setReversibility] = useState<ReversibilityLevel>(initialReversibility);
   const [timeHorizon, setTimeHorizon] = useState<TimeHorizon>(initialTimeHorizon);
+
+  // Auto-detect category and priorities from prompt if user hasn't explicitly picked one
+  const handlePromptChange = (val: string) => {
+    setPrompt(val);
+    if (!userCustomizedCategory) {
+      const lower = val.toLowerCase();
+      if (
+        lower.includes('friend') ||
+        lower.includes('fight') ||
+        lower.includes('argument') ||
+        lower.includes('call her') ||
+        lower.includes('call him') ||
+        lower.includes('text') ||
+        lower.includes('apologiz') ||
+        lower.includes('relationship') ||
+        lower.includes('breakup')
+      ) {
+        setCategory('Relationships');
+        setSelectedPriorities(['Family & Relationships', 'Long-term Stability & Peace of Mind', 'Time Flexibility & Autonomy']);
+      } else if (
+        lower.includes('buy') ||
+        lower.includes('phone') ||
+        lower.includes('laptop') ||
+        lower.includes('save money') ||
+        lower.includes('spend') ||
+        lower.includes('purchase') ||
+        lower.includes('car')
+      ) {
+        setCategory('Shopping');
+        setSelectedPriorities(['Money, Income & Savings', 'Long-term Stability & Peace of Mind', 'Risk & Uncertainty Tolerance']);
+      } else if (
+        lower.includes('stay home') ||
+        lower.includes('stay at home') ||
+        lower.includes('home order') ||
+        lower.includes('order food') ||
+        lower.includes('cook') ||
+        lower.includes('go out') ||
+        lower.includes('movie') ||
+        lower.includes('read a book') ||
+        lower.includes('weekend') ||
+        lower.includes('party') ||
+        lower.includes('relax')
+      ) {
+        setCategory('Lifestyle');
+        setSelectedPriorities(['Personal Enjoyment & Fun', 'Rest, Health & Wellbeing', 'Time Flexibility & Autonomy']);
+      } else if (
+        lower.includes('learn python') ||
+        lower.includes('learn') ||
+        lower.includes('study') ||
+        lower.includes('course') ||
+        lower.includes('degree') ||
+        lower.includes('bootcamp')
+      ) {
+        setCategory('Education');
+        setSelectedPriorities(['Learning & Mastery', 'Career Growth & Trajectory', 'Time Flexibility & Autonomy']);
+      } else if (
+        lower.includes('job offer') ||
+        lower.includes('salary') ||
+        lower.includes('promotion') ||
+        lower.includes('career') ||
+        lower.includes('startup') ||
+        lower.includes('boss') ||
+        lower.includes('resign')
+      ) {
+        setCategory('Career');
+        setSelectedPriorities(['Career Growth & Trajectory', 'Money, Income & Savings', 'Time Flexibility & Autonomy']);
+      }
+    }
+  };
 
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [workspaceStep, setWorkspaceStep] = useState<'input' | 'clarify'>('input');
@@ -442,7 +515,10 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
                 </label>
                 <select
                   value={category}
-                  onChange={(e) => setCategory(e.target.value as DecisionCategory)}
+                  onChange={(e) => {
+                    setCategory(e.target.value as DecisionCategory);
+                    setUserCustomizedCategory(true);
+                  }}
                   className="w-full px-3 py-2 text-xs rounded-lg bg-white border border-[#E8E5DF] text-stone-900 focus:outline-none focus:border-[#B88E3D] cursor-pointer shadow-2xs font-semibold"
                   disabled={isAnalyzing}
                 >
@@ -608,8 +684,8 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
                     <textarea
                       rows={5}
                       value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="e.g. Should I accept a $1,200/month remote software engineer offer now, or dedicate 6 months to upskilling in full-stack AI agents for $3,500+/mo global roles?"
+                      onChange={(e) => handlePromptChange(e.target.value)}
+                      placeholder="e.g. Should I go out with my friends or stay home and rest? / Should I cook dinner or order food? / Should I call my friend after our argument?"
                       className="w-full px-4 py-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-stone-900 placeholder:text-stone-400 text-sm sm:text-base focus:outline-none focus:border-[#B88E3D] focus:ring-2 focus:ring-amber-500/10 transition-all resize-y leading-relaxed font-sans"
                       disabled={isAnalyzing}
                     />

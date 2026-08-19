@@ -20,37 +20,58 @@ export function extractAlternativesFromQuestion(question: string): ExtractedOpti
 
   const clean = question.trim();
 
-  // Strip leading question framing phrases (e.g. "Should I", "Should we", "Is it better to", "Do I", "Would it be better to", "Deciding between")
+  // Special cases for common natural dilemmas
+  const lower = clean.toLowerCase();
+  if (lower.includes('tired') && (lower.includes('rest') || lower.includes('sleep') || lower.includes('nap'))) {
+    return [
+      { id: 'opt1', title: 'Rest & Recharge Now', description: 'Prioritize physical recovery, mental rest, and sleep.' },
+      { id: 'opt2', title: 'Push Through & Keep Going', description: 'Continue current activity despite fatigue.' },
+    ];
+  }
+
+  if (lower.match(/should\s+i\s+quit\b/) && !lower.includes(' or ') && !lower.includes(' vs ')) {
+    return [
+      { id: 'opt1', title: 'Quit / Step Away', description: 'Transition away from current commitment or habit.' },
+      { id: 'opt2', title: 'Stay & Continue with Adjustments', description: 'Remain in place and implement boundary or workflow adjustments.' },
+    ];
+  }
+
+  // Strip leading question framing phrases
   let stripped = clean
     .replace(/^[\s]*(should\s+i|should\s+we|is\s+it\s+better\s+to|do\s+i|would\s+it\s+be\s+better\s+to|deciding\s+between|i\s+am\s+trying\s+to\s+decide\s+(between|whether\s+to)?|whether\s+to)\s+/i, '')
     .replace(/\?+$/, '')
     .trim();
 
-  // Check for comma-separated lists with "or" / "vs" (e.g. "learn MERN, Python AI, or DevOps", "buy a MacBook, a Dell XPS, or a Lenovo ThinkPad")
-  // Regex to split by comma followed by optional "or"/"and"/"vs" or standalone "or"/"vs"/"versus"
+  // If there are multiple sentences (e.g. "I have a dilemma. Should I do X or Y"), find the actual question part
+  if (stripped.includes('.') && (stripped.toLowerCase().includes(' or ') || stripped.toLowerCase().includes(' vs '))) {
+    const sentences = stripped.split(/[.!?]\s+/);
+    const questionSentence = sentences.find(s => s.toLowerCase().includes(' or ') || s.toLowerCase().includes(' vs '));
+    if (questionSentence) {
+      stripped = questionSentence
+        .replace(/^[\s]*(should\s+i|should\s+we|is\s+it\s+better\s+to|do\s+i|would\s+it\s+be\s+better\s+to|deciding\s+between|whether\s+to)\s+/i, '')
+        .trim();
+    }
+  }
+
+  // Check for comma-separated lists with "or" / "vs"
   let parts: string[] = [];
 
-  // If question has "between ... and ...", handle that
   const betweenMatch = stripped.match(/^between\s+(.+?)\s+and\s+(.+)$/i);
   if (betweenMatch) {
     parts = [betweenMatch[1], betweenMatch[2]];
   } else if (stripped.includes(',') && (stripped.toLowerCase().includes(' or ') || stripped.toLowerCase().includes(' vs '))) {
-    // Split by commas and the final 'or'/'vs'
     const tokens = stripped.split(/,\s*(?:or\s+|vs\s+|versus\s+)?|\s+or\s+|\s+vs\s+|\s+versus\s+/i);
     parts = tokens.map(t => t.trim()).filter(Boolean);
   } else {
-    // Split by ' or ', ' vs ', ' versus ', ' against '
     parts = stripped.split(/\s+(?:or|vs\.?|versus|against)\s+/i).map(t => t.trim()).filter(Boolean);
   }
 
-  // Format clean human-readable title from each part
   const cleanTitle = (raw: string): string => {
     let t = raw
-      .replace(/^(\s*to\s+|\s*a\s+|\s*an\s+|\s*the\s+)/i, '')
+      .replace(/^[\s]*(should\s+i|should\s+we|can\s+i|could\s+i|do\s+i|would\s+it\s+be\s+better\s+to|is\s+it\s+better\s+to|to\s+|a\s+|an\s+|the\s+)/i, '')
       .replace(/\s+/g, ' ')
       .trim();
 
-    // Capitalize first letter of each major word
     if (t.length > 0) {
       t = t.charAt(0).toUpperCase() + t.slice(1);
     }
@@ -68,7 +89,7 @@ export function extractAlternativesFromQuestion(question: string): ExtractedOpti
     });
   }
 
-  // Single sentence without explicit "or": make proactive vs deferred path based on question
+  // Single sentence without explicit "or": make proactive vs alternative path
   const title = cleanTitle(stripped);
   return [
     {

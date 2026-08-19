@@ -80,27 +80,41 @@ export function apiLogout(): void {
 
 // Decisions Library API Calls (Private to Authenticated User)
 export async function apiGetDecisions(): Promise<DecisionAnalysis[]> {
+  const token = getStoredToken();
+  if (!token) {
+    return [];
+  }
   try {
     const res = await request<{ decisions: DecisionAnalysis[] } | DecisionAnalysis[]>('/api/decisions');
     if (Array.isArray(res)) {
       return res;
     }
     return res.decisions || [];
-  } catch (err) {
-    console.error('Failed to load user decisions:', err);
+  } catch (err: any) {
+    if (err?.message && (err.message.includes('Authentication required') || err.message.includes('401') || err.message.includes('invalid') || err.message.includes('expired'))) {
+      clearStoredToken();
+      return [];
+    }
     return [];
   }
 }
 
 export async function apiGetDecisionById(id: string): Promise<DecisionAnalysis | null> {
+  const token = getStoredToken();
+  if (!token) {
+    return null;
+  }
   try {
     const res = await request<{ decision: DecisionAnalysis } | DecisionAnalysis>(`/api/decisions/${encodeURIComponent(id)}`);
     if ('decision' in res) {
       return res.decision;
     }
     return res as DecisionAnalysis;
-  } catch (err) {
-    console.error('Failed to load decision by id:', err);
+  } catch (err: any) {
+    if (err?.message && (err.message.includes('Authentication required') || err.message.includes('401'))) {
+      clearStoredToken();
+      return null;
+    }
     return null;
   }
 }

@@ -476,6 +476,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         body: JSON.stringify({
           decisionContext: decision,
           message: currentInput,
+          history: chatMessages,
         }),
       });
 
@@ -740,10 +741,37 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 <FileText className="w-4 h-4 text-[#B88E3D]" />
                 Executive Synthesis
               </h3>
-              <p className="text-sm text-stone-800 leading-relaxed font-sans">
-                {decision.recommendation?.mainReasons?.join(' ') ||
-                  `Analyzing ${decision.options.length} options for "${decision.title}".`}
-              </p>
+              
+              {decision.recommendation?.mainReasons && decision.recommendation.mainReasons.length > 0 ? (
+                <div className="space-y-2">
+                  <ul className="space-y-2 text-sm text-stone-800">
+                    {decision.recommendation.mainReasons.map((reason, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-[#B88E3D] font-bold mt-0.5">•</span>
+                        <span className="leading-relaxed">{reason}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {decision.recommendation?.tradeOff && (
+                    <div className="p-3 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-stone-700 mt-2">
+                      <strong className="text-stone-900 font-semibold">Key Trade-off: </strong>
+                      {decision.recommendation.tradeOff}
+                    </div>
+                  )}
+
+                  {decision.recommendation?.bottomLine && (
+                    <div className="p-3 rounded-lg bg-amber-50/70 border border-amber-200/80 text-xs text-stone-800 font-medium mt-2">
+                      <strong className="text-amber-900 font-semibold">Bottom Line: </strong>
+                      {decision.recommendation.bottomLine}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-stone-800 leading-relaxed font-sans">
+                  {`Evaluating ${decision.options.length} options for "${decision.title}".`}
+                </p>
+              )}
 
               {/* Priorities Tags */}
               <div className="pt-2 border-t border-[#E8E5DF]">

@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
 import path from "path";
+import fs from "fs";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
@@ -17,7 +18,7 @@ import {
   deleteDecisionForUser,
 } from "./server/db.js";
 import { extractAlternativesFromQuestion } from "./server/optionExtractor.js";
-import { generateClarifyingQuestions, analyzeDecisionWithProviders } from "./server/aiProvider.js";
+import { generateClarifyingQuestions, analyzeDecisionWithProviders, generateContentWithRetryAndFallback } from "./server/aiProvider.js";
 
 dotenv.config();
 
@@ -166,7 +167,6 @@ app.post("/api/auth/demo", (req: Request, res: Response) => {
 // Switcher: List existing profiles for instant multi-user simulation
 app.get("/api/auth/users", (_req: Request, res: Response) => {
   try {
-    const fs = require("fs");
     const dbPath = path.join(process.cwd(), "data", "database.json");
     if (fs.existsSync(dbPath)) {
       const data = JSON.parse(fs.readFileSync(dbPath, "utf-8"));
@@ -343,57 +343,90 @@ app.post("/api/analyze", optionalAuthenticateToken, async (req: AuthenticatedReq
 // ==========================================
 
 app.post("/api/think-deeper-chat", async (req: Request, res: Response) => {
-  const { decisionContext, message } = req.body || {};
+  const { decisionContext, message, history } = req.body || {};
   try {
-    const ai = getGeminiClient();
-
-    if (!message) {
+    if (!message || typeof message !== "string" || message.trim().length === 0) {
       return res.status(400).json({ error: "Message is required." });
     }
 
-    if (!ai) {
-      return res.json({
-        reply: `Here is a deeper perspective on "${decisionContext?.title || "your decision"}": Consider setting a strict 14-day evaluation trial before committing long term. What would be your non-negotiable exit condition?`,
-      });
-    }
+    const ai = getGeminiClient();
+    const cleanMsg = message.trim();
+    const recommendedTitle =
+      decisionContext?.recommendation?.recommendedOptionTitle ||
+      decisionContext?.options?.[0]?.title ||
+      "the top-scoring option";
+    const altTitle =
+      decisionContext?.options?.find(
+        (o: any) =>
+          o.title !== recommendedTitle &&
+          o.id !== decisionContext?.recommendation?.recommendedOptionId
+      )?.title || "the alternative option";
+
+    // Domain and prompt context
+    const domain = decisionContext?.recommendation?.domain || "general";
+    const originalPrompt = decisionContext?.originalPrompt || decisionContext?.title || "";
 
     const systemInstruction = `You are "The Tiebreaker", an authoritative, expert decision intelligence engine.
-The user is asking a follow-up question on their decision titled: "${decisionContext?.title || "Decision"}".
+The user is having a conversation regarding their decision titled: "${decisionContext?.title || "Decision"}".
 Context:
-Prompt: ${decisionContext?.originalPrompt || ""}
-Options: ${JSON.stringify(decisionContext?.options || [])}
-Priorities: ${JSON.stringify(decisionContext?.userPriorities || [])}
-Recommendation: ${JSON.stringify(decisionContext?.recommendation || {})}
+- Original Dilemma: "${originalPrompt}"
+- Category: ${decisionContext?.category || "General"}
+- Domain: ${domain}
+- Evaluated Options: ${JSON.stringify(decisionContext?.options || [])}
+- User Priorities: ${JSON.stringify(decisionContext?.userPriorities || [])}
+- Multi-Criteria Recommendation: ${JSON.stringify(decisionContext?.recommendation || {})}
+- Conversation History: ${JSON.stringify(history || [])}
 
 CRITICAL DIRECTIVES:
-1. PRESCRIPTIVE GUIDANCE: When answering, you MUST ALWAYS provide clear, decisive guidance using: "You should choose [Option] because..." or "Based on your stated priorities, you should select [Option]...".
-2. ABSOLUTE PROHIBITION OF FIRST-PERSON PRONOUNS: You are STRICTLY FORBIDDEN from using "I", "my", "me", "we", or "our" anywhere in your response. (NEVER say "I recommend", "I think", "I suggest", "I advise", "I believe", etc.). Speak strictly with direct, objective second-person guidance: "You should choose...", "Your best path is...", "This option delivers...".
-3. NO SPECULATIVE PREDICTIONS: Base all analysis strictly on the user's provided options, trade-offs, constraints, and priorities.
+1. DOMAIN AWARENESS:
+   - For TECHNICAL decisions (PostgreSQL vs MongoDB, React vs Vue): Answer strictly based on data integrity, ACID consistency, developer velocity, ecosystem tooling, and query models. Never mention career/salary.
+   - For LIFESTYLE / DAILY LIFE (e.g. resting when tired, cooking vs ordering): Answer strictly based on physical recovery, energy, social connection, and personal well-being.
+   - For CAREER: Focus on compounding growth, compensation, learning ceiling, and autonomy.
+2. CONTEXT ADAPTATION:
+   - If the user provides new information (e.g. "What if I only have 3 months?" or "Actually, I know JavaScript"), adapt your analysis immediately to factor in that constraint.
+   - If the user asks "Why did you choose the first option?" or "What about the second option?", explain the exact trade-offs, criteria scores, and conditions where each option excels.
+3. ABSOLUTE PROHIBITION OF FIRST-PERSON PRONOUNS:
+   - You are STRICTLY FORBIDDEN from using "I", "my", "me", "we", or "our".
+   - Always phrase advice in direct, objective second-person guidance ("You should choose...", "Your primary advantage is...", "This option delivers...").
+4. Provide a direct, structured, 1-2 paragraph response with concrete reasoning.`;
 
-Provide a direct, concise, and actionable response in 1-2 paragraphs.`;
+    if (ai) {
+      const response = await generateContentWithRetryAndFallback(ai, {
+        contents: `User message: "${cleanMsg}"`,
+        config: {
+          systemInstruction,
+          temperature: 0.2,
+        },
+      });
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.7-flash",
-      contents: `User question: ${message}`,
-      config: {
-        systemInstruction,
-        temperature: 0.2,
-      },
-    });
+      if (response && response.text) {
+        return res.json({ reply: response.text.trim() });
+      }
+    }
 
-    const recommendedTitle = decisionContext?.recommendation?.recommendedOptionTitle || decisionContext?.options?.[0]?.title || "the top-scoring option";
+    // Deterministic fallback response when AI is offline or unavailable
+    const lower = cleanMsg.toLowerCase();
+    let fallbackReply = `You should choose ${recommendedTitle} because it delivers the highest overall score against your primary decision criteria.`;
 
+    if (lower.includes('why') && (lower.includes('first') || lower.includes('choose') || lower.includes('recommend'))) {
+      const mainReasons = decisionContext?.recommendation?.mainReasons || [];
+      const reasonText = mainReasons.length > 0 ? mainReasons.join(' ') : `it maximizes long-term upside while minimizing downside risk.`;
+      fallbackReply = `You should prioritize ${recommendedTitle} because ${reasonText} Relative to ${altTitle}, this choice offers superior alignment with your top-weighted priorities and minimizes post-decision regret.`;
+    } else if (lower.includes('second') || (lower.includes('what about') && altTitle && lower.includes(altTitle.toLowerCase()))) {
+      fallbackReply = `${altTitle} remains a viable secondary path if your immediate constraints shift. It is best suited when your primary goal is rapid, low-friction execution rather than the deeper compounding benefits provided by ${recommendedTitle}.`;
+    } else if (lower.includes('month') || lower.includes('timeline') || lower.includes('time') || lower.includes('urgent')) {
+      fallbackReply = `If your timeline is constrained to a shorter window, you should focus on the fastest high-impact milestones of ${recommendedTitle}. If immediate delivery within that timeframe is non-negotiable, evaluate whether ${altTitle} offers a simpler stepping stone.`;
+    } else if (lower.includes('javascript') || lower.includes('python') || lower.includes('experience') || lower.includes('already know')) {
+      fallbackReply = `Having prior experience significantly reduces the onboarding curve. This makes ${recommendedTitle} even more advantageous by accelerating your execution speed and eliminating initial learning friction.`;
+    } else if (lower.includes('tired') || lower.includes('rest') || lower.includes('sleep')) {
+      fallbackReply = `You should take time to rest and recharge. Pushing through acute fatigue yields diminishing returns, impairs decision quality, and increases burnout risk. Stepping away restores your physical and mental baseline.`;
+    }
+
+    return res.json({ reply: fallbackReply });
+  } catch (err) {
+    console.error("Error in /api/think-deeper-chat:", err);
     return res.json({
-      reply:
-        response.text ||
-        `You should choose ${recommendedTitle} because it delivers the highest alignment with your stated priorities and minimizes downside trade-offs.`,
-    });
-  } catch (error: any) {
-    console.error("Error in think-deeper-chat:", error);
-    const recommendedTitle = decisionContext?.recommendation?.recommendedOptionTitle || "the top-scoring option";
-    return res.json({
-      reply:
-        `You should choose ${recommendedTitle} because it maximizes your strategic priorities while preserving critical reversibility.`,
+      reply: `You should proceed with the recommended path because it provides the strongest practical balance for your specific situation.`,
     });
   }
 });
