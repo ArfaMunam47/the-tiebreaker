@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { getStore } from '@netlify/blobs';
 import { DecisionAnalysis } from '../src/types';
 
 export interface UserRecord {
@@ -21,7 +22,7 @@ export interface DecisionRecord {
   updatedAt: string;
 }
 
-interface DatabaseSchema {
+export interface DatabaseSchema {
   users: UserRecord[];
   decisions: DecisionRecord[];
 }
@@ -29,12 +30,24 @@ interface DatabaseSchema {
 const DATA_DIR = path.join(process.cwd(), 'data');
 const DB_FILE = path.join(DATA_DIR, 'database.json');
 
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+// Ensure data directory exists for local disk fallback
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+} catch (e) {
+  // Read-only filesystem in some serverless environments
 }
 
-function loadDatabase(): DatabaseSchema {
+function getBlobStore() {
+  try {
+    return getStore('tiebreaker_db');
+  } catch (e) {
+    return null;
+  }
+}
+
+function loadDatabaseFromDisk(): DatabaseSchema {
   try {
     if (fs.existsSync(DB_FILE)) {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
@@ -45,23 +58,83 @@ function loadDatabase(): DatabaseSchema {
       };
     }
   } catch (err) {
-    console.error('Error reading database file, initializing empty schema:', err);
+    // Disk read failed or directory read-only
   }
   return { users: [], decisions: [] };
 }
 
-function saveDatabase(data: DatabaseSchema): void {
+function saveDatabaseToDisk(data: DatabaseSchema): void {
   try {
     const tempFile = `${DB_FILE}.tmp.${Date.now()}`;
     fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
     fs.renameSync(tempFile, DB_FILE);
   } catch (err) {
-    console.error('Error saving database file:', err);
+    // Read-only filesystem in serverless mode, handled by Netlify Blobs
   }
 }
 
-// In-memory cache synced with disk
-let dbCache: DatabaseSchema = loadDatabase();
+// In-memory cache synced with storage
+let dbCache: DatabaseSchema = loadDatabaseFromDisk();
+
+/**
+ * Sync database from Netlify Blobs or Local Disk
+ */
+export async function syncDatabaseFromStorage(): Promise<DatabaseSchema> {
+  try {
+    const store = getBlobStore();
+    if (store) {
+      const data = (await store.get('schema', { type: 'json' })) as DatabaseSchema | null;
+      if (data && Array.isArray(data.users)) {
+        dbCache = {
+          users: Array.isArray(data.users) ? data.users : [],
+          decisions: Array.isArray(data.decisions) ? data.decisions : [],
+        };
+        return dbCache;
+      }
+    }
+  } catch (err) {
+    // Netlify Blobs unavailable (e.g. running locally without Netlify CLI)
+  }
+
+  const diskData = loadDatabaseFromDisk();
+  if (diskData.users.length > 0 || diskData.decisions.length > 0) {
+    dbCache = diskData;
+  }
+  return dbCache;
+}
+
+/**
+ * Persist database to Netlify Blobs and Local Disk
+ */
+export async function persistDatabaseToStorage(data: DatabaseSchema): Promise<void> {
+  dbCache = data;
+
+  // 1. Persist to Netlify Blobs (Production serverless storage)
+  try {
+    const store = getBlobStore();
+    if (store) {
+      await store.setJSON('schema', data);
+    }
+  } catch (err) {
+    // Blobs offline in local mode
+  }
+
+  // 2. Persist to local disk (Local development / container storage)
+  saveDatabaseToDisk(data);
+}
+
+// Synchronous wrapper to ensure backward compatibility
+function saveDatabase(data: DatabaseSchema): void {
+  dbCache = data;
+  saveDatabaseToDisk(data);
+  // Async fire-and-forget to Netlify Blobs
+  try {
+    const store = getBlobStore();
+    if (store) {
+      store.setJSON('schema', data).catch(() => {});
+    }
+  } catch (e) {}
+}
 
 // Initialize Demo Seed Users & Isolated Libraries
 export function getOrCreateDemoUser(profile: string = 'user_a'): UserRecord {
