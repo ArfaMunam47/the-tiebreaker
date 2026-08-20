@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 import { DecisionAnalysis } from '../types';
+import { generateAndDownloadDecisionPdf } from '../utils/pdfGenerator';
 import {
   X,
-  Printer,
   Download,
   Copy,
   Check,
   FileText,
-  FileCode,
   Award,
-  Shield,
-  Clock,
-  Grid2X2,
-  SlidersHorizontal,
-  Scale,
+  AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 
 interface ExportReportModalProps {
@@ -29,6 +25,8 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
 }) => {
   const [copiedMemo, setCopiedMemo] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   if (!isOpen) return null;
 
@@ -36,47 +34,61 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
     decision.options.find((o) => o.id === decision.recommendation?.recommendedOptionId) ||
     decision.options[0];
 
-  // Generate clean Markdown Decision Brief
+  const handleDownloadPdfDirect = () => {
+    setErrorMessage(null);
+    setIsGeneratingPdf(true);
+    try {
+      const success = generateAndDownloadDecisionPdf(decision);
+      if (success) {
+        setDownloadSuccess('Complete Decision PDF downloaded successfully!');
+        setTimeout(() => setDownloadSuccess(null), 3000);
+      } else {
+        setErrorMessage('Could not generate PDF. Please try again or copy the text summary.');
+      }
+    } catch (e: any) {
+      setErrorMessage('PDF download encountered an issue.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  // Generate clean text summary
   const generateMarkdownReport = (): string => {
-    let md = `# EXECUTIVE DECISION BRIEF: ${decision.title.toUpperCase()}\n\n`;
-    md += `**Date:** ${new Date(decision.createdAt).toLocaleDateString()} | **Category:** ${decision.category || 'General'} | **Time Horizon:** ${decision.timeHorizon || '1 year'} | **Reversibility:** ${decision.reversibility || 'Somewhat reversible'}\n\n`;
+    let md = `# DECISION SUMMARY: ${decision.title.toUpperCase()}\n\n`;
+    md += `**Date:** ${new Date(decision.createdAt || Date.now()).toLocaleDateString()} | **Category:** ${decision.category || 'General'} | **Timeframe:** ${decision.timeHorizon || '1 year'} | **Undoable:** ${decision.reversibility || 'Somewhat reversible'}\n\n`;
     md += `---\n\n`;
 
-    md += `## 1. CORE DECISION QUESTION\n`;
-    md += `> ${decision.originalPrompt}\n\n`;
+    md += `## 1. YOUR QUESTION\n`;
+    md += `> ${decision.originalPrompt || decision.title}\n\n`;
 
-    md += `## 2. OPTIMAL RECOMMENDATION\n`;
-    md += `### **You Should Choose: ${recommendedOpt?.title || 'Primary Option'}**\n`;
+    md += `## 2. BEST CHOICE & RECOMMENDATION\n`;
+    md += `### **You Should Choose: ${recommendedOpt?.title || 'Primary Choice'}**\n`;
     md += `*Confidence Level: ${decision.recommendation?.confidenceLevel || 'High'}*\n\n`;
     if (decision.recommendation?.mainReasons?.length) {
-      md += `**Key Rationale:**\n`;
+      md += `**Why this choice is best:**\n`;
       decision.recommendation.mainReasons.forEach((r) => {
         md += `- ${r}\n`;
       });
       md += `\n`;
     }
 
+    if (decision.recommendation?.tradeOff || decision.recommendation?.bottomLine) {
+      md += `**Key Trade-off:** ${decision.recommendation.tradeOff || decision.recommendation.bottomLine}\n\n`;
+    }
+
     if (decision.recommendation?.biggestConcern) {
-      md += `**Primary Operational Risk:** ${decision.recommendation.biggestConcern}\n\n`;
+      md += `**Main Thing to Watch Out For:** ${decision.recommendation.biggestConcern}\n\n`;
     }
 
-    if (decision.recommendation?.reversalConditions?.length) {
-      md += `**Conditions That Would Flip This Recommendation:**\n`;
-      decision.recommendation.reversalConditions.forEach((cond) => {
-        md += `- ${cond}\n`;
-      });
-      md += `\n`;
-    }
-
-    md += `## 3. EVALUATED OPTIONS & TRADE-OFFS\n`;
+    md += `## 3. CHOICES COMPARED\n`;
     decision.options.forEach((opt, idx) => {
-      md += `### Option ${idx + 1}: ${opt.title}\n`;
-      md += `${opt.description}\n\n`;
+      md += `### Choice ${idx + 1}: ${opt.title}\n`;
+      if (opt.description) md += `${opt.description}\n\n`;
     });
 
     if (decision.criteria && decision.criteria.length > 0) {
-      md += `## 4. MULTI-CRITERIA WEIGHTED SCORING\n\n`;
-      md += `| Evaluation Priority | Weight (%) | ${decision.options.map((o) => o.title).join(' | ')} |\n`;
+      md += `## 4. WHAT MATTERS MOST (SCORING)\n\n`;
+      md += `| Factor | Importance | ${decision.options.map((o) => o.title).join(' | ')} |\n`;
       md += `| :--- | :---: | ${decision.options.map(() => ':---:').join(' | ')} |\n`;
 
       decision.criteria.forEach((crit) => {
@@ -88,103 +100,19 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
       md += `\n`;
     }
 
-    if (decision.swot && decision.swot.length > 0) {
-      md += `## 5. SWOT STRATEGIC ANALYSIS\n\n`;
-      decision.options.forEach((opt) => {
-        const swot = decision.swot.find((s) => s.optionId === opt.id) || decision.swot[0];
-        if (swot) {
-          md += `### ${opt.title} — SWOT\n`;
-          md += `- **Strengths:** ${swot.strengths?.join('; ') || 'None identified'}\n`;
-          md += `- **Weaknesses:** ${swot.weaknesses?.join('; ') || 'None identified'}\n`;
-          md += `- **Opportunities:** ${swot.opportunities?.join('; ') || 'None identified'}\n`;
-          md += `- **Threats:** ${swot.threats?.join('; ') || 'None identified'}\n\n`;
-        }
-      });
-    }
-
     if (decision.risks && decision.risks.length > 0) {
-      md += `## 6. RISK ASSESSMENT & MITIGATION\n\n`;
+      md += `## 5. RISKS & HOW TO HANDLE THEM\n\n`;
       decision.risks.forEach((r) => {
         const opt = decision.options.find((o) => o.id === r.optionId);
-        md += `- **[${r.probability} Probability / ${r.impact} Impact]** for *${opt?.title || 'General'}*: ${r.risk}\n`;
-        md += `  - *Mitigation Safeguard:* ${r.mitigation}\n`;
+        md += `- **[${r.probability} Likelihood]** for *${opt?.title || 'General'}*: ${r.risk}\n`;
+        if (r.mitigation) md += `  - *How to handle:* ${r.mitigation}\n`;
       });
       md += `\n`;
     }
 
     md += `---\n`;
-    md += `*Generated by The Tiebreaker Decision Intelligence Platform*\n`;
+    md += `*Generated by Tiebreaker Studio*\n`;
     return md;
-  };
-
-  // Generate clean standalone HTML
-  const generateHtmlReport = (): string => {
-    const md = generateMarkdownReport();
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Decision Brief - ${decision.title}</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1c1917; max-width: 800px; margin: 40px auto; padding: 0 20px; background: #fff; }
-    h1 { font-size: 24px; border-bottom: 2px solid #e7e5e4; padding-bottom: 12px; margin-bottom: 8px; font-family: Georgia, serif; }
-    h2 { font-size: 18px; margin-top: 32px; color: #78350f; border-bottom: 1px solid #f5f5f4; padding-bottom: 6px; }
-    h3 { font-size: 15px; margin-top: 16px; margin-bottom: 4px; }
-    blockquote { margin: 16px 0; padding: 12px 18px; background: #fafaf9; border-left: 4px solid #b45309; border-radius: 4px; font-style: italic; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
-    th, td { border: 1px solid #e7e5e4; padding: 8px 12px; text-align: left; }
-    th { background: #f5f5f4; font-weight: 600; }
-    .meta { font-size: 12px; color: #78716c; margin-bottom: 24px; }
-    .rec-box { background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 16px; margin: 16px 0; }
-    ul { padding-left: 20px; }
-    li { margin-bottom: 6px; }
-    @media print { body { margin: 20px; } }
-  </style>
-</head>
-<body>
-  <h1>Executive Decision Brief: ${decision.title}</h1>
-  <div class="meta">
-    <strong>Date:</strong> ${new Date(decision.createdAt).toLocaleDateString()} | 
-    <strong>Category:</strong> ${decision.category || 'General'} | 
-    <strong>Horizon:</strong> ${decision.timeHorizon || '1 year'} | 
-    <strong>Reversibility:</strong> ${decision.reversibility || 'Somewhat reversible'}
-  </div>
-
-  <blockquote>${decision.originalPrompt}</blockquote>
-
-  <div class="rec-box">
-    <h3 style="margin-top:0; color:#92400e;">You Should Choose: ${recommendedOpt?.title}</h3>
-    <p style="margin: 4px 0; font-size: 13px;"><strong>Confidence:</strong> ${decision.recommendation?.confidenceLevel || 'High'}</p>
-    ${decision.recommendation?.mainReasons ? `<ul>${decision.recommendation.mainReasons.map((r) => `<li>${r}</li>`).join('')}</ul>` : ''}
-  </div>
-
-  <h2>Evaluated Options</h2>
-  ${decision.options.map((o) => `<h3>${o.title}</h3><p style="font-size:13px; color:#44403c;">${o.description}</p>`).join('')}
-
-  <h2>Risk Assessment & Mitigations</h2>
-  <ul>
-    ${decision.risks.map((r) => `<li><strong>[${r.probability} Prob / ${r.impact} Impact]</strong> ${r.risk} — <em>Mitigation: ${r.mitigation}</em></li>`).join('')}
-  </ul>
-
-  <footer style="margin-top: 40px; border-top: 1px solid #e7e5e4; padding-top: 12px; font-size: 11px; color: #a8a29e;">
-    Generated by The Tiebreaker Decision Intelligence Platform
-  </footer>
-</body>
-</html>`;
-  };
-
-  const handleDownloadFile = (content: string, filename: string, type: string) => {
-    const blob = new Blob([content], { type });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setDownloadSuccess(filename);
-    setTimeout(() => setDownloadSuccess(null), 2500);
   };
 
   const handleCopyMarkdown = () => {
@@ -194,173 +122,126 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
     setTimeout(() => setCopiedMemo(false), 2000);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-fadeIn">
-      <div className="bg-white border border-[#E8E5DF] rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="skeuo-modal-shell max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E8E5DF] bg-[#FAF7F2]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#E0D9CC] bg-[#FAF7F2]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#2C221E] text-white flex items-center justify-center">
-              <FileText className="w-4 h-4 text-[#D4A338]" />
+            <div className="w-9 h-9 rounded-xl skeuo-btn-primary text-white flex items-center justify-center">
+              <Download className="w-4 h-4 text-[#D4A338]" />
             </div>
             <div>
               <h3 className="font-serif italic text-base font-bold text-stone-900">
-                Export Executive Decision Report
+                Save as PDF Report
               </h3>
               <p className="text-[11px] text-stone-500">
-                Download structured decision briefs for stakeholders, records, or printing.
+                Download your complete decision analysis as a high-quality PDF.
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
-            aria-label="Close modal"
+            className="p-1.5 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-200/50 transition-colors cursor-pointer"
+            aria-label="Close"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-6 overflow-y-auto flex-1 text-xs">
-          {/* Executive Overview Preview */}
-          <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+        <div className="p-6 space-y-5 overflow-y-auto flex-1 text-xs">
+          {/* Overview Preview */}
+          <div className="p-4 rounded-xl skeuo-well space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#B88E3D] flex items-center gap-1.5">
                 <Award className="w-3.5 h-3.5 text-[#B88E3D]" /> Report Summary
               </span>
-              <span className="text-[10px] font-mono text-stone-500">
-                {decision.options.length} Options • {decision.criteria.length} Weighted Criteria
+              <span className="text-[10px] text-stone-500 font-mono">
+                {decision.options.length} Choices Analyzed
               </span>
             </div>
             <h4 className="text-sm font-serif italic text-stone-900 font-bold">
               {decision.title}
             </h4>
             <p className="text-stone-700 leading-relaxed font-sans">
-              <strong>Primary Direction:</strong> You should choose{' '}
-              <strong className="text-[#B88E3D]">{recommendedOpt?.title}</strong> ({decision.recommendation?.confidenceLevel || 'High'} Confidence).
+              <strong>Best Choice:</strong> You should choose{' '}
+              <strong className="text-[#B88E3D]">{recommendedOpt?.title}</strong> ({decision.recommendation?.confidenceLevel || 'High'} confidence).
             </p>
           </div>
 
-          {/* Export Options Grid */}
+          {/* Action Cards */}
           <div className="space-y-3">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-600 block">
-              Select Export Format:
-            </span>
-
-            <div className="grid sm:grid-cols-2 gap-3">
-              {/* Option 1: Print / PDF */}
-              <button
-                type="button"
-                onClick={handlePrint}
-                className="flex items-start gap-3 p-4 rounded-xl border border-[#E8E5DF] bg-white hover:bg-[#FAF7F2] hover:border-[#B88E3D] transition-all text-left group cursor-pointer shadow-2xs"
-              >
-                <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 shrink-0">
-                  <Printer className="w-4 h-4" />
-                </div>
-                <div className="space-y-1">
-                  <span className="font-bold text-stone-900 block text-xs group-hover:text-[#B88E3D]">
-                    Print / Save as PDF
+            {/* Primary Action: Direct Complete PDF Download */}
+            <button
+              type="button"
+              onClick={handleDownloadPdfDirect}
+              disabled={isGeneratingPdf}
+              className="w-full flex items-start gap-3.5 p-4 rounded-xl skeuo-card border-2 border-amber-300/80 bg-amber-50/50 hover:bg-amber-50 hover:border-[#B88E3D] transition-all text-left group cursor-pointer shadow-xs"
+            >
+              <div className="p-3 rounded-xl bg-[#B88E3D] text-white shrink-0 shadow-xs">
+                <Download className="w-5 h-5" />
+              </div>
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-stone-900 text-xs sm:text-sm group-hover:text-[#B88E3D]">
+                    {isGeneratingPdf ? 'Generating PDF...' : 'Download Decision PDF (.pdf)'}
                   </span>
-                  <p className="text-[11px] text-stone-500 leading-relaxed">
-                    Formatted document with clean margins, letterhead, and score tables.
-                  </p>
-                </div>
-              </button>
-
-              {/* Option 2: Copy Markdown */}
-              <button
-                type="button"
-                onClick={handleCopyMarkdown}
-                className="flex items-start gap-3 p-4 rounded-xl border border-[#E8E5DF] bg-white hover:bg-[#FAF7F2] hover:border-[#B88E3D] transition-all text-left group cursor-pointer shadow-2xs"
-              >
-                <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 shrink-0">
-                  {copiedMemo ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                </div>
-                <div className="space-y-1">
-                  <span className="font-bold text-stone-900 block text-xs group-hover:text-[#B88E3D]">
-                    {copiedMemo ? 'Copied to Clipboard!' : 'Copy Markdown Brief'}
+                  <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-[#B88E3D] text-white">
+                    Complete Report
                   </span>
-                  <p className="text-[11px] text-stone-500 leading-relaxed">
-                    Paste into Notion, Slack, Google Docs, or Obsidian.
-                  </p>
                 </div>
-              </button>
+                <p className="text-[11px] text-stone-600 leading-relaxed">
+                  Includes recommendation, scoring matrix, pros & cons, risks, and scenario timelines.
+                </p>
+              </div>
+            </button>
 
-              {/* Option 3: Download Markdown File */}
-              <button
-                type="button"
-                onClick={() =>
-                  handleDownloadFile(
-                    generateMarkdownReport(),
-                    `decision-brief-${decision.id}.md`,
-                    'text/markdown'
-                  )
-                }
-                className="flex items-start gap-3 p-4 rounded-xl border border-[#E8E5DF] bg-white hover:bg-[#FAF7F2] hover:border-[#B88E3D] transition-all text-left group cursor-pointer shadow-2xs"
-              >
-                <div className="p-2.5 rounded-lg bg-stone-100 border border-stone-300 text-stone-900 shrink-0">
-                  <Download className="w-4 h-4" />
-                </div>
-                <div className="space-y-1">
-                  <span className="font-bold text-stone-900 block text-xs group-hover:text-[#B88E3D]">
-                    Download Markdown (.md)
-                  </span>
-                  <p className="text-[11px] text-stone-500 leading-relaxed">
-                    Structured text brief for local archives and project documentation.
-                  </p>
-                </div>
-              </button>
-
-              {/* Option 4: Download HTML File */}
-              <button
-                type="button"
-                onClick={() =>
-                  handleDownloadFile(
-                    generateHtmlReport(),
-                    `decision-brief-${decision.id}.html`,
-                    'text/html'
-                  )
-                }
-                className="flex items-start gap-3 p-4 rounded-xl border border-[#E8E5DF] bg-white hover:bg-[#FAF7F2] hover:border-[#B88E3D] transition-all text-left group cursor-pointer shadow-2xs"
-              >
-                <div className="p-2.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-900 shrink-0">
-                  <FileCode className="w-4 h-4" />
-                </div>
-                <div className="space-y-1">
-                  <span className="font-bold text-stone-900 block text-xs group-hover:text-[#B88E3D]">
-                    Download HTML Report (.html)
-                  </span>
-                  <p className="text-[11px] text-stone-500 leading-relaxed">
-                    Standalone styled document viewable in any browser offline.
-                  </p>
-                </div>
-              </button>
-            </div>
+            {/* Secondary Action: Copy Summary Text */}
+            <button
+              type="button"
+              onClick={handleCopyMarkdown}
+              className="w-full flex items-start gap-3.5 p-3.5 rounded-xl skeuo-card hover:border-[#B88E3D] transition-all text-left group cursor-pointer"
+            >
+              <div className="p-2.5 rounded-lg bg-stone-100 border border-stone-300 text-stone-700 shrink-0">
+                {copiedMemo ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+              </div>
+              <div className="space-y-0.5">
+                <span className="font-bold text-stone-900 block text-xs group-hover:text-[#B88E3D]">
+                  {copiedMemo ? 'Copied to Clipboard!' : 'Copy Text Summary'}
+                </span>
+                <p className="text-[11px] text-stone-500 leading-relaxed">
+                  Quick text summary to paste into messages, notes, or emails.
+                </p>
+              </div>
+            </button>
           </div>
 
           {downloadSuccess && (
             <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 font-medium">
               <Check className="w-4 h-4 text-emerald-600" />
-              <span>Successfully exported: {downloadSuccess}</span>
+              <span>{downloadSuccess}</span>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2 font-medium">
+              <AlertCircle className="w-4 h-4 text-red-600" />
+              <span>{errorMessage}</span>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3.5 border-t border-[#E8E5DF] bg-[#FAF7F2] flex items-center justify-between">
-          <span className="text-[10px] text-stone-500 font-mono">
-            ID: {decision.id}
+        <div className="px-6 py-3.5 border-t border-[#E0D9CC] bg-[#FAF7F2] flex items-center justify-between">
+          <span className="text-[10px] text-stone-500">
+            Tiebreaker Studio
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-[#2C221E] hover:bg-[#3D312B] text-white text-xs font-bold transition-colors cursor-pointer border border-[#2C221E]"
+            className="px-5 py-2 rounded-xl skeuo-btn-secondary text-stone-800 text-xs font-bold transition-colors cursor-pointer"
           >
             Close
           </button>

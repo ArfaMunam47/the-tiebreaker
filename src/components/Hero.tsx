@@ -13,7 +13,7 @@ export const Hero: React.FC<HeroProps> = ({
   onSelectSample,
 }) => {
   return (
-    <section className="relative overflow-hidden pt-8 pb-10 md:pt-12 md:pb-12 border-b border-[#E8E5DF] bg-[#FAF8F5] text-stone-900">
+    <section className="relative overflow-hidden pt-8 pb-10 md:pt-12 md:pb-12 border-b border-[#E0D9CC] bg-[#F7F4EE] text-stone-900">
       {/* Rich ambient warm radial background accent */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-gradient-to-tr from-amber-200/30 via-amber-100/20 to-yellow-100/30 blur-[140px] rounded-full pointer-events-none" />
 
@@ -22,7 +22,7 @@ export const Hero: React.FC<HeroProps> = ({
           {/* Left Hero Column */}
           <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
             {/* Eyebrow Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-[#E8E5DF] text-[#B88E3D] text-[11px] font-bold tracking-wider shadow-2xs max-w-full">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full skeuo-well text-[#B88E3D] text-[11px] font-bold tracking-wider max-w-full">
               <Sparkles className="w-3.5 h-3.5 text-[#B88E3D] shrink-0" />
               <span className="truncate uppercase tracking-widest">Don’t decide for me. Help me decide better.</span>
             </div>
@@ -37,103 +37,103 @@ export const Hero: React.FC<HeroProps> = ({
 
             {/* Supporting text */}
             <p className="text-sm sm:text-base md:text-lg text-stone-600 font-normal leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              The Tiebreaker transforms complex dilemmas into structured insights, weighted MCDA matrices, risk safeguards, and cognitive bias neutralization.
+              Tiebreaker helps you compare your choices, weigh what matters most, spot hidden risks, and make your decision with confidence.
             </p>
 
             {/* Primary CTAs */}
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
               <button
                 onClick={onStartAnalysis}
-                className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-3.5 text-xs font-extrabold uppercase tracking-widest text-white bg-[#2C221E] hover:bg-[#3D312B] rounded-xl shadow-md transition-all active:scale-[0.98] group cursor-pointer border border-[#2C221E]"
+                className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-7 py-3.5 text-xs font-extrabold uppercase tracking-widest text-white skeuo-btn-primary rounded-xl transition-all active:scale-[0.98] group cursor-pointer"
               >
-                <span className="text-[#D4A338]">ANALYZE A DECISION</span>
+                <span className="text-[#D4A338]">START YOUR DECISION</span>
                 <ArrowRight className="w-4 h-4 text-[#D4A338] stroke-[3] group-hover:translate-x-1 transition-transform" />
               </button>
 
               <button
                 onClick={onOpenHowItWorks}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 text-xs font-bold uppercase tracking-widest text-stone-800 bg-white hover:bg-[#FAF7F2] border border-[#E8E5DF] hover:border-[#B88E3D] rounded-xl transition-all shadow-2xs cursor-pointer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 text-xs font-bold uppercase tracking-widest text-stone-800 skeuo-btn rounded-xl transition-all cursor-pointer"
               >
-                <span>THE METHODOLOGY</span>
+                <span>HOW IT WORKS</span>
               </button>
             </div>
 
             {/* Quick Sample Starter Chips */}
-            <div className="pt-4 border-t border-[#E8E5DF] flex flex-wrap items-center justify-center lg:justify-start gap-2">
+            <div className="pt-4 border-t border-[#E0D9CC] flex flex-wrap items-center justify-center lg:justify-start gap-2">
               <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider w-full sm:w-auto text-center sm:text-left mb-1 sm:mb-0">
-                Example Dilemmas:
+                Try an example:
               </span>
 
               <button
                 onClick={() => onSelectSample('sample_1')}
-                className="px-3.5 py-1.5 rounded-full bg-white hover:bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-medium text-stone-800 hover:text-[#B88E3D] transition-all shadow-2xs cursor-pointer"
+                className="px-3.5 py-1.5 rounded-full skeuo-btn text-xs font-medium text-stone-800 hover:text-[#B88E3D] transition-all cursor-pointer"
               >
-                "Startup Offer vs CS Degree"
+                "Startup Job vs College Degree"
               </button>
 
               <button
                 onClick={() => onSelectSample('sample_2')}
-                className="px-3.5 py-1.5 rounded-full bg-white hover:bg-[#FAF7F2] border border-[#E8E5DF] text-xs font-medium text-stone-800 hover:text-[#B88E3D] transition-all shadow-2xs cursor-pointer"
+                className="px-3.5 py-1.5 rounded-full skeuo-btn text-xs font-medium text-stone-800 hover:text-[#B88E3D] transition-all cursor-pointer"
               >
-                "Suburban Home vs Rent & Invest"
+                "Buy a Home vs Rent & Invest"
               </button>
 
               <button
                 onClick={() => onSelectSample()}
-                className="px-3.5 py-1.5 rounded-full bg-amber-100/80 hover:bg-amber-100 border border-amber-300 text-xs font-bold text-amber-950 transition-all cursor-pointer"
+                className="px-3.5 py-1.5 rounded-full bg-amber-100/90 hover:bg-amber-100 border border-amber-300 text-xs font-bold text-amber-950 transition-all cursor-pointer shadow-2xs"
               >
-                Explore All Samples →
+                See All Examples →
               </button>
             </div>
           </div>
 
           {/* Right Hero Column: 4 Methodology Pillars Showcase Card */}
-          <div className="lg:col-span-5 bg-white border border-[#E8E5DF] rounded-2xl p-6 sm:p-7 shadow-sm space-y-4 relative overflow-hidden backdrop-blur-md">
+          <div className="lg:col-span-5 skeuo-card rounded-2xl p-6 sm:p-7 space-y-4 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-36 h-36 bg-amber-100/50 rounded-bl-full pointer-events-none" />
 
-            <div className="flex items-center justify-between pb-3 border-b border-[#E8E5DF]">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E0D9CC]">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#B88E3D]">
-                Decision Intelligence Framework
+                How Tiebreaker Helps You
               </span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                Gemini AI Engine
+              <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md bg-amber-100/90 text-amber-900 border border-amber-300 shadow-2xs">
+                Smart AI Analysis
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] hover:border-[#B88E3D] transition-colors">
+              <div className="p-3.5 rounded-xl skeuo-well hover:border-[#B88E3D] transition-colors">
                 <Scale className="w-4 h-4 text-[#B88E3D] mb-1.5" />
-                <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Weighted Matrix</h3>
-                <p className="text-[11px] text-stone-600 mt-1 leading-snug">Criteria weights & real-time MCDA scoring.</p>
+                <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Score Choices</h3>
+                <p className="text-[11px] text-stone-600 mt-1 leading-snug">Rate options by what is most important to you.</p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] hover:border-[#B88E3D] transition-colors">
+              <div className="p-3.5 rounded-xl skeuo-well hover:border-[#B88E3D] transition-colors">
                 <GitMerge className="w-4 h-4 text-indigo-600 mb-1.5" />
-                <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Trade-offs & SWOT</h3>
-                <p className="text-[11px] text-stone-600 mt-1 leading-snug">Pros, cons, strengths, and weaknesses.</p>
+                <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Pros & Cons</h3>
+                <p className="text-[11px] text-stone-600 mt-1 leading-snug">See the good, the bad, and key trade-offs.</p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] hover:border-[#B88E3D] transition-colors">
+              <div className="p-3.5 rounded-xl skeuo-well hover:border-[#B88E3D] transition-colors">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 mb-1.5" />
-                <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Risk Modeling</h3>
-                <p className="text-[11px] text-stone-600 mt-1 leading-snug">Probabilities, impacts, and safeguards.</p>
+                <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Risk Check</h3>
+                <p className="text-[11px] text-stone-600 mt-1 leading-snug">Find possible problems and solutions in advance.</p>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] hover:border-[#B88E3D] transition-colors">
+              <div className="p-3.5 rounded-xl skeuo-well hover:border-[#B88E3D] transition-colors">
                 <Compass className="w-4 h-4 text-[#B88E3D] mb-1.5" />
-                <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Think Deeper</h3>
-                <p className="text-[11px] text-stone-600 mt-1 leading-snug">Expose cognitive biases and blindspots.</p>
+                <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Blind Spots</h3>
+                <p className="text-[11px] text-stone-600 mt-1 leading-snug">Spot thinking traps and see fresh angles.</p>
               </div>
             </div>
 
             <div className="pt-2">
               <button
                 onClick={() => onSelectSample('sample_1')}
-                className="w-full flex items-center justify-between p-3 rounded-xl bg-[#FAF7F2] hover:bg-[#F4F1EA] border border-[#E8E5DF] text-stone-900 transition-colors text-xs font-semibold group cursor-pointer"
+                className="w-full flex items-center justify-between p-3.5 rounded-xl skeuo-btn text-stone-900 transition-colors text-xs font-semibold group cursor-pointer"
               >
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-[#B88E3D]" />
-                  <span>Preview Full Sample Analysis</span>
+                  <span>See an Example Decision Result</span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-[#B88E3D] group-hover:translate-x-1 transition-transform" />
               </button>

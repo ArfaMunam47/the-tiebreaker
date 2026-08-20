@@ -321,9 +321,9 @@ export default function App() {
       <div className="w-full max-w-[1880px] mx-auto px-3 sm:px-5 lg:px-7 xl:px-8 py-4 sm:py-6 flex-1">
         {currentDecision ? (
           /* RESULTS DASHBOARD VIEW WITH DEDICATED DESKTOP SIDEBAR */
-          <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] xl:grid-cols-[280px_1fr] gap-6 min-h-[calc(100vh-120px)] items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] xl:grid-cols-[320px_1fr] 2xl:grid-cols-[340px_1fr] gap-6 xl:gap-8 items-start w-full">
             {/* Desktop Navigation Sidebar for Active Decision */}
-            <aside className="hidden lg:block bg-white rounded-2xl border border-[#E8E5DF] sticky top-[80px] h-[calc(100vh-110px)] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden shrink-0 shadow-2xs">
+            <aside className="hidden lg:block sticky top-[76px] shrink-0 rounded-2xl skeuo-card border border-[#E0D9CC] shadow-xs">
               <Sidebar
                 currentDecision={currentDecision}
                 savedDecisions={savedDecisions}
@@ -341,7 +341,7 @@ export default function App() {
             </aside>
 
             {/* Results Canvas */}
-            <main className="flex-1 min-w-0 max-w-full overflow-x-hidden">
+            <main className="flex-1 min-w-0 w-full">
               <ResultsDashboard
                 decision={currentDecision}
                 onUpdateDecision={handleUpdateDecision}
@@ -358,7 +358,7 @@ export default function App() {
           </div>
         ) : (
           /* HOMEPAGE & DECISION STUDIO WORKSPACE */
-          <main className="w-full min-w-0 max-w-full overflow-x-hidden">
+          <main className="w-full min-w-0">
             <DecisionWorkspace
               onRunAnalysis={handleRunAnalysis}
               isAnalyzing={isAnalyzing}
@@ -411,29 +411,34 @@ export default function App() {
 
       {/* SAMPLE DECISION PICKER MODAL */}
       {showSamplePicker && (
-        <div className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white border border-[#E8E5DF] rounded-2xl max-w-2xl w-full p-5 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] flex flex-col text-stone-900">
-            <div className="flex items-center justify-between border-b border-[#E8E5DF] pb-4">
+        <div className="fixed inset-0 z-50 bg-stone-950/45 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="skeuo-modal-shell rounded-2xl max-w-2xl w-full p-5 sm:p-8 space-y-6 max-h-[90vh] flex flex-col text-stone-900">
+            <div className="flex items-center justify-between border-b border-[#E3DCcf] pb-4">
               <div className="flex items-center gap-2.5">
-                <Sparkles className="w-5 h-5 text-[#B88E3D]" />
-                <h3 className="font-serif italic text-lg sm:text-xl font-bold text-[#2C221E]">
-                  Select a Pre-Built Sample Analysis
-                </h3>
+                <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200/80 shadow-xs flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-[#B88E3D]" />
+                </div>
+                <div>
+                  <h3 className="font-serif italic text-lg sm:text-xl font-bold text-[#2C221E]">
+                    Select a Pre-Built Sample Analysis
+                  </h3>
+                  <p className="text-[11px] text-stone-500 font-medium">Load fully structured decision models to explore</p>
+                </div>
               </div>
               <button
                 onClick={() => setShowSamplePicker(false)}
-                className="p-1.5 text-stone-400 hover:text-stone-900 rounded-lg hover:bg-stone-100 cursor-pointer"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-stone-400 hover:text-stone-900 skeuo-btn-secondary cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-3 overflow-y-auto pr-1 flex-1">
+            <div className="space-y-3 overflow-y-auto pr-1 flex-1 custom-scrollbar">
               {SAMPLE_DECISIONS.map((sample) => (
                 <div
                   key={sample.id}
                   onClick={() => handleSelectSample(sample.id)}
-                  className="p-4 sm:p-5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] hover:border-[#B88E3D] cursor-pointer transition-all space-y-2 group shadow-xs"
+                  className="p-4 sm:p-5 rounded-xl skeuo-card-interactive cursor-pointer space-y-2 group"
                 >
                   <div className="flex items-center justify-between">
                     <h4 className="font-serif italic text-base font-bold text-[#2C221E] group-hover:text-[#B88E3D] transition-colors">
@@ -444,14 +449,14 @@ export default function App() {
                     </span>
                   </div>
 
-                  <p className="text-xs text-stone-600 line-clamp-2">
+                  <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">
                     {sample.originalPrompt}
                   </p>
 
-                  <div className="flex items-center gap-2 text-[11px] font-mono text-stone-500 pt-1">
-                    <span>{sample.options.length} Options</span>
+                  <div className="flex items-center gap-2 text-[11px] font-mono text-stone-500 pt-1 border-t border-stone-200/60">
+                    <span className="px-2 py-0.5 rounded-md skeuo-well text-stone-700 font-semibold">{sample.options.length} Options</span>
                     <span>•</span>
-                    <span>{sample.criteria.length} Matrix Criteria</span>
+                    <span className="px-2 py-0.5 rounded-md skeuo-well text-stone-700 font-semibold">{sample.criteria.length} Matrix Criteria</span>
                   </div>
                 </div>
               ))}

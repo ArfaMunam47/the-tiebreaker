@@ -72,22 +72,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-900/50 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-      <div className="bg-white border border-[#E8E5DF] rounded-2xl max-w-md w-full p-6 sm:p-7 space-y-5 shadow-2xl relative text-stone-900">
+    <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+      <div className="skeuo-modal-shell max-w-md w-full p-6 sm:p-7 space-y-5 relative text-stone-900">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-1 text-stone-400 hover:text-stone-900 rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"
+          className="absolute top-5 right-5 p-1 text-stone-400 hover:text-stone-900 rounded-lg hover:bg-stone-200/50 transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[#B88E3D] text-[11px] font-bold">
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full skeuo-well text-[#B88E3D] text-[11px] font-bold">
             <Shield className="w-3.5 h-3.5" />
             <span>Private User Decision Library</span>
           </div>
           <h3 className="font-serif italic text-xl sm:text-2xl font-bold text-[#2C221E]">
-            {currentUser ? 'User Profile & Account' : 'Sign In to Your Decision Workspace'}
+            {currentUser ? 'User Profile & Account' : 'Sign In to Your Workspace'}
           </h3>
           <p className="text-xs text-stone-600">
             Every decision analysis is stored strictly in your private, authenticated account.
@@ -95,7 +95,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         {error && (
-          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2">
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-start gap-2 shadow-2xs">
             <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 mt-0.5" />
             <span>{error}</span>
           </div>
@@ -103,9 +103,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {currentUser ? (
           <div className="space-y-5 pt-1">
-            <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+            <div className="p-4 rounded-xl skeuo-well space-y-2">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#2C221E] text-white flex items-center justify-center font-bold text-sm">
+                <div className="w-10 h-10 rounded-full skeuo-btn-primary text-white flex items-center justify-center font-bold text-sm">
                   {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                 </div>
                 <div>
@@ -128,10 +128,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <button
                   onClick={() => handleQuickDemo('user_a')}
                   disabled={loading}
-                  className={`p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                  className={`p-2.5 rounded-xl text-left text-xs transition-all cursor-pointer ${
                     currentUser.email.includes('workspace1')
-                      ? 'bg-amber-50/70 border-[#B88E3D] font-bold text-stone-900'
-                      : 'bg-white border-[#E8E5DF] text-stone-700 hover:border-[#B88E3D]'
+                      ? 'skeuo-card border-[#B88E3D]/80 bg-amber-50/70 font-bold text-stone-900'
+                      : 'skeuo-well hover:border-[#B88E3D] text-stone-700'
                   }`}
                 >
                   <span className="block font-bold text-stone-900">Workspace Demo A</span>
@@ -140,10 +140,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <button
                   onClick={() => handleQuickDemo('user_b')}
                   disabled={loading}
-                  className={`p-2.5 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                  className={`p-2.5 rounded-xl text-left text-xs transition-all cursor-pointer ${
                     currentUser.email.includes('workspace2')
-                      ? 'bg-amber-50/70 border-[#B88E3D] font-bold text-stone-900'
-                      : 'bg-white border-[#E8E5DF] text-stone-700 hover:border-[#B88E3D]'
+                      ? 'skeuo-card border-[#B88E3D]/80 bg-amber-50/70 font-bold text-stone-900'
+                      : 'skeuo-well hover:border-[#B88E3D] text-stone-700'
                   }`}
                 >
                   <span className="block font-bold text-stone-900">Workspace Demo B</span>
@@ -158,13 +158,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   onLogout();
                   onClose();
                 }}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold transition-colors cursor-pointer"
+                className="flex-1 px-4 py-2.5 rounded-xl skeuo-well hover:bg-[#EAE4D9] text-stone-800 text-xs font-bold transition-colors cursor-pointer"
               >
                 Sign Out
               </button>
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-[#2C221E] hover:bg-[#3D312B] text-white text-xs font-bold transition-colors cursor-pointer"
+                className="flex-1 px-4 py-2.5 rounded-xl skeuo-btn-primary text-white text-xs font-bold transition-colors cursor-pointer"
               >
                 Close
               </button>
@@ -173,7 +173,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         ) : (
           <div className="space-y-4">
             {/* Quick Demo Switcher Buttons */}
-            <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+            <div className="p-3.5 rounded-xl skeuo-well space-y-2">
               <span className="text-[10px] font-mono uppercase font-bold text-stone-500 tracking-wider block">
                 Instant Demo Access (Test Isolation)
               </span>
@@ -182,7 +182,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   type="button"
                   onClick={() => handleQuickDemo('user_a')}
                   disabled={loading}
-                  className="px-3 py-2 rounded-lg bg-white border border-[#E8E5DF] hover:border-[#B88E3D] text-left text-xs transition-all cursor-pointer shadow-2xs"
+                  className="px-3 py-2 rounded-xl skeuo-card hover:border-[#B88E3D] text-left text-xs transition-all cursor-pointer"
                 >
                   <span className="font-bold block text-stone-900">Workspace Demo A</span>
                   <span className="text-[10px] text-stone-500">Test Account 1</span>
@@ -191,7 +191,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   type="button"
                   onClick={() => handleQuickDemo('user_b')}
                   disabled={loading}
-                  className="px-3 py-2 rounded-lg bg-white border border-[#E8E5DF] hover:border-[#B88E3D] text-left text-xs transition-all cursor-pointer shadow-2xs"
+                  className="px-3 py-2 rounded-xl skeuo-card hover:border-[#B88E3D] text-left text-xs transition-all cursor-pointer"
                 >
                   <span className="font-bold block text-stone-900">Workspace Demo B</span>
                   <span className="text-[10px] text-stone-500">Test Account 2</span>
@@ -199,7 +199,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
 
-            <div className="flex border-b border-[#E8E5DF]">
+            <div className="flex border-b border-[#E0D9CC]">
               <button
                 onClick={() => setTab('login')}
                 className={`flex-1 pb-2.5 text-xs font-bold text-center transition-all cursor-pointer ${
@@ -234,7 +234,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@company.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-stone-900 focus:outline-none focus:border-[#B88E3D]"
+                    className="w-full px-3.5 py-2.5 rounded-xl skeuo-input text-xs text-stone-900 focus:outline-none focus:border-[#B88E3D]"
                   />
                 </div>
                 <div>
@@ -247,13 +247,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-stone-900 focus:outline-none focus:border-[#B88E3D]"
+                    className="w-full px-3.5 py-2.5 rounded-xl skeuo-input text-xs text-stone-900 focus:outline-none focus:border-[#B88E3D]"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 rounded-xl bg-[#2C221E] hover:bg-[#3D312B] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 mt-2"
+                  className="w-full py-2.5 rounded-xl skeuo-btn-primary text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 mt-2"
                 >
                   {loading ? 'Authenticating...' : 'Sign In'}
                 </button>
@@ -270,7 +270,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Jane Doe"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-stone-900 focus:outline-none focus:border-[#B88E3D]"
+                    className="w-full px-3.5 py-2.5 rounded-xl skeuo-input text-xs text-stone-900 focus:outline-none focus:border-[#B88E3D]"
                   />
                 </div>
                 <div>
@@ -283,7 +283,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@company.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-stone-900 focus:outline-none focus:border-[#B88E3D]"
+                    className="w-full px-3.5 py-2.5 rounded-xl skeuo-input text-xs text-stone-900 focus:outline-none focus:border-[#B88E3D]"
                   />
                 </div>
                 <div>
@@ -297,13 +297,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="At least 6 characters"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-stone-900 focus:outline-none focus:border-[#B88E3D]"
+                    className="w-full px-3.5 py-2.5 rounded-xl skeuo-input text-xs text-stone-900 focus:outline-none focus:border-[#B88E3D]"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 rounded-xl bg-[#2C221E] hover:bg-[#3D312B] text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 mt-2"
+                  className="w-full py-2.5 rounded-xl skeuo-btn-primary text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 mt-2"
                 >
                   {loading ? 'Creating Account...' : 'Create Account'}
                 </button>

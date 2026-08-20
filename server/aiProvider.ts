@@ -2386,3 +2386,173 @@ export function generateDeterministicDecisionAnalysis(
     status: 'analyzed' as const,
   };
 }
+
+// -------------------------------------------------------------
+// ENHANCE PROMPT WITH MULTILINGUAL AI & NATURAL CLARITY
+// -------------------------------------------------------------
+export interface EnhancePromptResult {
+  enhancedPrompt: string;
+  originalPrompt: string;
+  detectedLanguage: 'english' | 'roman_urdu' | 'urdu' | 'mixed' | 'other';
+  suggestedOptions?: string[];
+  tips?: string;
+}
+
+export async function enhancePromptWithAI(
+  userPrompt: string,
+  context?: {
+    category?: DecisionCategory;
+    reversibility?: ReversibilityLevel;
+    timeHorizon?: TimeHorizon;
+  }
+): Promise<EnhancePromptResult> {
+  const cleanPrompt = userPrompt?.trim() || '';
+  if (!cleanPrompt) {
+    throw new Error('Please enter a question or decision first.');
+  }
+
+  // Detect language
+  const isUrduScript = /[\u0600-\u06FF]/.test(cleanPrompt);
+  const romanUrduKeywords = [
+    'mujhe', 'karna', 'karni', 'chahiye', 'chahye', 'samajh', 'nahi', 'aa', 'raha',
+    'rahi', 'kya', 'kaise', 'konsa', 'konsi', 'ya', 'aur', 'karein', 'hoon', 'hai',
+    'mein', 'main', 'pe', 'par', 'bhi', 'kare', 'len', 'lena', 'chhod', 'chhor',
+  ];
+  const lower = cleanPrompt.toLowerCase();
+  const matchedRomanUrduWords = romanUrduKeywords.filter((w) =>
+    new RegExp(`\\b${w}\\b`, 'i').test(lower)
+  );
+
+  let detectedLanguage: 'english' | 'roman_urdu' | 'urdu' | 'mixed' | 'other' = 'english';
+  if (isUrduScript) {
+    detectedLanguage = 'urdu';
+  } else if (matchedRomanUrduWords.length >= 2) {
+    detectedLanguage = 'roman_urdu';
+  } else if (matchedRomanUrduWords.length === 1) {
+    detectedLanguage = 'mixed';
+  }
+
+  const ai = getGeminiClient();
+
+  const systemInstruction = `You are a helpful, clear AI assistant that refines and improves user decision questions for "Tiebreaker".
+Your goal is to make the user's question clearer, more specific, and easier to analyze, while STRICTLY respecting the user's exact intent and situation.
+
+CRITICAL RULES:
+1. 10TH-GRADE READING LEVEL: Use simple, natural, clear everyday words. No academic jargon.
+2. MULTI-LANGUAGE RESPECT:
+   - If the user wrote in English, produce a clear, refined English question.
+   - If the user wrote in Roman Urdu (e.g., "mujhe samajh nahi aa raha ke mujhe AI automation seekhni chahiye ya ML"), improve the question in clean, natural Roman Urdu or natural bilingual tone (e.g. "Mujhe AI automation aur machine learning (ML) mein se kis ko choose karna chahiye? In dono ko learning difficulty, job opportunities, aur time required ke hisab se compare karein.").
+   - If the user wrote in Urdu script, improve the question in clear Urdu.
+   - Do NOT force everything into English if the user wrote in Urdu or Roman Urdu.
+3. NEVER INVENT INFORMATION:
+   - Do NOT make up personal facts, budgets, timelines, or unrelated assumptions.
+   - Do NOT turn daily-life decisions into career questions (e.g., "I'm tired. Should I rest?" must stay strictly about resting and resting vs pushing through).
+   - Do NOT turn product purchases into job dilemmas.
+4. PRESERVE MEANING: Keep the user's exact dilemma, just make it structured and easy to compare.
+5. SUGGESTED OPTIONS: Extract 2 to 3 distinct choices (e.g. ["React", "Vue"], ["AI Automation", "Machine Learning", "Take a Rest", "Keep Working"]).
+
+Respond with a valid JSON object matching this schema:
+{
+  "enhancedPrompt": "The clear, refined, easy-to-understand question in the user's language/style",
+  "suggestedOptions": ["Option A", "Option B"],
+  "tips": "One short simple tip for making this decision"
+}`;
+
+  if (ai) {
+    try {
+      const response = await generateContentWithRetryAndFallback(ai, {
+        contents: `Original user dilemma: "${cleanPrompt}"
+Context hints (if applicable):
+Category: ${context?.category || 'Automatic'}
+Timeframe: ${context?.timeHorizon || 'Flexible'}`,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          temperature: 0.3,
+        },
+      });
+
+      if (response && response.text) {
+        const parsed = JSON.parse(response.text.trim());
+        if (parsed.enhancedPrompt && typeof parsed.enhancedPrompt === 'string') {
+          return {
+            enhancedPrompt: parsed.enhancedPrompt.trim(),
+            originalPrompt: cleanPrompt,
+            detectedLanguage,
+            suggestedOptions: Array.isArray(parsed.suggestedOptions)
+              ? parsed.suggestedOptions.filter((s: any) => typeof s === 'string' && s.trim())
+              : undefined,
+            tips: parsed.tips || undefined,
+          };
+        }
+      }
+    } catch (err) {
+      console.warn('AI prompt enhancement fallback triggered:', err);
+    }
+  }
+
+  // Deterministic multilingual fallback if AI is offline
+  let fallbackEnhanced = cleanPrompt;
+  let fallbackOptions: string[] = [];
+
+  // Handle Roman Urdu cases
+  if (detectedLanguage === 'roman_urdu' || detectedLanguage === 'mixed') {
+    if (lower.includes('automation') && (lower.includes('ml') || lower.includes('machine learning'))) {
+      fallbackEnhanced =
+        'Mujhe AI automation aur Machine Learning (ML) mein se kis field ko choose karna chahiye? In dono ko learning difficulty, job opportunities, aur time required ke hisaab se compare karein.';
+      fallbackOptions = ['AI Automation', 'Machine Learning (ML)'];
+    } else if (lower.includes('rest') || lower.includes('thak') || lower.includes('tired') || lower.includes('araam')) {
+      fallbackEnhanced =
+        'Mujhe abhi break/rest lena chahiye ya apna kaam continue karna chahiye? Health, energy, aur productivity ke hisaab se kya behtar rahega?';
+      fallbackOptions = ['Rest lein aur recharge hon', 'Kaam continue karein'];
+    } else if (lower.includes('react') && lower.includes('vue')) {
+      fallbackEnhanced =
+        'Mujhe React aur Vue mein se konsa framework seekhna chahiye? Ease of learning, community support, aur jobs ke hisaab se compare karein.';
+      fallbackOptions = ['React', 'Vue'];
+    } else {
+      fallbackEnhanced = `${cleanPrompt.replace(/\?+$/, '')} — is decision ke pros, cons, aur sabse behtar option kya hoga?`;
+    }
+  } else if (detectedLanguage === 'urdu') {
+    fallbackEnhanced = `${cleanPrompt.replace(/\؟+$/, '')} — اس فیصلے کے اہم فائدے، نقصانات اور بہترین حل کیا ہیں؟`;
+  } else {
+    // English cases
+    if (lower.includes('react') && lower.includes('vue')) {
+      fallbackEnhanced =
+        'Should I learn React or Vue? Please compare them based on ease of learning, job market demand, and community support.';
+      fallbackOptions = ['React', 'Vue'];
+    } else if (lower.includes('mongodb') && (lower.includes('postgres') || lower.includes('postgresql'))) {
+      fallbackEnhanced =
+        'Should I use MongoDB or PostgreSQL for my project? Please compare them based on data structure, scalability, performance, and ease of use.';
+      fallbackOptions = ['PostgreSQL', 'MongoDB'];
+    } else if (lower.includes('automation') && (lower.includes('ml') || lower.includes('machine learning'))) {
+      fallbackEnhanced =
+        'Should I focus on AI automation or Machine Learning (ML)? Please compare them based on learning curve, career opportunities, and time required to become job-ready.';
+      fallbackOptions = ['AI Automation', 'Machine Learning'];
+    } else if (lower.includes('tired') || lower.includes('rest') || lower.includes('exhausted') || lower.includes('sleep')) {
+      fallbackEnhanced =
+        'I am feeling tired. Should I take a rest now or keep pushing through? Please compare based on recovery, health, and task quality.';
+      fallbackOptions = ['Take a rest and recharge', 'Keep pushing through'];
+    } else if (lower.includes('buy') && (lower.includes('laptop') || lower.includes('phone') || lower.includes('car'))) {
+      fallbackEnhanced = `Should I buy this now or hold off? Please compare based on value for money, urgency, budget impact, and long-term utility.`;
+      fallbackOptions = ['Buy now', 'Wait or look for alternatives'];
+    } else {
+      // General clean enhancement
+      const baseClean = cleanPrompt.replace(/\?+$/, '').trim();
+      fallbackEnhanced = `${baseClean}? Please compare the best choices based on key trade-offs, pros and cons, and practical outcomes.`;
+    }
+  }
+
+  if (fallbackOptions.length === 0) {
+    const extracted = extractAlternativesFromQuestion(cleanPrompt);
+    if (extracted.length >= 2) {
+      fallbackOptions = extracted.map((e) => e.title);
+    }
+  }
+
+  return {
+    enhancedPrompt: fallbackEnhanced,
+    originalPrompt: cleanPrompt,
+    detectedLanguage,
+    suggestedOptions: fallbackOptions.length >= 2 ? fallbackOptions : undefined,
+  };
+}

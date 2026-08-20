@@ -2,11 +2,11 @@ import React from 'react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="border-t border-[#E8E5DF] bg-white py-6 sm:py-8 px-4 md:px-8 text-stone-600 text-xs mt-6 print:hidden">
+    <footer className="border-t border-[#E0D9CC] bg-[#FAF7F2] py-6 sm:py-8 px-4 md:px-8 text-stone-600 text-xs mt-6 print:hidden">
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3 max-w-full">
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-6 h-6 rounded-md bg-[#2C221E] text-[#D4A338] flex items-center justify-center font-serif text-xs font-bold shadow-xs shrink-0">
+            <div className="w-7 h-7 rounded-lg skeuo-btn-primary text-[#D4A338] flex items-center justify-center font-serif text-xs font-bold shrink-0">
               T
             </div>
             <span className="text-base font-serif italic tracking-tight font-bold text-[#2C221E] whitespace-nowrap">

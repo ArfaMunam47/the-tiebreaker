@@ -22,6 +22,7 @@ import {
   Plus,
   Trash2,
   Save,
+  Download,
   Printer,
   Send,
   HelpCircle,
@@ -527,27 +528,27 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   });
 
   const tabList: { id: TabType; label: string; icon: React.ElementType }[] = [
-    { id: 'overview', label: 'Executive Overview', icon: BarChart3 },
+    { id: 'overview', label: 'Overview', icon: BarChart3 },
     { id: 'prosCons', label: 'Pros & Cons', icon: FileText },
-    { id: 'compare', label: 'Compare Matrix', icon: Table },
-    { id: 'swot', label: 'SWOT Grid', icon: Grid2X2 },
-    { id: 'matrix', label: 'Weighted Matrix', icon: SlidersHorizontal },
-    { id: 'risks', label: 'Risk Analysis', icon: Shield },
-    { id: 'future', label: '1–5 Yr Scenarios', icon: Clock },
-    { id: 'thinkDeeper', label: 'Think Deeper & AI', icon: Compass },
+    { id: 'compare', label: 'Compare Choices', icon: Table },
+    { id: 'swot', label: 'Strengths & Weaknesses', icon: Grid2X2 },
+    { id: 'matrix', label: 'Score Matrix', icon: SlidersHorizontal },
+    { id: 'risks', label: 'Risks & Solutions', icon: Shield },
+    { id: 'future', label: 'Future Scenarios', icon: Clock },
+    { id: 'thinkDeeper', label: 'Ask Questions', icon: Compass },
   ];
 
   return (
     <div className="w-full space-y-8 animate-fadeIn print:px-0 print:py-0">
       {/* HEADER BANNER */}
-      <div className="bg-[#FAF8F5] border border-[#E8E5DF] rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-xs print:border-none print:shadow-none">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-100/50 blur-[100px] pointer-events-none rounded-full" />
+      <div className="skeuo-card rounded-2xl p-6 sm:p-8 relative overflow-hidden print:border-none print:shadow-none">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-100/40 blur-[100px] pointer-events-none rounded-full" />
         <div className="absolute top-0 left-0 w-full h-[3px] bg-[#B88E3D]" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest bg-amber-100 text-amber-950 border border-amber-300 rounded-md">
+              <span className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest bg-amber-100/90 text-amber-950 border border-amber-300/80 rounded-md shadow-2xs">
                 Decision Analysis
               </span>
               <span className="text-xs text-stone-500 font-mono">
@@ -563,7 +564,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             {/* Recommendation Highlight Pill */}
             {recommendedOpt && (
               <div className="space-y-2">
-                <div className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-lg bg-white border border-[#E8E5DF] text-stone-800 text-xs font-medium shadow-2xs">
+                <div className="inline-flex flex-wrap items-center gap-2 px-3.5 py-2 rounded-xl skeuo-card text-stone-800 text-xs font-medium">
                   <Award className="w-4 h-4 text-[#B88E3D]" />
                   <span>
                     You Should Choose:{' '}
@@ -573,20 +574,20 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     ({decision.recommendation?.confidenceLevel || 'High'} Confidence)
                   </span>
                   {decision.reversibility && (
-                    <span className="px-2 py-0.5 rounded bg-[#FAF7F2] text-[10px] text-stone-700 border border-[#E8E5DF]">
+                    <span className="px-2 py-0.5 rounded-md skeuo-well text-[10px] text-stone-700">
                       ↺ {decision.reversibility}
                     </span>
                   )}
                   {decision.timeHorizon && (
-                    <span className="px-2 py-0.5 rounded bg-[#FAF7F2] text-[10px] text-stone-700 border border-[#E8E5DF]">
+                    <span className="px-2 py-0.5 rounded-md skeuo-well text-[10px] text-stone-700">
                       ⏱ {decision.timeHorizon} horizon
                     </span>
                   )}
                 </div>
 
                 {decision.recommendation?.confidenceReason && (
-                  <p className="text-xs text-stone-700 bg-white/90 p-2.5 rounded-lg border border-[#E8E5DF] italic">
-                    💡 <strong>Confidence Rationale:</strong> {decision.recommendation.confidenceReason}
+                  <p className="text-xs text-stone-700 skeuo-well p-3 rounded-xl italic leading-relaxed">
+                    💡 <strong>Why we are confident:</strong> {decision.recommendation.confidenceReason}
                   </p>
                 )}
               </div>
@@ -594,31 +595,31 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
 
           {/* Action Bar */}
-          <div className="flex flex-wrap items-center gap-2.5 print:hidden">
+          <div className="grid grid-cols-1 xs:grid-cols-3 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 print:hidden w-full sm:w-auto pt-2 sm:pt-0">
             <button
               onClick={handleSaveClick}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border transition-all cursor-pointer ${
+              className={`flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer w-full sm:w-auto ${
                 savedSuccess
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                  : 'bg-white hover:bg-[#FAF7F2] text-stone-800 border-[#E8E5DF] hover:border-[#B88E3D] shadow-2xs'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs'
+                  : 'skeuo-btn-secondary text-stone-800'
               }`}
             >
               <Save className="w-4 h-4 text-[#B88E3D]" />
-              <span>{savedSuccess ? 'Saved to History!' : 'Save Decision'}</span>
+              <span>{savedSuccess ? 'Saved!' : 'Save Decision'}</span>
             </button>
 
             <button
               onClick={() => setIsExportModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold uppercase tracking-wider bg-white hover:bg-[#FAF7F2] text-stone-800 border border-[#E8E5DF] hover:border-[#B88E3D] rounded-lg transition-all shadow-2xs cursor-pointer"
-              title="Print or Export PDF / Markdown / HTML"
+              className="skeuo-btn-secondary flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-xs font-bold uppercase tracking-wider text-stone-800 rounded-xl transition-all cursor-pointer hover:border-[#B88E3D] w-full sm:w-auto"
+              title="Save complete decision report as PDF"
             >
-              <Printer className="w-4 h-4 text-stone-500" />
-              <span className="hidden sm:inline">Export Report</span>
+              <Download className="w-4 h-4 text-[#B88E3D]" />
+              <span>Save as PDF</span>
             </button>
 
             <button
               onClick={onNewDecision}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-extrabold uppercase tracking-wider text-white bg-[#2C221E] hover:bg-[#3D312B] rounded-lg shadow-xs transition-all cursor-pointer border border-[#2C221E]"
+              className="skeuo-btn-primary flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-xs font-extrabold uppercase tracking-wider text-white rounded-xl transition-all cursor-pointer w-full sm:w-auto"
             >
               <Plus className="w-4 h-4 text-[#D4A338] stroke-[3]" />
               <span className="text-[#D4A338]">New Decision</span>
@@ -629,19 +630,19 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
       {/* CLARIFYING QUESTIONS BANNER (if available) */}
       {decision.clarifyingQuestions && decision.clarifyingQuestions.length > 0 && (
-        <div className="bg-[#FAF7F2] border border-[#E8E5DF] rounded-xl p-5 space-y-3 shadow-2xs">
+        <div className="skeuo-card rounded-2xl p-5 space-y-3">
           <div className="flex items-center gap-2 text-[#B88E3D] text-xs font-bold uppercase tracking-wider">
             <HelpCircle className="w-4 h-4 text-[#B88E3D]" />
-            <span>Clarifying Context Identified By AI</span>
+            <span>Helpful Questions & Context</span>
           </div>
           <p className="text-xs text-stone-600">
-            Key questions that sharpen the decision framework:
+            Key points considered for your decision:
           </p>
           <div className="grid sm:grid-cols-2 gap-3 pt-1">
             {decision.clarifyingQuestions.map((q) => (
               <div
                 key={q.id}
-                className="p-3.5 rounded-lg bg-white border border-[#E8E5DF] text-xs space-y-2"
+                className="p-3.5 rounded-xl skeuo-well text-xs space-y-2"
               >
                 <p className="font-semibold text-stone-900">{q.question}</p>
                 {q.suggestedAnswers && q.suggestedAnswers.length > 0 && (
@@ -649,7 +650,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     {q.suggestedAnswers.map((ans, idx) => (
                       <span
                         key={idx}
-                        className="px-2 py-0.5 rounded bg-[#FAF7F2] border border-[#E8E5DF] text-[11px] text-stone-700"
+                        className="px-2.5 py-1 rounded-lg skeuo-card text-[11px] text-stone-700"
                       >
                         {ans}
                       </span>
@@ -663,7 +664,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       )}
 
       {/* NAVIGATION TABS (Mobile Dropdown + Fully Responsive Horizontal Tab Strip) */}
-      <div className="sticky top-[65px] z-20 bg-white/95 backdrop-blur-md pt-2.5 pb-4 mb-8 sm:mb-10 border-b border-[#E8E5DF] shadow-xs print:hidden space-y-2.5 max-w-full min-w-0">
+      <div className="sticky top-[60px] z-20 bg-[#F7F5F0]/95 backdrop-blur-md pt-2 pb-3 mb-6 sm:mb-8 border-b border-[#E0D9CC] shadow-xs print:hidden space-y-2 max-w-full min-w-0">
         {/* Mobile Dropdown Selector (visible on small mobile screens < 640px) */}
         <div className="sm:hidden px-1">
           <label htmlFor="mobile-tab-select" className="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1">
@@ -673,7 +674,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             id="mobile-tab-select"
             value={activeTab}
             onChange={(e) => setActiveTab(e.target.value as TabType)}
-            className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-stone-900 focus:outline-none focus:border-[#B88E3D] shadow-2xs cursor-pointer"
+            className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl skeuo-well text-stone-900 focus:outline-none focus:border-[#B88E3D] cursor-pointer"
           >
             {tabList.map((tab) => (
               <option key={tab.id} value={tab.id}>
@@ -687,7 +688,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         <div className="relative w-full max-w-full min-w-0 flex items-center gap-1.5">
           <button
             onClick={() => scrollTabs('left')}
-            className="hidden sm:flex p-1.5 rounded-lg bg-white border border-[#E8E5DF] text-stone-700 hover:text-stone-950 hover:bg-[#FAF7F2] shadow-2xs transition-colors shrink-0 cursor-pointer"
+            className="hidden sm:flex p-2 rounded-xl skeuo-btn-secondary text-stone-700 hover:text-stone-950 transition-colors shrink-0 cursor-pointer"
             aria-label="Scroll tabs left"
             title="Scroll left"
           >
@@ -696,7 +697,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
           <div
             ref={tabStripRef}
-            className="flex items-center gap-1.5 overflow-x-auto scroll-smooth py-1.5 px-1.5 max-w-full w-full touch-pan-x border border-[#E8E5DF] bg-[#FAF7F2] rounded-xl shadow-2xs [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            className="flex items-center gap-1.5 overflow-x-auto scroll-smooth py-1.5 px-1.5 max-w-full w-full touch-pan-x skeuo-well rounded-xl [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
           >
             {tabList.map((tab) => {
               const Icon = tab.icon;
@@ -707,8 +708,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-[#2C221E] text-white shadow-2xs font-extrabold border border-[#2C221E]'
-                      : 'text-stone-700 hover:text-stone-950 hover:bg-white border border-transparent'
+                      ? 'skeuo-btn-primary text-white font-extrabold shadow-sm'
+                      : 'text-stone-700 hover:text-stone-950 hover:bg-white/80 border border-transparent'
                   }`}
                 >
                   <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-[#D4A338]' : 'text-[#B88E3D]'}`} />
@@ -720,7 +721,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
           <button
             onClick={() => scrollTabs('right')}
-            className="hidden sm:flex p-1.5 rounded-lg bg-white border border-[#E8E5DF] text-stone-700 hover:text-stone-950 hover:bg-[#FAF7F2] shadow-2xs transition-colors shrink-0 cursor-pointer"
+            className="hidden sm:flex p-2 rounded-xl skeuo-btn-secondary text-stone-700 hover:text-stone-950 transition-colors shrink-0 cursor-pointer"
             aria-label="Scroll tabs right"
             title="Scroll right"
           >
@@ -736,7 +737,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         <div className="space-y-8 animate-fadeIn">
           {/* Executive Summary & Top Recommendation Box */}
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs">
+            <div className="md:col-span-2 skeuo-card rounded-2xl p-6 space-y-4">
               <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#B88E3D] flex items-center gap-2">
                 <FileText className="w-4 h-4 text-[#B88E3D]" />
                 Executive Synthesis
@@ -754,15 +755,15 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                   </ul>
 
                   {decision.recommendation?.tradeOff && (
-                    <div className="p-3 rounded-lg bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-stone-700 mt-2">
+                    <div className="p-3.5 rounded-xl skeuo-well text-xs text-stone-700 mt-2">
                       <strong className="text-stone-900 font-semibold">Key Trade-off: </strong>
                       {decision.recommendation.tradeOff}
                     </div>
                   )}
 
                   {decision.recommendation?.bottomLine && (
-                    <div className="p-3 rounded-lg bg-amber-50/70 border border-amber-200/80 text-xs text-stone-800 font-medium mt-2">
-                      <strong className="text-amber-900 font-semibold">Bottom Line: </strong>
+                    <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200/90 text-xs text-stone-800 font-medium mt-2 shadow-2xs">
+                      <strong className="text-amber-950 font-semibold">Bottom Line: </strong>
                       {decision.recommendation.bottomLine}
                     </div>
                   )}
@@ -774,7 +775,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               )}
 
               {/* Priorities Tags */}
-              <div className="pt-2 border-t border-[#E8E5DF]">
+              <div className="pt-3 border-t border-[#E0D9CC]">
                 <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500 block mb-2">
                   Priorities Evaluated:
                 </span>
@@ -782,7 +783,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                   {decision.userPriorities?.map((p, idx) => (
                     <span
                       key={idx}
-                      className="px-2.5 py-1 rounded-full bg-[#FAF7F2] text-stone-800 text-xs font-medium border border-[#E8E5DF]"
+                      className="px-3 py-1 rounded-xl skeuo-card text-stone-800 text-xs font-medium"
                     >
                       {p}
                     </span>
@@ -792,12 +793,12 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             </div>
 
             {/* Recommendation Score Meter Box */}
-            <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 relative overflow-hidden shadow-2xs">
+            <div className="skeuo-card rounded-2xl p-6 space-y-4 relative overflow-hidden">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#B88E3D]">
                   You Should Choose
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">
+                <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-amber-100/90 text-amber-950 border border-amber-300/80 font-bold shadow-2xs">
                   {decision.recommendation?.confidenceLevel || 'High'} Confidence
                 </span>
               </div>
@@ -811,7 +812,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-[#E8E5DF] space-y-1.5 text-xs">
+              <div className="pt-3 border-t border-[#E0D9CC] space-y-1.5 text-xs">
                 <span className="text-stone-500 font-medium">Primary Operational Risk:</span>
                 <p className="text-[#B88E3D] font-semibold">
                   {decision.recommendation?.biggestConcern || 'Managing short-term transition.'}
@@ -825,7 +826,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             <div className="grid md:grid-cols-2 gap-6">
               {/* Why Other Options Lost */}
               {losingOptionsWithReasons.length > 0 && (
-                <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs">
+                <div className="skeuo-card rounded-2xl p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#B88E3D] flex items-center gap-2">
                       <Scale className="w-4 h-4 text-[#B88E3D]" />
@@ -837,12 +838,12 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                   </div>
                   <div className="space-y-3 text-xs">
                     {losingOptionsWithReasons.map(({ option, reason }) => (
-                      <div key={option.id} className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-1.5 shadow-2xs">
+                      <div key={option.id} className="p-4 rounded-xl skeuo-well space-y-1.5">
                         <div className="flex items-center justify-between">
                           <span className="font-serif italic text-stone-900 font-bold block text-sm">
                             {option.title}
                           </span>
-                          <span className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-stone-200 text-stone-700">
+                          <span className="text-[9px] font-mono font-bold uppercase px-2 py-0.5 rounded-md skeuo-card text-stone-700">
                             Trade-Off Profile
                           </span>
                         </div>
@@ -855,19 +856,19 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
               {/* Conditions that would change the recommendation */}
               {decision.recommendation?.reversalConditions && decision.recommendation.reversalConditions.length > 0 && (
-                <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs">
+                <div className="skeuo-card rounded-2xl p-6 space-y-4">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-rose-700 flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-rose-600" />
                       Conditions That Would Flip Recommendation
                     </h4>
-                    <span className="text-[10px] font-mono text-rose-600 font-bold">
+                    <span className="text-[10px] font-mono text-rose-700 font-bold bg-rose-100/90 px-2 py-0.5 rounded-full border border-rose-300/80 shadow-2xs">
                       Reversal Triggers
                     </span>
                   </div>
                   <ul className="space-y-2.5 text-xs">
                     {decision.recommendation.reversalConditions.map((cond, idx) => (
-                      <li key={idx} className="p-3.5 rounded-xl bg-rose-50/60 border border-rose-200 text-stone-800 flex items-start gap-2.5 shadow-2xs">
+                      <li key={idx} className="p-3.5 rounded-xl bg-rose-50/70 border border-rose-200/90 text-stone-800 flex items-start gap-2.5 shadow-2xs">
                         <span className="text-rose-600 font-bold text-sm leading-none">•</span>
                         <span className="leading-relaxed">{cond}</span>
                       </li>
@@ -880,7 +881,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
           {/* Evidence Items Breakdown (Facts vs Assumptions) */}
           {decision.evidenceItems && decision.evidenceItems.length > 0 && (
-            <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs">
+            <div className="skeuo-card rounded-2xl p-6 space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-stone-500 flex items-center gap-2">
                 <FileText className="w-4 h-4 text-[#B88E3D]" />
                 Evidence & Information Integrity Breakdown
@@ -888,14 +889,14 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 {decision.evidenceItems.map((item) => {
                   const categoryColors = {
-                    FACT: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                    ASSUMPTION: 'bg-amber-50 text-amber-800 border-amber-200',
-                    INTERPRETATION: 'bg-indigo-50 text-indigo-800 border-indigo-200',
-                    UNKNOWN: 'bg-[#FAF7F2] text-stone-700 border-[#E8E5DF]',
+                    FACT: 'bg-emerald-50 text-emerald-800 border-emerald-300/80 shadow-2xs',
+                    ASSUMPTION: 'bg-amber-50 text-amber-900 border-amber-300/80 shadow-2xs',
+                    INTERPRETATION: 'bg-indigo-50 text-indigo-900 border-indigo-300/80 shadow-2xs',
+                    UNKNOWN: 'skeuo-card text-stone-700',
                   };
                   return (
-                    <div key={item.id} className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2 text-xs">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase border ${categoryColors[item.category]}`}>
+                    <div key={item.id} className="p-3.5 rounded-xl skeuo-well space-y-2 text-xs">
+                      <span className={`px-2 py-0.5 rounded-md text-[9px] font-mono font-bold uppercase border ${categoryColors[item.category]}`}>
                         {item.category}
                       </span>
                       <p className="text-stone-800 font-medium leading-relaxed">{item.text}</p>
@@ -918,14 +919,14 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 return (
                   <div
                     key={opt.id}
-                    className={`p-6 rounded-2xl border transition-all space-y-4 relative bg-white ${
+                    className={`p-6 rounded-2xl transition-all space-y-4 relative ${
                       isRecommended || isLeader
-                        ? 'border-[#B88E3D] shadow-xs'
-                        : 'border-[#E8E5DF] shadow-2xs'
+                        ? 'skeuo-card border-[#B88E3D]/60'
+                        : 'skeuo-card'
                     }`}
                   >
                     {(isRecommended || isLeader) && (
-                      <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-[#2C221E] text-white rounded-full shadow-2xs border border-[#2C221E]">
+                      <span className="absolute -top-2.5 right-4 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider skeuo-btn-primary text-white rounded-full">
                         {isRecommended ? 'Recommended' : 'Top Matrix Score'}
                       </span>
                     )}
@@ -940,16 +941,16 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     </div>
 
                     {/* Score Bar */}
-                    <div className="space-y-1.5 pt-3 border-t border-[#E8E5DF]">
+                    <div className="space-y-1.5 pt-3 border-t border-[#E0D9CC]">
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-stone-500 font-semibold">Weighted Total</span>
                         <span className="font-mono font-bold text-[#B88E3D] text-sm">
                           {weightedScore} / 10
                         </span>
                       </div>
-                      <div className="w-full bg-[#FAF7F2] border border-[#E8E5DF] h-2 rounded-full overflow-hidden">
+                      <div className="w-full skeuo-well h-2.5 rounded-full overflow-hidden">
                         <div
-                          className="bg-[#B88E3D] h-full rounded-full transition-all duration-500"
+                          className="bg-[#B88E3D] h-full rounded-full transition-all duration-500 shadow-2xs"
                           style={{ width: `${(weightedScore / 10) * 100}%` }}
                         />
                       </div>
@@ -985,22 +986,22 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={opt.id}
-                  className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-5 shadow-2xs"
+                  className="skeuo-card rounded-2xl p-6 space-y-5"
                 >
-                  <div className="flex items-center justify-between border-b border-[#E8E5DF] pb-3">
+                  <div className="flex items-center justify-between border-b border-[#E0D9CC] pb-3">
                     <h4 className="font-serif italic text-lg text-stone-900 font-bold">
                       {opt.title}
                     </h4>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleAddProCon(opt.id, 'pro')}
-                        className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#FAF7F2] text-stone-800 hover:bg-white hover:text-[#B88E3D] border border-[#E8E5DF] rounded transition-colors flex items-center gap-1 cursor-pointer"
+                        className="skeuo-btn-secondary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-800 hover:text-[#B88E3D] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                       >
                         <Plus className="w-3 h-3 text-[#B88E3D]" /> Pro
                       </button>
                       <button
                         onClick={() => handleAddProCon(opt.id, 'con')}
-                        className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-[#FAF7F2] text-stone-800 hover:bg-white hover:text-[#B88E3D] border border-[#E8E5DF] rounded transition-colors flex items-center gap-1 cursor-pointer"
+                        className="skeuo-btn-secondary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-stone-800 hover:text-[#B88E3D] rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
                       >
                         <Plus className="w-3 h-3 text-stone-500" /> Con
                       </button>
@@ -1016,7 +1017,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                       {pc.pros.map((item, idx) => (
                         <li
                           key={idx}
-                          className="p-3.5 rounded-xl bg-[#FAF7F2] border-l-2 border-[#B88E3D] border-y border-r border-[#E8E5DF] text-xs flex items-start justify-between gap-3"
+                          className="p-3.5 rounded-xl skeuo-well border-l-4 border-l-[#B88E3D] text-xs flex items-start justify-between gap-3"
                         >
                           <div>
                             <p className="font-semibold text-stone-900">{item.text}</p>
@@ -1025,9 +1026,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                             )}
                           </div>
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold shrink-0 ${
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-mono uppercase font-bold shrink-0 ${
                               item.weight === 'high'
-                                ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                ? 'bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs'
                                 : 'bg-transparent text-stone-500'
                             }`}
                           >
@@ -1039,7 +1040,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                   </div>
 
                   {/* CONS LIST */}
-                  <div className="space-y-2 pt-2 border-t border-[#E8E5DF]">
+                  <div className="space-y-2 pt-3 border-t border-[#E0D9CC]">
                     <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> Disadvantages ({pc.cons.length})
                     </span>
@@ -1047,7 +1048,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                       {pc.cons.map((item, idx) => (
                         <li
                           key={idx}
-                          className="p-3.5 rounded-xl bg-[#FAF7F2] border-l-2 border-rose-500 border-y border-r border-[#E8E5DF] text-xs flex items-start justify-between gap-3"
+                          className="p-3.5 rounded-xl skeuo-well border-l-4 border-l-rose-500 text-xs flex items-start justify-between gap-3"
                         >
                           <div>
                             <p className="font-semibold text-stone-900">{item.text}</p>
@@ -1056,9 +1057,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                             )}
                           </div>
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold shrink-0 ${
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-mono uppercase font-bold shrink-0 ${
                               item.weight === 'high'
-                                ? 'bg-rose-100 text-rose-900 border border-rose-300'
+                                ? 'bg-rose-100 text-rose-950 border border-rose-300 shadow-2xs'
                                 : 'bg-transparent text-stone-500'
                             }`}
                           >
@@ -1077,8 +1078,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
       {/* 3. COMPARE TAB */}
       {activeTab === 'compare' && (
-        <div className="bg-white border border-[#E8E5DF] rounded-2xl p-5 sm:p-7 space-y-6 animate-fadeIn shadow-2xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E5DF] pb-4">
+        <div className="skeuo-card rounded-2xl p-5 sm:p-7 space-y-6 animate-fadeIn">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E0D9CC] pb-4">
             <div>
               <div className="flex items-center gap-2">
                 <Table className="w-4 h-4 text-[#B88E3D]" />
@@ -1095,10 +1096,10 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               <button
                 type="button"
                 onClick={handleCopyMatrixMarkdown}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                className={`skeuo-btn-secondary flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
                   copiedMatrix
                     ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                    : 'bg-[#FAF7F2] hover:bg-white text-stone-800 border-[#E8E5DF]'
+                    : 'text-stone-800'
                 }`}
               >
                 <Check className={`w-3.5 h-3.5 ${copiedMatrix ? 'text-emerald-600' : 'text-stone-500'}`} />
@@ -1108,37 +1109,118 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
 
           {/* ADD CUSTOM COMPARISON CRITERION INPUT */}
-          <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] flex flex-col sm:flex-row items-center gap-2.5">
+          <div className="p-3.5 rounded-xl skeuo-well flex flex-col sm:flex-row items-center gap-2.5">
             <input
               type="text"
               value={newCompareCriterion}
               onChange={(e) => setNewCompareCriterion(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddCompareCriterion()}
               placeholder="Add custom evaluation criterion (e.g., Work-Life Balance, Time-to-ROI, Stress Impact)..."
-              className="flex-1 w-full px-3.5 py-2 text-xs bg-white border border-[#E8E5DF] rounded-lg text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B88E3D]"
+              className="flex-1 w-full px-3.5 py-2.5 text-xs skeuo-input rounded-xl text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B88E3D]"
             />
             <button
               type="button"
               onClick={handleAddCompareCriterion}
               disabled={!newCompareCriterion.trim()}
-              className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-white bg-[#2C221E] hover:bg-[#3D312B] disabled:opacity-40 rounded-lg transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-1.5 border border-[#2C221E]"
+              className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold text-white skeuo-btn-primary disabled:opacity-40 rounded-xl transition-colors cursor-pointer shrink-0 flex items-center justify-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5 text-[#D4A338] stroke-[3]" />
               <span className="text-[#D4A338]">Add Criterion</span>
             </button>
           </div>
 
-          {/* MAIN MATRIX TABLE */}
-          <div className="overflow-x-auto rounded-xl border border-[#E8E5DF]">
-            <table className="w-full text-left border-collapse min-w-[680px]">
+          {/* MOBILE STACKED CARDS VIEW (Clean, No Clipping, Full Width Responsive) */}
+          <div className="space-y-4 md:hidden">
+            {effectiveComparisonRows.map((row, rowIdx) => {
+              return (
+                <div
+                  key={rowIdx}
+                  className="p-4 rounded-xl skeuo-well border border-[#E0D9CC] space-y-3"
+                >
+                  <div className="flex items-center justify-between pb-2 border-b border-[#E0D9CC]">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-[#B88E3D] shrink-0" />
+                      <h4 className="font-serif italic font-bold text-stone-900 text-sm">
+                        {row.criterion}
+                      </h4>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {decision.options.map((opt, optIdx) => {
+                      const cellInfo = getOptionComparisonInfo(row, opt, optIdx);
+                      const isRecommended =
+                        opt.id === decision.recommendation?.recommendedOptionId;
+                      const isTopScore = opt.id === topScoringOptionId;
+
+                      return (
+                        <div
+                          key={opt.id}
+                          className={`p-3 rounded-xl flex items-center justify-between gap-3 text-xs transition-all ${
+                            cellInfo.isLeader
+                              ? 'bg-amber-50/90 border border-amber-300/90 shadow-2xs'
+                              : 'skeuo-card border border-stone-200/90'
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-serif italic font-bold text-stone-900 text-xs">
+                                {opt.title}
+                              </span>
+                              {isRecommended && (
+                                <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase skeuo-btn-primary text-[#D4A338] rounded">
+                                  ★ Rec
+                                </span>
+                              )}
+                              {isTopScore && !isRecommended && (
+                                <span className="px-1.5 py-0.2 text-[9px] font-mono font-bold uppercase skeuo-badge text-stone-700 rounded">
+                                  Top Score
+                                </span>
+                              )}
+                            </div>
+                            <p
+                              className={`mt-1 text-xs leading-snug ${
+                                cellInfo.isLeader
+                                  ? 'text-amber-950 font-bold'
+                                  : 'text-stone-700 font-medium'
+                              }`}
+                            >
+                              {cellInfo.val}
+                            </p>
+                          </div>
+
+                          {cellInfo.isLeader && (
+                            <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase skeuo-btn-primary text-white rounded-md shrink-0 shadow-2xs">
+                              Leader
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {row.note && (
+                    <div className="pt-2 border-t border-[#E0D9CC]/70 text-[11px] text-stone-600 italic leading-relaxed">
+                      <strong className="text-stone-700 not-italic font-semibold">Note: </strong>
+                      {row.note}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* DESKTOP MATRIX TABLE */}
+          <div className="hidden md:block overflow-x-auto rounded-xl border border-[#E0D9CC] shadow-xs">
+            <table className="w-full text-left border-collapse min-w-[640px]">
               <thead>
-                <tr className="bg-[#FAF7F2] border-b border-[#E8E5DF] text-[10px] uppercase font-bold text-stone-600 tracking-wider">
-                  <th className="py-3.5 px-4 min-w-[180px]">Evaluation Criterion</th>
+                <tr className="bg-[#EFECE6] border-b border-[#E0D9CC] text-[10px] uppercase font-bold text-stone-600 tracking-wider">
+                  <th className="py-3.5 px-4 min-w-[170px]">Evaluation Criterion</th>
                   {decision.options.map((opt) => {
                     const isRecommended = opt.id === decision.recommendation?.recommendedOptionId;
                     const isTopScore = opt.id === topScoringOptionId;
                     return (
-                      <th key={opt.id} className="py-3.5 px-4 min-w-[180px]">
+                      <th key={opt.id} className="py-3.5 px-4 min-w-[160px]">
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5">
                             <span className="font-serif italic text-xs text-stone-900 font-bold">
@@ -1146,7 +1228,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                             </span>
                           </div>
                           {(isRecommended || isTopScore) && (
-                            <span className="inline-block px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase bg-[#2C221E] text-white rounded">
+                            <span className="inline-block px-2 py-0.5 text-[9px] font-mono font-bold uppercase skeuo-btn-primary text-white rounded-md">
                               {isRecommended ? '★ Recommended' : 'Top Matrix Score'}
                             </span>
                           )}
@@ -1154,14 +1236,14 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                       </th>
                     );
                   })}
-                  <th className="py-3.5 px-4 min-w-[200px]">Trade-Off & Guidance Note</th>
+                  <th className="py-3.5 px-4 min-w-[190px]">Trade-Off & Guidance Note</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#E8E5DF] text-xs text-stone-800">
+              <tbody className="divide-y divide-[#E0D9CC] text-xs text-stone-800">
                 {effectiveComparisonRows.map((row, rowIdx) => {
                   return (
-                    <tr key={rowIdx} className="hover:bg-[#FAF7F2]/80 transition-colors">
-                      <td className="py-3.5 px-4 font-serif italic text-[#B88E3D] font-semibold border-r border-[#E8E5DF] bg-[#FAF7F2]">
+                    <tr key={rowIdx} className="hover:bg-[#FAF8F5] transition-colors">
+                      <td className="py-3.5 px-4 font-serif italic text-[#B88E3D] font-semibold border-r border-[#E0D9CC] bg-[#F7F5F0]">
                         {row.criterion}
                       </td>
                       {decision.options.map((opt, optIdx) => {
@@ -1169,8 +1251,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                         return (
                           <td
                             key={opt.id}
-                            className={`py-3.5 px-4 border-r border-[#E8E5DF] ${
-                              cellInfo.isLeader ? 'bg-amber-50/70' : ''
+                            className={`py-3.5 px-4 border-r border-[#E0D9CC] ${
+                              cellInfo.isLeader ? 'bg-amber-50/80 font-semibold' : 'bg-white'
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2">
@@ -1184,7 +1266,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                                 {cellInfo.val}
                               </span>
                               {cellInfo.isLeader && (
-                                <span className="px-1.5 py-0.5 text-[9px] font-bold font-mono uppercase bg-[#2C221E] text-white rounded shrink-0 shadow-2xs">
+                                <span className="px-1.5 py-0.5 text-[9px] font-bold font-mono uppercase skeuo-btn-primary text-white rounded shrink-0">
                                   Leader
                                 </span>
                               )}
@@ -1192,7 +1274,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                           </td>
                         );
                       })}
-                      <td className="py-3.5 px-4 text-stone-500 text-[11px] leading-relaxed italic bg-[#FAF7F2]/50">
+                      <td className="py-3.5 px-4 text-stone-500 text-[11px] leading-relaxed italic bg-[#F7F5F0]/60">
                         {row.note || 'Balanced evaluation across options.'}
                       </td>
                     </tr>
@@ -1203,7 +1285,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
 
           {/* FOOTER SUMMARY */}
-          <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="p-4 rounded-xl skeuo-well flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-stone-700">
               <Award className="w-4 h-4 text-[#B88E3D] shrink-0" />
               <span>
@@ -1213,7 +1295,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             <button
               type="button"
               onClick={() => setActiveTab('matrix')}
-              className="px-3 py-1.5 text-xs font-semibold text-[#B88E3D] hover:text-stone-900 bg-white border border-[#E8E5DF] rounded-lg shadow-2xs transition-colors shrink-0 cursor-pointer"
+              className="skeuo-btn-secondary px-3 py-1.5 text-xs font-semibold text-[#B88E3D] hover:text-stone-900 rounded-xl transition-colors shrink-0 cursor-pointer"
             >
               Adjust Weighted Matrix →
             </button>
@@ -1225,7 +1307,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {activeTab === 'swot' && (
         <div className="space-y-6 animate-fadeIn">
           {/* Header and Option Switcher */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E5DF] pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E0D9CC] pb-4">
             <div>
               <h3 className="text-base font-serif italic text-stone-900 flex items-center gap-2 font-bold">
                 <Grid2X2 className="w-4 h-4 text-[#B88E3D]" />
@@ -1237,13 +1319,13 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             </div>
 
             {/* Option Filter Pills */}
-            <div className="flex flex-wrap items-center gap-1.5 p-1 bg-[#FAF7F2] border border-[#E8E5DF] rounded-xl self-start sm:self-auto">
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 skeuo-well rounded-xl self-start sm:self-auto">
               <button
                 type="button"
                 onClick={() => setSelectedSwotOptionId('all')}
                 className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   selectedSwotOptionId === 'all'
-                    ? 'bg-[#2C221E] text-white shadow-2xs'
+                    ? 'skeuo-btn-primary text-white shadow-2xs font-bold'
                     : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
@@ -1256,7 +1338,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                   onClick={() => setSelectedSwotOptionId(opt.id)}
                   className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     selectedSwotOptionId === opt.id
-                      ? 'bg-[#2C221E] text-white shadow-2xs'
+                      ? 'skeuo-btn-primary text-white shadow-2xs font-bold'
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
@@ -1283,21 +1365,21 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 return (
                   <div
                     key={opt.id}
-                    className="bg-white border border-[#E8E5DF] rounded-2xl p-6 sm:p-7 space-y-6 shadow-2xs"
+                    className="skeuo-card rounded-2xl p-6 sm:p-7 space-y-6"
                   >
                     {/* Option Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E8E5DF] pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E0D9CC] pb-3">
                       <div className="flex items-center gap-2">
                         <h4 className="font-serif italic text-lg text-stone-900 font-bold">
                           {opt.title} — Strategic SWOT Profile
                         </h4>
                         {isRecommended && (
-                          <span className="px-2 py-0.5 text-[9px] font-mono font-bold uppercase bg-[#2C221E] text-white rounded">
+                          <span className="px-2.5 py-0.5 text-[9px] font-mono font-bold uppercase skeuo-btn-primary text-white rounded-md">
                             ★ Primary Recommendation
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded bg-[#FAF7F2] text-stone-700 border border-[#E8E5DF] self-start sm:self-auto">
+                      <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded-md skeuo-well text-stone-700 self-start sm:self-auto">
                         2x2 Strategic Matrix
                       </span>
                     </div>
@@ -1305,9 +1387,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     {/* 2x2 SWOT Grid */}
                     <div className="grid md:grid-cols-2 gap-4">
                       {/* S — Strengths (Internal / Positive) */}
-                      <div className="p-4 rounded-xl bg-[#FAF7F2] border-l-3 border-emerald-600 border-y border-r border-[#E8E5DF] space-y-3 flex flex-col justify-between">
+                      <div className="p-4 rounded-xl skeuo-well border-l-4 border-l-emerald-600 space-y-3 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center justify-between pb-2 border-b border-[#E8E5DF]/70">
+                          <div className="flex items-center justify-between pb-2 border-b border-[#E0D9CC]/70">
                             <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-1.5">
                               <Check className="w-3.5 h-3.5 text-emerald-600" /> S — Internal Strengths
                             </span>
@@ -1340,12 +1422,12 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                               onKeyDown={(e) => e.key === 'Enter' && handleAddSwotBullet(opt.id, 'strengths')}
                               placeholder="Type strength and press Enter..."
                               autoFocus
-                              className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#E8E5DF] rounded-lg focus:outline-none focus:border-[#B88E3D]"
+                              className="flex-1 px-3 py-1.5 text-xs skeuo-input rounded-xl focus:outline-none focus:border-[#B88E3D]"
                             />
                             <button
                               type="button"
                               onClick={() => handleAddSwotBullet(opt.id, 'strengths')}
-                              className="px-2.5 py-1.5 text-xs font-bold bg-[#2C221E] text-white rounded-lg cursor-pointer"
+                              className="px-3 py-1.5 text-xs font-bold skeuo-btn-primary text-white rounded-xl cursor-pointer"
                             >
                               Add
                             </button>
@@ -1372,9 +1454,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                       </div>
 
                       {/* W — Weaknesses (Internal / Negative) */}
-                      <div className="p-4 rounded-xl bg-[#FAF7F2] border-l-3 border-rose-500 border-y border-r border-[#E8E5DF] space-y-3 flex flex-col justify-between">
+                      <div className="p-4 rounded-xl skeuo-well border-l-4 border-l-rose-500 space-y-3 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center justify-between pb-2 border-b border-[#E8E5DF]/70">
+                          <div className="flex items-center justify-between pb-2 border-b border-[#E0D9CC]/70">
                             <span className="text-[11px] font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
                               <AlertTriangle className="w-3.5 h-3.5 text-rose-600" /> W — Internal Weaknesses
                             </span>
@@ -1407,12 +1489,12 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                               onKeyDown={(e) => e.key === 'Enter' && handleAddSwotBullet(opt.id, 'weaknesses')}
                               placeholder="Type weakness and press Enter..."
                               autoFocus
-                              className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#E8E5DF] rounded-lg focus:outline-none focus:border-[#B88E3D]"
+                              className="flex-1 px-3 py-1.5 text-xs skeuo-input rounded-xl focus:outline-none focus:border-[#B88E3D]"
                             />
                             <button
                               type="button"
                               onClick={() => handleAddSwotBullet(opt.id, 'weaknesses')}
-                              className="px-2.5 py-1.5 text-xs font-bold bg-[#2C221E] text-white rounded-lg cursor-pointer"
+                              className="px-3 py-1.5 text-xs font-bold skeuo-btn-primary text-white rounded-xl cursor-pointer"
                             >
                               Add
                             </button>
@@ -1439,9 +1521,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                       </div>
 
                       {/* O — Opportunities (External / Positive) */}
-                      <div className="p-4 rounded-xl bg-[#FAF7F2] border-l-3 border-[#B88E3D] border-y border-r border-[#E8E5DF] space-y-3 flex flex-col justify-between">
+                      <div className="p-4 rounded-xl skeuo-well border-l-4 border-l-[#B88E3D] space-y-3 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center justify-between pb-2 border-b border-[#E8E5DF]/70">
+                          <div className="flex items-center justify-between pb-2 border-b border-[#E0D9CC]/70">
                             <span className="text-[11px] font-bold text-[#8A631E] uppercase tracking-wider flex items-center gap-1.5">
                               <Sparkles className="w-3.5 h-3.5 text-[#B88E3D]" /> O — External Opportunities
                             </span>
@@ -1474,12 +1556,12 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                               onKeyDown={(e) => e.key === 'Enter' && handleAddSwotBullet(opt.id, 'opportunities')}
                               placeholder="Type opportunity and press Enter..."
                               autoFocus
-                              className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#E8E5DF] rounded-lg focus:outline-none focus:border-[#B88E3D]"
+                              className="flex-1 px-3 py-1.5 text-xs skeuo-input rounded-xl focus:outline-none focus:border-[#B88E3D]"
                             />
                             <button
                               type="button"
                               onClick={() => handleAddSwotBullet(opt.id, 'opportunities')}
-                              className="px-2.5 py-1.5 text-xs font-bold bg-[#2C221E] text-white rounded-lg cursor-pointer"
+                              className="px-3 py-1.5 text-xs font-bold skeuo-btn-primary text-white rounded-xl cursor-pointer"
                             >
                               Add
                             </button>
@@ -1506,9 +1588,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                       </div>
 
                       {/* T — Threats & Risks (External / Negative) */}
-                      <div className="p-4 rounded-xl bg-[#FAF7F2] border-l-3 border-amber-600 border-y border-r border-[#E8E5DF] space-y-3 flex flex-col justify-between">
+                      <div className="p-4 rounded-xl skeuo-well border-l-4 border-l-amber-600 space-y-3 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center justify-between pb-2 border-b border-[#E8E5DF]/70">
+                          <div className="flex items-center justify-between pb-2 border-b border-[#E0D9CC]/70">
                             <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
                               <Shield className="w-3.5 h-3.5 text-amber-700" /> T — External Threats & Risks
                             </span>
@@ -1541,12 +1623,12 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                               onKeyDown={(e) => e.key === 'Enter' && handleAddSwotBullet(opt.id, 'threats')}
                               placeholder="Type threat/risk and press Enter..."
                               autoFocus
-                              className="flex-1 px-3 py-1.5 text-xs bg-white border border-[#E8E5DF] rounded-lg focus:outline-none focus:border-[#B88E3D]"
+                              className="flex-1 px-3 py-1.5 text-xs skeuo-input rounded-xl focus:outline-none focus:border-[#B88E3D]"
                             />
                             <button
                               type="button"
                               onClick={() => handleAddSwotBullet(opt.id, 'threats')}
-                              className="px-2.5 py-1.5 text-xs font-bold bg-[#2C221E] text-white rounded-lg cursor-pointer"
+                              className="px-3 py-1.5 text-xs font-bold skeuo-btn-primary text-white rounded-xl cursor-pointer"
                             >
                               Add
                             </button>
@@ -1574,7 +1656,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     </div>
 
                     {/* Strategic Synthesis Card */}
-                    <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2 text-xs">
+                    <div className="p-4 rounded-xl skeuo-well space-y-2 text-xs">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[#B88E3D] flex items-center gap-1.5">
                         <Award className="w-3.5 h-3.5 text-[#B88E3D]" /> Strategic Takeaway for {opt.title}
                       </span>
@@ -1593,8 +1675,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
       {/* 5. DECISION MATRIX TAB */}
       {activeTab === 'matrix' && (
-        <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 sm:p-8 space-y-6 animate-fadeIn shadow-2xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E8E5DF] pb-4">
+        <div className="skeuo-card rounded-2xl p-6 sm:p-8 space-y-6 animate-fadeIn">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E0D9CC] pb-4">
             <div>
               <h3 className="text-base font-serif italic text-stone-900 flex items-center gap-2 font-bold">
                 <SlidersHorizontal className="w-4 h-4 text-[#B88E3D]" />
@@ -1607,7 +1689,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
             <button
               onClick={handleAddCriterion}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider bg-[#2C221E] hover:bg-[#3D312B] text-white border border-[#2C221E] rounded-lg transition-colors self-start sm:self-auto cursor-pointer"
+              className="skeuo-btn-primary flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-white rounded-xl transition-colors self-start sm:self-auto cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5 text-[#D4A338] stroke-[3]" />
               <span className="text-[#D4A338]">Add Priority</span>
@@ -1623,10 +1705,10 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={opt.id}
-                  className={`p-5 rounded-2xl border flex items-center justify-between transition-all ${
+                  className={`p-5 rounded-2xl flex items-center justify-between transition-all ${
                     isLeader
-                      ? 'bg-amber-50/70 text-stone-900 border-[#B88E3D] shadow-xs'
-                      : 'bg-[#FAF7F2] text-stone-800 border-[#E8E5DF]'
+                      ? 'skeuo-card border-[#B88E3D]/80 bg-amber-50/60'
+                      : 'skeuo-well'
                   }`}
                 >
                   <div>
@@ -1658,14 +1740,14 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
 
           {/* CRITERIA & SCORES SLIDERS TABLE */}
-          <div className="space-y-4 pt-4 border-t border-[#E8E5DF]">
+          <div className="space-y-4 pt-4 border-t border-[#E0D9CC]">
             {criteria.map((crit) => (
               <div
                 key={crit.id}
-                className="p-5 rounded-2xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-4 shadow-2xs"
+                className="p-5 rounded-2xl skeuo-well space-y-4"
               >
                 {/* Criterion Header & Weight Slider */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E8E5DF] pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E0D9CC] pb-3">
                   <div>
                     <h4 className="text-sm font-serif italic text-stone-900 font-bold">
                       {crit.name}
@@ -1676,7 +1758,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-[#E8E5DF]">
+                    <div className="flex items-center gap-2 skeuo-card px-3 py-1.5 rounded-xl">
                       <span className="text-xs text-stone-500 font-mono">Weight:</span>
                       <input
                         type="range"
@@ -1694,7 +1776,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     {criteria.length > 1 && (
                       <button
                         onClick={() => handleRemoveCriterion(crit.id)}
-                        className="p-1.5 text-stone-400 hover:text-rose-600 transition-colors cursor-pointer rounded-md hover:bg-rose-50"
+                        className="p-2 text-stone-400 hover:text-rose-600 transition-colors cursor-pointer rounded-lg hover:bg-rose-50/80"
                         title="Remove Criterion"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1710,7 +1792,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     return (
                       <div
                         key={opt.id}
-                        className="p-3.5 rounded-xl bg-white border border-[#E8E5DF] space-y-2 shadow-2xs"
+                        className="p-3.5 rounded-xl skeuo-card space-y-2"
                       >
                         <div className="flex justify-between items-center text-xs">
                           <span className="text-stone-900 font-serif italic truncate max-w-[180px] font-semibold">
@@ -1759,7 +1841,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={risk.id}
-                  className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs"
+                  className="skeuo-card rounded-2xl p-6 space-y-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -1773,19 +1855,19 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <span
-                        className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold rounded ${
+                        className={`px-2.5 py-0.5 text-[10px] font-mono uppercase font-bold rounded-md ${
                           risk.probability === 'High'
-                            ? 'bg-rose-100 text-rose-900 border border-rose-300'
-                            : 'bg-[#FAF7F2] text-stone-700 border border-[#E8E5DF]'
+                            ? 'bg-rose-100 text-rose-900 border border-rose-300 shadow-2xs'
+                            : 'skeuo-well text-stone-700'
                         }`}
                       >
                         Prob: {risk.probability}
                       </span>
                       <span
-                        className={`px-2 py-0.5 text-[10px] font-mono uppercase font-bold rounded ${
+                        className={`px-2.5 py-0.5 text-[10px] font-mono uppercase font-bold rounded-md ${
                           risk.impact === 'High'
-                            ? 'bg-rose-100 text-rose-900 border border-rose-300'
-                            : 'bg-[#FAF7F2] text-stone-700 border border-[#E8E5DF]'
+                            ? 'bg-rose-100 text-rose-900 border border-rose-300 shadow-2xs'
+                            : 'skeuo-well text-stone-700'
                         }`}
                       >
                         Impact: {risk.impact}
@@ -1793,7 +1875,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
+                  <div className="p-3.5 rounded-xl skeuo-well space-y-1">
                     <span className="text-[10px] font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1">
                       <Shield className="w-3 h-3 text-[#B88E3D]" /> Recommended Safeguard
                     </span>
@@ -1811,7 +1893,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {/* 7. FUTURE SCENARIOS TAB */}
       {activeTab === 'future' && (
         <div className="space-y-6 animate-fadeIn">
-          <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-stone-700 shadow-2xs flex items-center gap-2">
+          <div className="p-4 rounded-xl skeuo-well text-xs text-stone-700 flex items-center gap-2">
             <Clock className="w-4 h-4 text-[#B88E3D] shrink-0" />
             <span>
               <strong className="text-stone-900 font-bold">Future Projections:</strong> Plausible trajectories based on trade-off models to stress-test your decision horizon.
@@ -1824,9 +1906,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               return (
                 <div
                   key={idx}
-                  className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs"
+                  className="skeuo-card rounded-2xl p-6 space-y-4"
                 >
-                  <div className="flex items-center justify-between border-b border-[#E8E5DF] pb-3">
+                  <div className="flex items-center justify-between border-b border-[#E0D9CC] pb-3">
                     <h4 className="font-serif italic text-base text-stone-900 font-bold">
                       {opt?.title || `Option ${idx + 1}`}
                     </h4>
@@ -1836,7 +1918,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                   </div>
 
                   <div className="space-y-3">
-                    <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
+                    <div className="p-3.5 rounded-xl skeuo-well space-y-1">
                       <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-[#B88E3D]" /> Short-Term (1–6 Months)
                       </span>
@@ -1845,7 +1927,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                       </p>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-1">
+                    <div className="p-3.5 rounded-xl skeuo-well space-y-1">
                       <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
                         <TrendingUp className="w-3.5 h-3.5 text-[#B88E3D]" /> Long-Term (1–5 Years)
                       </span>
@@ -1871,9 +1953,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {/* 8. THINK DEEPER TAB & CHAT */}
       {activeTab === 'thinkDeeper' && (
         <div className="space-y-8 animate-fadeIn">
-          <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 sm:p-8 space-y-6 shadow-2xs">
-            <div className="flex items-center gap-3 border-b border-[#E8E5DF] pb-4">
-              <div className="w-9 h-9 rounded-xl bg-[#2C221E] text-white flex items-center justify-center shrink-0 border border-[#2C221E]">
+          <div className="skeuo-card rounded-2xl p-6 sm:p-8 space-y-6">
+            <div className="flex items-center gap-3 border-b border-[#E0D9CC] pb-4">
+              <div className="w-10 h-10 rounded-xl skeuo-btn-primary text-white flex items-center justify-center shrink-0">
                 <Compass className="w-5 h-5 text-[#D4A338]" />
               </div>
               <div>
@@ -1888,7 +1970,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
             <div className="grid md:grid-cols-2 gap-4">
               {/* Assumptions */}
-              <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+              <div className="p-4 rounded-xl skeuo-well space-y-2">
                 <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
                   <Lightbulb className="w-3.5 h-3.5 text-[#B88E3D]" /> Hidden Assumptions
                 </span>
@@ -1900,7 +1982,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </div>
 
               {/* Cognitive Biases */}
-              <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+              <div className="p-4 rounded-xl skeuo-well space-y-2">
                 <span className="text-xs font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
                   <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Potential Biases
                 </span>
@@ -1912,7 +1994,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </div>
 
               {/* Blindspot Questions */}
-              <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+              <div className="p-4 rounded-xl skeuo-well space-y-2">
                 <span className="text-xs font-bold text-[#B88E3D] uppercase tracking-wider flex items-center gap-1.5">
                   <HelpCircle className="w-3.5 h-3.5 text-[#B88E3D]" /> Blindspot Questions
                 </span>
@@ -1924,7 +2006,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </div>
 
               {/* Questions to Ask Others */}
-              <div className="p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] space-y-2">
+              <div className="p-4 rounded-xl skeuo-well space-y-2">
                 <span className="text-xs font-bold text-stone-800 uppercase tracking-wider flex items-center gap-1.5">
                   <MessageSquare className="w-3.5 h-3.5 text-[#B88E3D]" /> Questions to Ask Others
                 </span>
@@ -1938,8 +2020,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
 
           {/* INTERACTIVE CHAT BOX WITH AI FOR FOLLOW-UP QUESTIONS */}
-          <div className="bg-white border border-[#E8E5DF] rounded-2xl p-6 space-y-4 shadow-2xs">
-            <div className="flex items-center justify-between border-b border-[#E8E5DF] pb-3">
+          <div className="skeuo-card rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E0D9CC] pb-3">
               <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#B88E3D] flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-[#B88E3D]" />
                 Follow-up Conversation with Decision AI
@@ -1950,14 +2032,14 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             </div>
 
             {chatMessages.length > 0 && (
-              <div className="space-y-3 max-h-80 overflow-y-auto p-4 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF]">
+              <div className="space-y-3 max-h-80 overflow-y-auto p-4 rounded-xl skeuo-well">
                 {chatMessages.map((m) => (
                   <div
                     key={m.id}
                     className={`p-3.5 rounded-xl text-xs space-y-1 ${
                       m.role === 'user'
-                        ? 'bg-[#2C221E] text-white font-medium ml-8 shadow-2xs'
-                        : 'bg-white border border-[#E8E5DF] text-stone-900 mr-8 shadow-2xs'
+                        ? 'skeuo-btn-primary text-white font-medium ml-8 shadow-xs'
+                        : 'skeuo-card text-stone-900 mr-8'
                     }`}
                   >
                     <div className="flex justify-between font-mono text-[10px] opacity-80">
@@ -1976,13 +2058,13 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 placeholder="Ask a follow-up question (e.g. What if my main assumption about remote work turns out false?)..."
-                className="flex-1 px-4 py-2.5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B88E3D]"
+                className="flex-1 px-4 py-2.5 rounded-xl skeuo-input text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B88E3D]"
                 disabled={isSendingChat}
               />
               <button
                 type="submit"
                 disabled={isSendingChat || !chatInput.trim()}
-                className="px-5 py-2.5 rounded-xl bg-[#2C221E] hover:bg-[#3D312B] text-white font-bold uppercase tracking-wider text-xs transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer border border-[#2C221E]"
+                className="px-5 py-2.5 rounded-xl skeuo-btn-primary text-white font-bold uppercase tracking-wider text-xs transition-all flex items-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer"
               >
                 {isSendingChat ? (
                   <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#D4A338]" />

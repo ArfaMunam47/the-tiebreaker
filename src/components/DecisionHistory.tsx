@@ -38,54 +38,54 @@ export const DecisionHistory: React.FC<DecisionHistoryProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-900/40 backdrop-blur-sm flex justify-end animate-fadeIn">
-      <div className="w-full max-w-2xl bg-white border-l border-[#E8E5DF] h-full flex flex-col shadow-2xl overflow-hidden text-stone-900">
+    <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex justify-end animate-fadeIn">
+      <div className="w-full max-w-2xl bg-[#F7F4EE] border-l border-[#E0D9CC] h-full flex flex-col shadow-2xl overflow-hidden text-stone-900">
         {/* Modal Drawer Header */}
-        <div className="p-6 border-b border-[#E8E5DF] flex items-center justify-between bg-white">
+        <div className="p-6 border-b border-[#E0D9CC] flex items-center justify-between bg-[#FAF7F2]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#2C221E] text-[#D4A338] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl skeuo-btn-primary text-[#D4A338] flex items-center justify-center">
               <History className="w-4 h-4 text-[#D4A338]" />
             </div>
             <div>
               <h2 className="font-serif italic text-xl text-[#2C221E] font-bold">
-                Saved Decision Library
+                Saved Decisions
               </h2>
               <p className="text-xs text-stone-500">
-                {savedDecisions.length} stored analyses in memory
+                {savedDecisions.length} decisions saved
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 text-stone-400 hover:text-stone-900 rounded-md hover:bg-stone-100 transition-colors cursor-pointer"
+            className="p-2 text-stone-400 hover:text-stone-900 rounded-lg hover:bg-stone-200/50 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Search & Filters */}
-        <div className="p-4 border-b border-[#E8E5DF] bg-[#FAF7F2] flex flex-col sm:flex-row gap-3">
+        <div className="p-4 border-b border-[#E0D9CC] bg-[#FAF7F2] flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search saved decisions..."
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-white border border-[#E8E5DF] text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B88E3D]"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl skeuo-input text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-[#B88E3D]"
             />
           </div>
 
-          <div className="flex gap-1">
+          <div className="flex gap-1.5 p-1 skeuo-well rounded-xl self-start sm:self-auto">
             {(['all', 'analyzed', 'decided'] as const).map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                   statusFilter === st
-                    ? 'bg-[#2C221E] text-white shadow-xs'
-                    : 'bg-white text-stone-700 border border-[#E8E5DF] hover:text-stone-900 hover:bg-[#FAF7F2]'
+                    ? 'skeuo-btn-primary text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900'
                 }`}
               >
                 {st}
@@ -107,7 +107,7 @@ export const DecisionHistory: React.FC<DecisionHistoryProps> = ({
                   onClose();
                   onNewDecision();
                 }}
-                className="px-4 py-2 text-xs font-extrabold uppercase tracking-wider text-white bg-[#2C221E] hover:bg-[#3D312B] rounded-lg shadow transition-all inline-block cursor-pointer border border-[#2C221E]"
+                className="px-5 py-2.5 text-xs font-extrabold uppercase tracking-wider text-white skeuo-btn-primary rounded-xl transition-all inline-block cursor-pointer"
               >
                 Start a New Decision
               </button>
@@ -121,12 +121,12 @@ export const DecisionHistory: React.FC<DecisionHistoryProps> = ({
               return (
                 <div
                   key={dec.id}
-                  className="p-5 rounded-xl bg-[#FAF7F2] border border-[#E8E5DF] hover:border-[#B88E3D] transition-all space-y-3 shadow-xs group"
+                  className="p-5 rounded-2xl skeuo-card hover:border-[#B88E3D] transition-all space-y-3 group"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded bg-amber-100 text-amber-900 border border-amber-300">
+                        <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase rounded-md bg-amber-100/80 text-amber-900 border border-amber-300 shadow-2xs">
                           {dec.status || 'analyzed'}
                         </span>
                         <span className="text-[11px] text-stone-500 flex items-center gap-1 font-mono">
@@ -140,13 +140,13 @@ export const DecisionHistory: React.FC<DecisionHistoryProps> = ({
                       </h3>
                     </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button
                         onClick={() => {
                           onSelectDecision(dec);
                           onClose();
                         }}
-                        className="px-3 py-1.5 rounded-md bg-[#2C221E] hover:bg-[#3D312B] text-white font-bold border border-[#2C221E] text-xs uppercase tracking-wider flex items-center gap-1 transition-all cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-xl skeuo-btn-primary text-white font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer"
                       >
                         <span className="text-[#D4A338]">Open</span>
                         <ExternalLink className="w-3 h-3 text-[#D4A338]" />
@@ -154,7 +154,7 @@ export const DecisionHistory: React.FC<DecisionHistoryProps> = ({
 
                       <button
                         onClick={() => onDeleteDecision(dec.id)}
-                        className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                        className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50/80 rounded-lg transition-colors cursor-pointer"
                         title="Delete decision"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -167,7 +167,7 @@ export const DecisionHistory: React.FC<DecisionHistoryProps> = ({
                     {dec.originalPrompt}
                   </p>
 
-                  <div className="pt-2 border-t border-[#E8E5DF] flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="pt-2 border-t border-[#E0D9CC] flex flex-wrap items-center justify-between gap-2 text-xs">
                     <span className="text-stone-500">
                       Options: <strong className="text-stone-900">{dec.options.length}</strong>
                     </span>

@@ -1,517 +1,274 @@
-# ⚖️ The Tiebreaker — AI Decision Intelligence
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.0.0-2C221E?style=for-the-badge&labelColor=F4F0E8" alt="Version" />
+  <img src="https://img.shields.io/badge/React-19-2C221E?style=for-the-badge&logo=react&labelColor=F4F0E8" alt="React 19" />
+  <img src="https://img.shields.io/badge/TypeScript-5.8-2C221E?style=for-the-badge&logo=typescript&labelColor=F4F0E8" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Express-4.21-2C221E?style=for-the-badge&logo=express&labelColor=F4F0E8" alt="Express" />
+  <img src="https://img.shields.io/badge/Netlify-2C221E?style=for-the-badge&logo=netlify&labelColor=F4F0E8" alt="Netlify" />
+</p>
 
-**The Tiebreaker** is a full-stack AI-powered decision intelligence platform. You describe a dilemma, add context, and the system uses structured analysis frameworks (Plus/Minus/Interesting, Impact/Effort, Cost-Benefit, Regret Minimization) plus an LLM to help you reason through it.
+<p align="center">
+  <img src="https://img.shields.io/badge/Google%20Gemini-2C221E?style=for-the-badge&logo=googlegemini&labelColor=F4F0E8" alt="Google Gemini" />
+  <img src="https://img.shields.io/badge/Tailwind%20CSS-4-2C221E?style=for-the-badge&logo=tailwindcss&labelColor=F4F0E8" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Neo%20Skeuomorphism-2C221E?style=for-the-badge&labelColor=F4F0E8" alt="Skeuomorphism" />
+</p>
+
+<div align="center">
+
+# ⚖️ The Tiebreaker
+
+### Decision Intelligence, Crafted with Physical Presence
+
+**The Tiebreaker** is a full-stack AI decision-intelligence platform that transforms dilemmas into rigorous, multi-dimensional analysis. Describe a predicament, answer a few sharp clarifying questions, and the system synthesizes your options across structured frameworks — pros/cons, multi-criteria scoring, risk matrices, scenario modeling, long-term impact, sensitivity analysis, and a confidence-rated recommendation with reversal triggers.
+
+Beneath it all lives a hand-crafted **skeuomorphic design system** — tactile raised cards, recessed input wells, enamel-switch buttons, and layered amber depth that make the interface feel like a physical decision instrument.
+
+</div>
 
 ---
 
-## ✨ Features
+## 🏛️ A Premium, Physical Interface
 
-- **AI-Powered Analysis** – Enter a decision prompt and optional context; the system generates a structured decision analysis with options, pros/cons, scoring, and a clear recommendation.
-- **Clarifying Questions** – The AI asks intelligent follow-up questions to refine your thinking before giving a final recommendation.
-- **Multi-Framework Scoring** – Evaluate options across multiple decision frameworks, not just one.
-- **Impact & Effort Matrices** – See each option plotted by impact and effort.
-- **Confidence Intervals** – Monte Carlo-ish confidence estimates for each option.
-- **Insight Cards** – AI-curated key insights and patterns.
-- **Follow-up Q&A** – Ask questions about your analysis and get reasoned responses.
-- **Decision Library** – Save, search, and revisit your past analyses.
-- **Note-taking** – Reusable notes per saved decision.
-- **Sensitivity Analysis** – Interactive slider-based weight adjustments to see how results change.
-- **Conversations** – Multi-message clarification with AI.
-- **Samples & Templates** – Pre-built examples to understand analysis quality.
+The Tiebreaker doesn't just think better — it *feels* better. The entire UI is built on a **modern skeuomorphic design language** that gives every element physical presence:
+
+| Design Token | Purpose | Signature Detail |
+|---|---|---|
+| `skeuo-card` / `skeuo-card-interactive` | Raised surfaces (cards, decks, containers) | Layered top-light + soft ambient shadows, subtle lift on hover, physical press on click |
+| `skeuo-well` / `skeuo-input` | Recessed inset surfaces (inputs, search, trays) | Directional inner shadows that mimic a depression in the material |
+| `skeuo-btn-primary` / `skeuo-btn-amber` | Tactile, pressable buttons | Beveled edges with a heavier bottom border, "pressed" inset state on click |
+| `skeuo-pill` / `skeuo-pill-active` | Enamel badges & indicator plates | Hard-edge gloss, engraved active state |
+| `skeuo-segmented-well` | Physical hardware control trench | Inset well holding raised segmented controls |
+| `skeuo-modal-shell` | Heavy glass/leather modal container | Deep multi-layer shadow system with a crisp top highlight |
+| `skeuo-bubble-ai` / `skeuo-bubble-user` | Physical chat bubbles | Raised (AI) vs. recessed dark (user) material language |
+
+The visual language is anchored in a warm **amber-on-cream palette** — parchment backgrounds (`#F4F0E8`), burnt caramel accents (`#B88E3D`), and deep espresso ink (`#241C18`) — paired with editorially spaced *Newsreader* serif display type and *Plus Jakarta Sans* for UI.
+
+---
+
+## ✨ Highlights
+
+- **🧠 Gemini-Powered Analysis** — structured decision intelligence generated by Google Gemini, with automatic multi-model failover (`gemini-flash` family) and a deterministic offline engine that keeps the app fully functional without an API key.
+- **💬 Adaptive Clarifying Questions** — 2–4 sharp, domain-detected questions (technical, career, lifestyle, relationships, health, shopping, education) that surface constraints *before* you commit.
+- **📊 Multi-Criteria Decision Matrix** — weighted scoring across your own priorities, with per-option criterion scores and a transparent ranked outcome.
+- **⚖️ Honest Recommendations** — confidence levels, trade-off statements, "why not the alternatives," and explicit *reversal conditions* — when you should reconsider.
+- **🔄 Reframing & Reversal Thinking** — thoughts on reversing, opportunity cost, and regret-minimizing paths.
+- **🧭 Scenario Modeling** — short-term vs. long-term projections, best/expected/worst case, and long-term impact breakdowns across finance, career, time, and learning.
+- **⚠️ Risk Register** — probability × impact risk catalog with mitigation strategies for each option.
+- **🔮 Think Deeper / Follow-up Q&A** — a context-aware assistant with chat history, re-scoped to your decision at hand.
+- **📚 Persistent Decision Library** — private, per-user storage of every analysis with tagging, favorites, duplicate, and re-run capabilities.
+- **📈 Sensitivity Analysis** — interactive slider-based re-weighting that shows exactly how fragile the winning result is.
+- **📝 Decision Journal & Outcome Tracking** — thoughts, final reflection, and post-decision calibration ("successful / mixed / unsuccessful") with predicted-vs-actual.
+- **🔀 Version History** — snapshot and compare previous criteria and scores for the same decision.
+- **💾 JSON Export/Import** — one-click backup, sharing, and restore.
+
+> **No API key? No problem.** The built-in rule-based heuristic engine produces a rich, realistic multi-method analysis — so every workflow is fully explorable in Guest/Demo mode.
+
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Node.js 18+** (developed with Node 22)
-- npm or yarn
 
-### Installation
+| Requirement | Minimum |
+|---|---|
+| [Node.js](https://nodejs.org/) | 18+ (20+ recommended) |
+| Package manager | npm or bun |
+| (Optional) [Google Gemini API key](https://aistudio.google.com/apikey) | For full AI analysis |
 
-```bash
-# 1. Clone the repository
-git clone <your-repo-url>
-cd tie-breaker
-
-# 2. Install dependencies
-npm install
-
-# 3. Set up environment variables
-# Create a .env file in the project root with:
-# GEMINI_API_KEY=your_gemini_api_key_here
-
-# 4. Start the development server
-npm run dev
-```
-
-The server will start on `http://localhost:3000` and the Vite dev server will be available.
-
-## Usage
-
-1. **Open the app** in your browser at `http://localhost:5173`
-2. **Create a decision** by describing your dilemma
-3. **Add decision options** to compare
-4. **Add criteria** that matter to you
-5. Click **Generate Analysis** to see ties broken by priorities
-
-## Key Features
-
-- 🔐 Email/password authentication with persistent sessions
-- 🧠 AI-powered decision analysis with 6 analysis themes
-- 🧭 Iterative clarifying questions to refine your decision
-- 📊 Multi-criteria scoring with **card-pair comparison** (powered by the Bradley-Terry model)
-- 📋 Priority comparison & weighting
-- ⚖️ Weighted scoring matrix
-- 💬 AI-driven follow-up conversations
-- 📚 Persistent decision library
-- 🏷️ Tagging & search
-- 📈 Export results to PDF
-- ↕️ Drag-and-drop reordering of decision rows
-- 🔄 Duplicate & re-analyze decisions
-- ⭐ Favorite/custom ordering
-
-## 🚀 Quick Start
+### 1 · Clone & install
 
 ```bash
-# Install dependencies
-npm install
-
-# Set up environment variables
-# Create a .env.local file with:
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# Start the development server
-npm run dev
-```
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Server health check |
-| POST | `/api/login` | User registration/login |
-| POST | `/api/decisions` | Save a decision analysis |
-| PUT | `/api/decisions/:id` | Update a decision |
-| GET | `/api/decisions?userId=...` | List user's decisions |
-| DELETE | `/api/decisions/:id` | Delete a decision |
-| POST | `/api/friends` | Add a friend |
-| GET | `/api/friends/:userId` | Get user's friends list |
-| POST | `/api/friends/requests` | Send friend request |
-| POST | `/api/friends/accept` | Accept friend request |
-| POST | `/api/friends/notify` | Send decision notification |
-| GET | `/api/insights/crowd` | Crowd behavior insights |
-| POST | `/api/ai/clarify` | AI-clarifying questions generation |
-| POST | `/api/ai/analyze` | Main AI analysis with Gemini API |
-| POST | `/api/ai/enhance` | AI enhancement pipeline |
-| POST | `/api/ai/reframe` | AI reframing questions |
-| POST | `/api/ai/write` | AI-powered reflection writing assistant |
-
-<read_file for 'package.json'> Result:
-1 | {
-2 |   "name": "the-tiebreaker",
-3 |   "private": true,
-4 |   "version": "1.0.0",
-5 |   "description": "Decision analysis intelligence - break ties with confidence",
-6 |   "main": "server/index.ts",
-7 |   "scripts": {
-8 |     "dev": "concurrently "tsx server/index.ts" "vite"",
-9 |     "build": "tsc && vite build",
-10 |     "preview": "vite preview",
-11 |     "start": "node dist/server/index.js"
-12 |   },
-8 |     "dev": "concurrently \"tsx server/index.ts\" \"vite\"",
-9 |     "build": "tsc && vite build",
-10 |     "preview": "vite preview"
-11 |   },
-12 |   "dependencies": {
-13 |     "@google/generative-ai": "^0.21.2",
-14 |     "@vitejs/plugin-react": "^4.3.4",
-15 |     "express": "^4.19.2",
-26 |     "tsx": "^4.19.2"
-27 |   }
-28 |   ...
-}
-
-(File has 97 lines total.)
-
-I have a clear picture of the project now. This is **The Tiebreaker** — an AI-powered decision analysis app built with React + Vite, Express, Gemini AI, and a data persistence layer. The current README is bare-bones and doesn't reflect the actual features of the application.
-
-Let me write a comprehensive README that accurately documents this project.
-
-<write_to_file>
-<file_path>README.md</file_path>
-<file_content>
-# The Tiebreaker — AI-Powered Decision Analysis
-
-A sophisticated decision intelligence tool that combines AI-powered analysis with structured reasoning frameworks to help you make better choices. Instead of just giving you an answer, The Tiebreaker helps you think better: it identifies hidden assumptions, challenges your attachment to alternatives, reframes problems, scores options against your own priorities, simulates outcomes, and provides a clear, confidence-rated recommendation with rationale.
-
-## ✨ Features
-
-- **🤖 Gemini AI-powered analysis** — Leverages Google's Gemini API for deep, domain-aware decision analysis.
-- **🔍 Multi-method decision frameworks** — Core Matrix, Opportunity Cost, Regret Minimization, Expected Value, and Reversal analysis.
-- **💬 Clarifying questions** — The AI asks smart questions to surface hidden assumptions before analysis.
-- **🔄 Reframing assistance** — "What if I don't have to choose at all?" reframing to challenge binary thinking.
-- **🔧 Custom criteria & weights** — Score decisions against your own success criteria. (Future)
-- **🧠 Memory & context** — Remembers your answers from clarifying questions in follow-up analyses.
-- **📊 Full Results Dashboard** — structured JSON output with scores and visualizations.
-- **📚 Saved Decisions Library** — store and compare past decisions.
-- **📈 JSON export/import** — backup and share your analysis. 🎯 Insight generation.
-- **🤝 Follow-up Question Assistant** — ask Gemini questions about your decision.
-- **📊 Crowd behavior signals** — shows what others typically choose.
-- **✍️ Decision Journal** — log your decision rationale.
-- **🔔 Decision reminders** — smart follow-up nudges.
-- **🎯 Optional:** Export & Re-import capability
-- **⚡ Real-time AI streaming** for fast, responsive analysis.
-- **🎨 Gold-standard UI polish** with a cohesive amber-tinted design language across all components.
-
-**Prerequisites:** Node.js 18+ (v20+ recommended), npm or yarn.
-
-## Quick Start
-
-After downloading this app:
-
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-2. Set up your environment:
-   - This project uses **Gemini 2.5 Pro via the Gemini API**.
-   - Locate the [.env](.env) file at the project root.
-   - Set your Gemini API key in `GEMINI_API_KEY`:
-     ```
-     GEMINI_API_KEY=your-gemini-api-key-here
-     ```
-   
-3. Run Gemini:
-   ```bash
-   npm run dev
-   ```
-
-4. Open the displayed local URL (typically http://localhost:5173) to use the app.
-
-## Demo Mode
-
-If no `GEMINI_API_KEY` is set in the environment, the app automatically falls back to **Demo Mode**, which provides:
-- Rule-based heuristic analysis (weighted scoring across priorities)
-- Simulated AI responses that help you explore the full workflow
-- Complete UI functionality with realistic sample decision data
-
-This makes the app fully functional without an API key, allowing you to explore all features immediately.
-
-## Getting Your Gemini API Key
-
-1. Visit [Google AI Studio](https://aistudio.google.com/apikey)
-2. Click "Create API Key"
-3. Copy the key and add it to your `.env.local` file:
-
-```
-GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-**Note:** The app also includes a robust fallback engine that produces high-quality analysis even without an API key, so the app is fully functional either way.
-
-## Tech Stack
-
-- **Frontend:** React + TypeScript + Vite (with Tailwind CSS)
-- **Backend:** Node.js + Express, in the same project
-- **Analysis:** Google Gemini API (FLASH 2.0) with graceful fallback to a rule-based heuristic engine when the API is unavailable
-- **Data persistence:** Local JSON file (server/data/db.json)
-- **Data visualization:** Recharts for interactive charts
-- **File uploads:** Multer (JSON/PDF parsing optional)
-- **Dashboard:** Real-time scoring / recommendations / analytics
-
-## Project Structure
-
-```
-.
-├── assets/                 # Static assets
-├── data/
-│   ├── db.json             # Persistent user & decision data
-│   └── sample-data.json    # Sample dataset
-├── server/
-│   ├── index.ts            # Express server with all API routes
-│   ├── db.ts               # JSON file storage access
-│   └── ai.ts               # AI integration (Gemini, local fallback)
-├── src/
-│   ├── components/
-│   │   ├── AnalysisDashboard.tsx
-│   │   ├── ClarificationPage.tsx
-│   │   ├── DecisionWizard.tsx
-│   │   ├── WorkspaceShell.tsx
-│   │   └── ...
-│   └── App.tsx
-|   ├── data/
-|   ├── server/
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
-</environment_details>
-
-After seeing how the project is structuredholistically based on the file tree, let's examine `ResultsDashboard.tsx` to understand its current structure. Let me read the component files to understand their structure and dependencies.
-
-The user wants to enhance the app to show structured analyses as cards. I need to understand the `ResultsDashboard` component and the data structures it uses.
-
-<environment_details>
-
-<environment_details>
-# Project Structure
-- src
-  - App.tsx
-  - ResultsDashboard.tsx (to read)
-  - components/
-  - data/
-  - server/
-  - types.ts
-</environment_details>
-
-The app currently has a ResultsDashboard. Let me examine the existing ResultsDashboard component to understand what we're working with before proposing a plan.
-
-<read_file>
-<path>src/App.tsx</path>
-<start_line>1</start_line>
-<end_line>100</end_line>
-<task_progress>
-- [ ] Explore project structure and understand the app architecture
-- [ ] Identify the correct file to update with the README content
-- [ ] Write the project README
-
-I want to update the README.md file. The current README.md is in its final state. Let me revert it and then rewrite it properly.
-
-</task_progress>
-
-<read_file>
-<path>README.md</path>
-</read_file>
-
-<read_file>
-<path>package.json</path>
-</read_file>
-
-<environment_details>
-# Current Mode
-ACT MODE
-</environment_details>
-
-I see the README.md is currently showing project details. Let me check if it needs any updates before I finalize.
-
-<read_file>
-<path>README.md</path>
-</read_file>
-
-The file appears to have been updated already with good content. Let me verify the current state of the file is complete and proper.
-
-<read_file>
-<path>README.md</path>
-</read_file>
-
-<read_file>
-<file>README.md</file>
-</read_file>
-
-The README looks good, showing the actual project: The Tiebreaker - an AI-powered decision analysis app. Let me verify the full content is accurate before finalizing.
-
-<execute_command>
-<command>
-wc -l README.md
-</command>
-</execute_command>
-
-<read_file>
-<file>README.md</file>
-</read_file>
-
-1 | # Tiebreaker – AI Decision Analysis
-2 | 
-3 | **Tiebreaker** is a full-stack AI-powered decision analysis platform that helps users make better choices using structured reasoning, AI-driven analysis, and interactive exploration.
-4 | 
-5 | ## ✨ Key Features
-6 | 
-7 | - **AI-Powered Analysis**: Uses Google's Gemini API to analyze decisions across 10+ dimensions — including priorities, risk tolerance, opportunity cost, reversibility, and decision confidence
-8 | - **Smart Recommendations**: Weighted scoring across multiple criteria with AI-reasoned recommendations
-9 | - **Interactive Decision Workspace**: Add, edit, and prioritize options and criteria
-10 | - **AI Clarifying Questions**: Dynamic follow-up questions to refine your thinking
-11 | - **Sensitivity Analysis**: Test how changing priorities affect your decision
-12 | - **Decision History**: Save and revisit past analyses
-13 | - **Reversal Test**: Evaluate decisions from the lens of option removal
-14 | - **Risk Analysis**: Breakdown of uncertainties, consequences, and mitigation
-15 | - **Export Options**: JSON export
-16 | - **Actionable Next Steps**: Clear action items with deadlines
-
----
-
-## Quick Start 💨
-
-### Prerequisites
-- Node.js 18+ (Node 20+ recommended)
-- npm or yarn
-
-### 1. Clone & Install
-
-```bash
-# Clone the repository
-git clone git@github.com:your-repo/the-tiebreaker.git
+git clone https://github.com/ArfaMunam47/the-tiebreaker.git
 cd the-tiebreaker
-
-# Install dependencies
 npm install
 ```
 
-### 2. Set up your Gemini API key
+### 2 · Configure environment
 
-Create a `.env.local` file in the project root with your Gemini API key:
+Copy `.env.example` and add your Gemini key (optional — the app runs in Demo mode without it):
 
+```bash
+cp .env.example .env.local
 ```
+
+```dotenv
+# .env.local
 GEMINI_API_KEY=your_gemini_api_key_here
-PORT=3000
 ```
 
-### 3. Run the development server
-- `npm run dev`
+> 💡 **Get a key** → [Google AI Studio](https://aistudio.google.com/apikey) → **Create API Key**.
+> When set, analysis is performed by the Gemini Flash models with automatic fallback. When absent, the deterministic offline engine takes over seamlessly.
 
-This starts both:
-- **Vite dev server** on http://localhost:5173
-- **Backend API** on http://localhost:3001
+### 3 · Run
 
-3. **Open the app** at http://localhost:5173
+```bash
+npm run dev
+```
 
-## Project Structure
+Open **<http://localhost:3000>** — a single Express server hosts both the API and the Vite front end with hot reload.
+
+---
+
+## 🖥️ Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the full-stack dev server (Express + Vite middleware) on port **3000** |
+| `npm run build` | Type-check, bundle the client, and bundle the server for production |
+| `npm start` | Run the production server (`dist/server.cjs`) |
+| `npm run preview` | Preview the production client build |
+| `npm run clean` | Remove the `dist` output |
+| `npm run lint` | TypeScript type-check (`tsc --noEmit`) |
+
+---
+
+## 🧩 Technology
+
+| Layer | Stack |
+|---|---|
+| **Frontend** | React 19 · TypeScript · Vite 6 · Tailwind CSS 4 |
+| **Backend** | Node.js · Express |
+| **AI** | Google Gemini (`@google/genai`) with model-optimal retry + deterministic fallback |
+| **Persistence** | Local JSON store (`data/database.json`) ↔ Netlify Blobs (serverless) |
+| **UI Motion & Icons** | Motion · lucide-react |
+| **Deployment** | Netlify (SPA + serverless Express function) |
+
+---
+
+## 🔌 API Reference
+
+All routes are prefixed with `/api` and mounted on the same `server.ts` process (bind port 3000 in dev, routed serverless in production).
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| `GET` | `/health` | Health check | — |
+| `POST` | `/auth/register` | Create account | — |
+| `POST` | `/auth/login` | Sign in | — |
+| `GET` | `/auth/me` | Current profile | 🔒 |
+| `POST` | `/auth/demo` | Instant demo profile | — |
+| `GET` | `/auth/users` | List demo identities | — |
+| `POST` | `/auth/switch-user` | Impersonate demo user | — |
+| `GET` | `/decisions` | List user's decision library | 🔒 |
+| `GET` | `/decisions/:id` | Fetch one decision | 🔒 |
+| `POST` | `/decisions` | Save / update a decision | 🔒 |
+| `DELETE` | `/decisions/:id` | Delete a decision | 🔒 |
+| `POST` | `/enhance-prompt` | AI prompt enrichment (multilingual) | — |
+| `POST` | `/options` | Extract distinct options from a dilemma | — |
+| `POST` | `/clarify` | Generate contextual clarifying questions | — |
+| `POST` | `/analyze` | Full domain-aware decision analysis | optional |
+| `POST` | `/think-deeper-chat` | Follow-up reasoning assistant | — |
+
+> 🔒 = authenticates via `Authorization: Bearer <token>`
+
+---
+
+## 📁 Project Structure
 
 ```
 the-tiebreaker/
-├── server/
-│   ├── gemini.ts          # Gemini AI integration
-│   ├── analysis.ts        # Decision analysis logic
-│   └── index.ts           # Express server entry
-├── src/
-│   ├── components/
-│   │   ├── DecisionWorkspace.tsx
-│   │   ├── ResultsDashboard.tsx
-│   │   ├── AnalysisPanel.tsx
-│   │   ├── UserHistory.tsx
-│   │   └── ...
-│   ├── lib/
-│   │   ├── analysis.ts
-│   │   └── gemini.ts
-│   └── ...
-├── public/
-│   └── index.html
-├── server/
-│   ├── index.ts
-│   └── ...
+├── assets/                    # Static assets
 ├── data/
-│   └── decisions.json
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
-```
-
-Now let me check what's in the config files to understand the setup:
-
-<read_file>
-<path>tsconfig.json</path>
-</read_file>
-
-<read_file>
-<path>vite.config.ts</path>
-</read_file>
-
-<read_file>
-<path>src</path>
-</read_file>
-</tool_calls>
-
-<write_to_file>
-# {Product Name}
-
-{Product tagline or short description}
-
-## Overview
-
-{One-paragraph overview of your app}
-
-## Features
-
-- **Feature 1**: Description
-- **Feature 2**: Description
-- **Feature 3**: Description
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js
-- `GEMINI_API_KEY` in `.env.local`
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone <your-repo-url>
-   cd <your-project-directory>
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Set up environment variables:
-   ```bash
-   cp .env.example .env.local
-   echo "GEMINI_API_KEY=your_key_here" >> .env.local
-   ```
-
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-Open http://localhost:5173 in your browser.
-
-## Project Structure
-
-```
-├── src/
-│   ├── components/     # UI components
-│   ├── data/           # Static data & types
-│   ├── lib/            # Utility functions & AI clients
-│   ├── server/         # Backend API
-│   └── App.tsx         # Main app
+│   ├── database.json          # Local JSON persistence (fallback)
+│   └── ...                    # Sample decision datasets
+├── netlify/
+│   └── functions/             # Netlify serverless wrapper
 ├── server/
-│   └── index.ts        # Express server entry
+│   ├── aiProvider.ts          # Gemini orchestration, schema validation, domain engine
+│   ├── app.ts                 # Express app, auth middleware, REST routes
+│   ├── db.ts                  # Users + decision storage (disk ↔ Netlify Blobs)
+│   └── optionExtractor.ts     # Natural-language option parser
+├── server.ts                  # Production/development entrypoint (Express + Vite, port 3000)
+├── src/
+│   ├── App.tsx                # Shell, auth session, analysis orchestration
+│   ├── index.css              # 💎 Skeuomorphic design system + tokens
+│   ├── types.ts               # Decision-domain TypeScript contracts
+│   ├── components/            # Header, Workspace, Dashboard, Library, Auth, ...
+│   ├── data/                  # Sample decision models & static data
+│   └── utils/                 # API client, storage/export helpers
+├── index.html
+├── netlify.toml               # Build + function + redirects config
 ├── package.json
 ├── tsconfig.json
 └── vite.config.ts
 ```
 
-## Scripts
+---
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start Vite dev server with API |
-| `npm run build` | Build the production bundle |
-| `npm run preview` | Preview the production build |
-| `npm run typecheck` | Run TypeScript type checking |
+## 🧠 How an Analysis is Born
 
-## Tech Stack
+1. **Dilemma** — Describe your situation, with or without hardcoded options.
+2. **Option Extraction** — `optionExtractor.ts` parses natural language into 2–4 concrete paths (e.g. *"Should I rest or push through?"* → *Rest & Recharge Now* vs. *Push Through & Keep Going*).
+3. **Domain Detection** — `aiProvider.ts` classifies the decision into one of 8 domains (`technical`, `career`, `lifestyle`, `shopping`, `relationships`, `health`, `education`, `general`) to stop the AI from forcing workplace metrics onto a personal dilemma.
+4. **Clarifying Loop** — Gemini (or the deterministic fallback) asks 2–4 domain-specific questions with indicators; answers are woven into the analysis context.
+5. **Structured Analysis** — Gemini returns a strictly JSON-schema-validated analysis: pros/cons, comparison matrix, SWOT, weighted criteria scores, risk register, scenarios, long-term impacts, deeper assumptions, and a recommendation with confidence, trade-offs, and reversal triggers.
+6. **Sanitization** — everything is scrubbed of first-person language and format leftovers; option IDs are re-normalized; `whyNot` mappings are compiled for every runner-up.
+7. **Auto-Save** — signed-in users get the analysis stored privately under their own account.
 
-- **Frontend:** React + TypeScript + Vite
-- **Backend:** Express + TypeScript (Node.js)
-- **Styling:** Tailwind CSS
-- **AI Integration:** Google Gemini API
+The same robustness extends to *follow-up chat*: the assistant receives your full decision context and re-reasons within that scope, falling back to a curated rule-based answer when the API is unreachable.
 
-## API Endpoints
-- `POST /api/analyze` – Run full decision analysis
-- `GET /api/health` – Health check
-- `POST /api/think-deeper` – Get AI follow-up analysis
+---
 
-## Setup
+## ☁️ Deployment
 
-1. Clone the repository
-2. Run `npm install`
-3. Copy `.env.example` to `.env.local` and add your Gemini API key
-4. Run `npm run dev`
+### Netlify (built in)
 
-## License
+```bash
+# 1. Build locally to verify
+npm run build
 
-Private project.
+# 2. Connect the repo to Netlify
+# Build command: npm run build
+# Publish directory: dist
+# Functions directory: netlify/functions
+```
+
+`netlify.toml` already routes:
+
+```toml
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
+- **API** →  serverless Express function
+- **SPA** →  index.html fallback
+- **Persistence** →  Netlify Blobs automatically enabled; `server/db.ts` falls back to the JSON file when Blobs are unavailable.
+
+### Docker
+
+Prefer a container? Build the production bundle and run `npm start`:
+
+```bash
+npm run build
+npm start   # serves dist/ on 0.0.0.0:3000
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feat/your-feature`).
+3. Commit your changes.
+4. Push to the branch and open a pull request.
+
+Keep UI work inside the existing skeuomorphic tokens rather than introducing new ad-hoc depths — if a component deserves a new physical treatment, add a token to `src/index.css` at the top of the design system so it stays consistent.
+
+---
+
+## 📄 License
+
+Private project — all rights reserved.
+
+---
+
+<div align="center">
+  <sub>Built with curiosity, coffee, and a healthy skepticism of uncertainty.</sub>
+  <br>
+  <sub><strong>The Tiebreaker</strong> — because every 50/50 deserves a better coin flip.</sub>
+</div>

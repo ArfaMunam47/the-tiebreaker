@@ -22,6 +22,7 @@ import {
   generateClarifyingQuestions,
   analyzeDecisionWithProviders,
   generateContentWithRetryAndFallback,
+  enhancePromptWithAI,
 } from "./aiProvider.js";
 
 dotenv.config();
@@ -283,6 +284,30 @@ app.delete("/api/decisions/:id", authenticateToken, (req: AuthenticatedRequest, 
       return res.status(403).json({ error: err.message });
     }
     return res.status(500).json({ error: "Failed to delete decision." });
+  }
+});
+
+// ==========================================
+// PROMPT ENHANCEMENT API (MULTILINGUAL AI)
+// ==========================================
+
+app.post("/api/enhance-prompt", async (req: Request, res: Response) => {
+  try {
+    const { prompt, category, reversibility, timeHorizon } = req.body;
+    if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
+      return res.status(400).json({ error: "Please enter a question or dilemma to enhance." });
+    }
+
+    const enhanced = await enhancePromptWithAI(prompt.trim(), {
+      category,
+      reversibility,
+      timeHorizon,
+    });
+
+    return res.json(enhanced);
+  } catch (err: any) {
+    console.error("Error in /api/enhance-prompt:", err);
+    return res.status(500).json({ error: err.message || "Failed to enhance question." });
   }
 });
 
