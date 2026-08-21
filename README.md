@@ -54,19 +54,8 @@ GEMINI_API_KEY=your_gemini_api_key_here
 npm run dev
 ```
 
-The full-stack app (Express + Vite) runs at **http://localhost:3000** — a single server hosts both the API and the client.
-
 ---
 
-## Demo Mode
-
-When no valid `GEMINI_API_KEY` is configured, the app automatically falls back to a **deterministic offline engine** that produces rich, realistic analysis. Every feature stays fully explorable:
-
-- Rule-based heuristic multi-method analysis
-- Clarifying questions, results dashboard, library, and exports
-- One-click demo profiles for simulating multiple users
-
----
 
 ## Features
 
