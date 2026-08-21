@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 interface DecisionHistoryProps {
-  savedDecisions: DecisionAnalysis[];
+  savedDecisions?: DecisionAnalysis[];
   onSelectDecision: (decision: DecisionAnalysis) => void;
   onDeleteDecision: (id: string) => void;
   onClose: () => void;
@@ -20,7 +20,7 @@ interface DecisionHistoryProps {
 }
 
 export const DecisionHistory: React.FC<DecisionHistoryProps> = ({
-  savedDecisions,
+  savedDecisions = [],
   onSelectDecision,
   onDeleteDecision,
   onClose,
@@ -29,10 +29,12 @@ export const DecisionHistory: React.FC<DecisionHistoryProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'analyzed' | 'decided'>('all');
 
-  const filteredDecisions = savedDecisions.filter((d) => {
+  const safeDecisions = Array.isArray(savedDecisions) ? savedDecisions : [];
+
+  const filteredDecisions = safeDecisions.filter((d) => {
     const matchesSearch =
-      d.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      d.originalPrompt.toLowerCase().includes(searchTerm.toLowerCase());
+      (d.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (d.originalPrompt || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || d.status === statusFilter;
     return matchesSearch && matchesStatus;
   });

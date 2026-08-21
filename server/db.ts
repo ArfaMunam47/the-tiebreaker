@@ -9,7 +9,10 @@ export interface UserRecord {
   email: string;
   passwordHash: string;
   name: string;
+  bio?: string;
+  avatar?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface DecisionRecord {
@@ -80,26 +83,49 @@ let dbCache: DatabaseSchema = loadDatabaseFromDisk();
  * Sync database from Netlify Blobs or Local Disk
  */
 export async function syncDatabaseFromStorage(): Promise<DatabaseSchema> {
+  const diskData = loadDatabaseFromDisk();
+
   try {
     const store = getBlobStore();
     if (store) {
       const data = (await store.get('schema', { type: 'json' })) as DatabaseSchema | null;
-      if (data && Array.isArray(data.users)) {
-        dbCache = {
-          users: Array.isArray(data.users) ? data.users : [],
-          decisions: Array.isArray(data.decisions) ? data.decisions : [],
-        };
+      if (data && Array.isArray(data.users) && data.users.length > 0) {
+        // Merge disk & store users so we NEVER lose users
+        const mergedUsers = [...data.users];
+        for (const diskUser of diskData.users) {
+          if (!mergedUsers.some(u => u.id === diskUser.id || u.email.toLowerCase() === diskUser.email.toLowerCase())) {
+            mergedUsers.push(diskUser);
+          }
+        }
+        const mergedDecisions = [...data.decisions];
+        for (const diskDec of diskData.decisions) {
+          if (!mergedDecisions.some(d => d.id === diskDec.id)) {
+            mergedDecisions.push(diskDec);
+          }
+        }
+        dbCache = { users: mergedUsers, decisions: mergedDecisions };
+        saveDatabaseToDisk(dbCache);
         return dbCache;
       }
     }
   } catch (err) {
-    // Netlify Blobs unavailable (e.g. running locally without Netlify CLI)
+    // Netlify Blobs unavailable
   }
 
-  const diskData = loadDatabaseFromDisk();
-  if (diskData.users.length > 0 || diskData.decisions.length > 0) {
-    dbCache = diskData;
+  // Disk fallback with in-memory merge
+  const mergedUsers = [...dbCache.users];
+  for (const diskUser of diskData.users) {
+    if (!mergedUsers.some(u => u.id === diskUser.id || u.email.toLowerCase() === diskUser.email.toLowerCase())) {
+      mergedUsers.push(diskUser);
+    }
   }
+  const mergedDecisions = [...dbCache.decisions];
+  for (const diskDec of diskData.decisions) {
+    if (!mergedDecisions.some(d => d.id === diskDec.id)) {
+      mergedDecisions.push(diskDec);
+    }
+  }
+  dbCache = { users: mergedUsers, decisions: mergedDecisions };
   return dbCache;
 }
 
@@ -276,6 +302,41 @@ export function createUser(email: string, password: string, name: string): UserR
   dbCache.users.push(newUser);
   saveDatabase(dbCache);
   return newUser;
+}
+
+export function updateUserProfile(
+  userId: string,
+  updates: { name?: string; bio?: string; avatar?: string; email?: string }
+): UserRecord {
+  const user = findUserById(userId);
+  if (!user) {
+    throw new Error('User not found.');
+  }
+
+  if (updates.name !== undefined && updates.name.trim().length > 0) {
+    user.name = updates.name.trim();
+  }
+
+  if (updates.bio !== undefined) {
+    user.bio = updates.bio.trim();
+  }
+
+  if (updates.avatar !== undefined) {
+    user.avatar = updates.avatar;
+  }
+
+  if (updates.email !== undefined && updates.email.trim().length > 0) {
+    const normalized = updates.email.trim().toLowerCase();
+    const existing = findUserByEmail(normalized);
+    if (existing && existing.id !== userId) {
+      throw new Error('This email is already in use by another account.');
+    }
+    user.email = normalized;
+  }
+
+  user.updatedAt = new Date().toISOString();
+  saveDatabase(dbCache);
+  return user;
 }
 
 // Decisions Operations with STRICT User Ownership

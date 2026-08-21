@@ -9,6 +9,7 @@ import {
   FollowUpMessage,
 } from '../types';
 import { calculateWeightedTotalScore } from '../utils/storage';
+import { generateAndDownloadDecisionPdf } from '../utils/pdfGenerator';
 import { ExportReportModal } from './ExportReportModal';
 import {
   Check,
@@ -33,6 +34,7 @@ import {
   ChevronLeft,
   MessageSquare,
   RefreshCw,
+  ArrowLeft,
   Award,
   SlidersHorizontal,
   Table,
@@ -44,6 +46,9 @@ interface ResultsDashboardProps {
   onUpdateDecision: (updated: DecisionAnalysis) => void;
   onSave: () => void;
   onNewDecision: () => void;
+  onMakeMorePersonal?: (decision: DecisionAnalysis) => void;
+  onBack?: () => void;
+  backLabel?: string;
   initialTab?: TabType;
 }
 
@@ -62,6 +67,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   onUpdateDecision,
   onSave,
   onNewDecision,
+  onMakeMorePersonal,
+  onBack,
+  backLabel = 'Back',
   initialTab = 'overview',
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
@@ -91,6 +99,34 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
   // Export report modal state
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
+  const [pdfSuccess, setPdfSuccess] = useState(false);
+
+  const handleDirectDownloadPdf = async () => {
+    setIsPdfGenerating(true);
+    try {
+      // Automatically save the decision into user account / library
+      if (onSave) {
+        try {
+          await onSave();
+        } catch (saveErr) {
+          console.warn('Auto-save during PDF export:', saveErr);
+        }
+      }
+
+      const success = generateAndDownloadDecisionPdf(decision);
+      if (success) {
+        setPdfSuccess(true);
+        setTimeout(() => setPdfSuccess(false), 2500);
+      } else {
+        setIsExportModalOpen(true);
+      }
+    } catch (e) {
+      setIsExportModalOpen(true);
+    } finally {
+      setIsPdfGenerating(false);
+    }
+  };
 
   // SWOT interactive state
   const [swotData, setSwotData] = useState(decision.swot || []);
@@ -539,14 +575,34 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   ];
 
   return (
-    <div className="w-full space-y-8 animate-fadeIn print:px-0 print:py-0">
+    <div className="w-full space-y-5 sm:space-y-6 animate-fadeIn print:px-0 print:py-0">
+      {/* STANDARD BACK NAVIGATION BAR */}
+      {onBack && (
+        <div className="flex items-center justify-between gap-3 pb-1 border-b border-[#E0D9CC] print:hidden">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 min-h-[40px] rounded-xl bg-[#FAF7F2] hover:bg-[#F0EAE0] border border-[#D5CEBF] text-stone-900 text-xs font-bold transition-all cursor-pointer shadow-2xs hover:-translate-x-0.5"
+            aria-label={backLabel}
+          >
+            <ArrowLeft className="w-4 h-4 text-[#B88E3D] stroke-[2.5]" />
+            <span>{backLabel}</span>
+          </button>
+
+          <div className="flex items-center gap-2 text-xs text-stone-600 font-sans hidden sm:flex truncate">
+            <span className="text-stone-400">Viewing:</span>
+            <span className="font-semibold text-stone-800 truncate max-w-md">{decision.title}</span>
+          </div>
+        </div>
+      )}
+
       {/* HEADER BANNER */}
-      <div className="skeuo-card rounded-2xl p-6 sm:p-8 relative overflow-hidden print:border-none print:shadow-none">
+      <div className="skeuo-card rounded-2xl p-5 sm:p-7 relative overflow-hidden print:border-none print:shadow-none">
         <div className="absolute top-0 right-0 w-80 h-80 bg-amber-100/40 blur-[100px] pointer-events-none rounded-full" />
         <div className="absolute top-0 left-0 w-full h-[3px] bg-[#B88E3D]" />
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative z-10">
+          <div className="space-y-2.5">
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-widest bg-amber-100/90 text-amber-950 border border-amber-300/80 rounded-md shadow-2xs">
                 Decision Analysis
@@ -594,32 +650,45 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             )}
           </div>
 
-          {/* Action Bar */}
-          <div className="grid grid-cols-1 xs:grid-cols-3 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 print:hidden w-full sm:w-auto pt-2 sm:pt-0">
+          {/* Action Bar: Exactly Two Symmetrical Options (Save as PDF & New Decision) */}
+          <div className="flex flex-row sm:flex-col lg:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 print:hidden w-full sm:w-auto shrink-0 pt-2 lg:pt-0">
+            {/* 1. SAVE AS PDF (Auto-saves decision to account + generates PDF) */}
             <button
-              onClick={handleSaveClick}
-              className={`flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer w-full sm:w-auto ${
-                savedSuccess
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs'
-                  : 'skeuo-btn-secondary text-stone-800'
+              type="button"
+              onClick={handleDirectDownloadPdf}
+              disabled={isPdfGenerating}
+              className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 min-h-[44px] text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-2xs hover:shadow-xs active:translate-y-0.5 ${
+                pdfSuccess
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                  : 'skeuo-btn-secondary text-stone-900 hover:border-[#B88E3D]'
               }`}
+              title="Save decision to your account and download the complete PDF report"
+              aria-label="Save as PDF"
             >
-              <Save className="w-4 h-4 text-[#B88E3D]" />
-              <span>{savedSuccess ? 'Saved!' : 'Save Decision'}</span>
+              {isPdfGenerating ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-stone-800/30 border-t-stone-800 rounded-full animate-spin" />
+                  <span>Saving & Exporting...</span>
+                </>
+              ) : pdfSuccess ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
+                  <span>Saved & Downloaded!</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 text-[#B88E3D] stroke-[2.5]" />
+                  <span>Save as PDF</span>
+                </>
+              )}
             </button>
 
+            {/* 2. NEW DECISION */}
             <button
-              onClick={() => setIsExportModalOpen(true)}
-              className="skeuo-btn-secondary flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-xs font-bold uppercase tracking-wider text-stone-800 rounded-xl transition-all cursor-pointer hover:border-[#B88E3D] w-full sm:w-auto"
-              title="Save complete decision report as PDF"
-            >
-              <Download className="w-4 h-4 text-[#B88E3D]" />
-              <span>Save as PDF</span>
-            </button>
-
-            <button
+              type="button"
               onClick={onNewDecision}
-              className="skeuo-btn-primary flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-xs font-extrabold uppercase tracking-wider text-white rounded-xl transition-all cursor-pointer w-full sm:w-auto"
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 min-h-[44px] text-xs font-extrabold uppercase tracking-wider text-white rounded-xl transition-all cursor-pointer skeuo-btn-primary shadow-2xs hover:shadow-xs active:translate-y-0.5"
+              aria-label="Start a new decision"
             >
               <Plus className="w-4 h-4 text-[#D4A338] stroke-[3]" />
               <span className="text-[#D4A338]">New Decision</span>
@@ -627,6 +696,32 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* QUICK DECISION PERSPECTIVE BANNER (If created via Quick Decision path) */}
+      {decision.isQuickDecision && (
+        <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent border border-amber-400/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm animate-fadeIn">
+          <div className="space-y-1 max-w-2xl">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#B88E3D]">
+              <Sparkles className="w-4 h-4 text-[#B88E3D]" />
+              <span>Quick Decision Perspective</span>
+            </div>
+            <p className="text-xs sm:text-sm text-stone-800 leading-relaxed font-sans">
+              This is a fast perspective based primarily on your question. For a more personalized result with custom criteria weighting and granular trade-offs, you can customize what matters most to you.
+            </p>
+          </div>
+
+          {onMakeMorePersonal && (
+            <button
+              type="button"
+              onClick={() => onMakeMorePersonal(decision)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs uppercase tracking-wider cursor-pointer shadow-sm shrink-0 transition-transform hover:scale-[1.02]"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              <span>Make This More Personal</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* CLARIFYING QUESTIONS BANNER (if available) */}
       {decision.clarifyingQuestions && decision.clarifyingQuestions.length > 0 && (
@@ -664,7 +759,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       )}
 
       {/* NAVIGATION TABS (Mobile Dropdown + Fully Responsive Horizontal Tab Strip) */}
-      <div className="sticky top-[60px] z-20 bg-[#F7F5F0]/95 backdrop-blur-md pt-2 pb-3 mb-6 sm:mb-8 border-b border-[#E0D9CC] shadow-xs print:hidden space-y-2 max-w-full min-w-0">
+      <div className="sticky top-[60px] z-20 bg-[#F7F5F0]/95 backdrop-blur-md pt-2 pb-2.5 mb-4 sm:mb-5 border-b border-[#E0D9CC] shadow-xs print:hidden space-y-2 max-w-full min-w-0">
         {/* Mobile Dropdown Selector (visible on small mobile screens < 640px) */}
         <div className="sm:hidden px-1">
           <label htmlFor="mobile-tab-select" className="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-1">
@@ -2083,6 +2178,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         decision={decision}
+        onSave={onSave}
       />
     </div>
   );

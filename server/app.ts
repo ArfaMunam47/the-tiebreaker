@@ -16,6 +16,7 @@ import {
   saveDecisionForUser,
   deleteDecisionForUser,
   syncDatabaseFromStorage,
+  updateUserProfile,
 } from "./db.js";
 import { extractAlternativesFromQuestion } from "./optionExtractor.js";
 import {
@@ -131,12 +132,20 @@ app.post("/api/auth/register", (req: Request, res: Response) => {
     const token = createSessionToken(user);
 
     return res.status(201).json({
-      user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        bio: user.bio || "",
+        avatar: user.avatar || "",
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
       token,
     });
   } catch (err: any) {
     console.error("Registration error:", err);
-    return res.status(500).json({ error: "Failed to create account." });
+    return res.status(400).json({ error: err.message || "Failed to create account." });
   }
 });
 
@@ -149,12 +158,20 @@ app.post("/api/auth/login", (req: Request, res: Response) => {
 
     const user = findUserByEmail(email);
     if (!user || !verifyPassword(password, user.passwordHash)) {
-      return res.status(401).json({ error: "Invalid email or password." });
+      return res.status(401).json({ error: "Invalid email or password. Please try again." });
     }
 
     const token = createSessionToken(user);
     return res.json({
-      user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        bio: user.bio || "",
+        avatar: user.avatar || "",
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
       token,
     });
   } catch (err: any) {
@@ -165,15 +182,74 @@ app.post("/api/auth/login", (req: Request, res: Response) => {
 
 app.get("/api/auth/me", authenticateToken, (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) {
-    return res.status(401).json({ error: "Unauthorized" });
+    return res.status(401).json({ error: "Unauthorized. Please sign in." });
   }
   const user = findUserById(req.user.id);
   if (!user) {
     return res.status(404).json({ error: "User profile not found." });
   }
   return res.json({
-    user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      bio: user.bio || "",
+      avatar: user.avatar || "",
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    },
   });
+});
+
+// Update Profile
+app.patch("/api/auth/profile", authenticateToken, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const { name, bio, avatar, email } = req.body;
+    const updated = updateUserProfile(req.user.id, { name, bio, avatar, email });
+    return res.json({
+      user: {
+        id: updated.id,
+        email: updated.email,
+        name: updated.name,
+        bio: updated.bio || "",
+        avatar: updated.avatar || "",
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt,
+      },
+      message: "Profile updated successfully.",
+    });
+  } catch (err: any) {
+    console.error("Profile update error:", err);
+    return res.status(400).json({ error: err.message || "Failed to update profile." });
+  }
+});
+
+app.put("/api/auth/profile", authenticateToken, (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const { name, bio, avatar, email } = req.body;
+    const updated = updateUserProfile(req.user.id, { name, bio, avatar, email });
+    return res.json({
+      user: {
+        id: updated.id,
+        email: updated.email,
+        name: updated.name,
+        bio: updated.bio || "",
+        avatar: updated.avatar || "",
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt,
+      },
+      message: "Profile updated successfully.",
+    });
+  } catch (err: any) {
+    console.error("Profile update error:", err);
+    return res.status(400).json({ error: err.message || "Failed to update profile." });
+  }
 });
 
 // Demo Auth Endpoint: Instant login for demo profiles and initial guest state
@@ -183,7 +259,15 @@ app.post("/api/auth/demo", (req: Request, res: Response) => {
     const user = getOrCreateDemoUser(profile);
     const token = createSessionToken(user);
     return res.json({
-      user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        bio: user.bio || "",
+        avatar: user.avatar || "",
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
       token,
     });
   } catch (err: any) {
@@ -361,7 +445,7 @@ app.post("/api/clarify", async (req: Request, res: Response) => {
 
 app.post("/api/analyze", optionalAuthenticateToken, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { prompt, options, priorities, clarifyingAnswers, category, reversibility, timeHorizon, clarificationState } = req.body;
+    const { prompt, options, priorities, clarifyingAnswers, category, reversibility, timeHorizon, clarificationState, isQuickDecision } = req.body;
 
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
       return res.status(400).json({ error: "Please enter a valid decision question." });
@@ -376,6 +460,7 @@ app.post("/api/analyze", optionalAuthenticateToken, async (req: AuthenticatedReq
       reversibility,
       timeHorizon,
       clarificationState,
+      isQuickDecision: Boolean(isQuickDecision),
     });
 
     // Auto-save to authenticated user's private database library
@@ -445,6 +530,7 @@ CRITICAL DIRECTIVES:
     if (ai) {
       const response = await generateContentWithRetryAndFallback(ai, {
         contents: `User message: "${cleanMsg}"`,
+        timeoutMs: 3800,
         config: {
           systemInstruction,
           temperature: 0.2,

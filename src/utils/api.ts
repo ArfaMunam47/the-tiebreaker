@@ -65,6 +65,18 @@ export async function apiGetMe(): Promise<{ user: User }> {
   return request<{ user: User }>('/api/auth/me');
 }
 
+export async function apiUpdateProfile(updates: {
+  name?: string;
+  bio?: string;
+  avatar?: string;
+  email?: string;
+}): Promise<{ user: User; message: string }> {
+  return request<{ user: User; message: string }>('/api/auth/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+}
+
 export async function apiLoginDemo(profile: 'user_a' | 'user_b' | 'guest'): Promise<AuthResponse> {
   const data = await request<AuthResponse>('/api/auth/demo', {
     method: 'POST',
@@ -147,6 +159,7 @@ export async function apiAnalyzeDecision(
     reversibility?: any;
     timeHorizon?: any;
     clarificationState?: any;
+    isQuickDecision?: boolean;
   },
   signal?: AbortSignal
 ): Promise<DecisionAnalysis> {

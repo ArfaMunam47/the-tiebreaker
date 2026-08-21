@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Scale, GitMerge, ShieldCheck, Compass, SlidersHorizontal, Check } from 'lucide-react';
+import { X, ArrowLeft, Scale, GitMerge, ShieldCheck, Compass, SlidersHorizontal, Check } from 'lucide-react';
 
 interface HowItWorksModalProps {
   onClose: () => void;
@@ -11,16 +11,26 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({ onClose, onSta
     <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
       <div className="skeuo-modal-shell max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden text-stone-900">
         {/* Modal Header */}
-        <div className="p-6 border-b border-[#E0D9CC] flex items-center justify-between bg-[#FAF7F2]">
+        <div className="p-4 sm:p-6 border-b border-[#E0D9CC] flex items-center justify-between bg-[#FAF7F2]">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl skeuo-btn-primary text-[#D4A338] flex items-center justify-center">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-stone-700 hover:text-stone-950 bg-[#F4EFE6] hover:bg-[#EBE4D8] border border-[#D5CEBF] rounded-lg cursor-pointer transition-colors"
+              aria-label="Back"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-[#B88E3D]" />
+              <span>Back</span>
+            </button>
+
+            <div className="w-9 h-9 rounded-xl skeuo-btn-primary text-[#D4A338] flex items-center justify-center hidden xs:flex">
               <Scale className="w-4 h-4 text-[#D4A338]" />
             </div>
             <div>
-              <h2 className="font-serif italic text-xl text-[#2C221E] font-bold">
+              <h2 className="font-serif italic text-lg sm:text-xl text-[#2C221E] font-bold">
                 How Tiebreaker Works
               </h2>
-              <p className="text-xs text-stone-500">
+              <p className="text-[11px] text-stone-500 hidden sm:block">
                 A simple 5-step process to help you choose with confidence
               </p>
             </div>
@@ -29,6 +39,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({ onClose, onSta
           <button
             onClick={onClose}
             className="p-2 text-stone-400 hover:text-stone-900 rounded-lg hover:bg-stone-200/50 transition-colors cursor-pointer"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>

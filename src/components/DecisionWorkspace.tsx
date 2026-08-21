@@ -1,40 +1,73 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Sparkles,
+  ArrowRight,
+  ArrowLeft,
   Plus,
   Trash2,
-  ArrowRight,
   Check,
-  SlidersHorizontal,
-  Loader2,
-  Clock,
   RotateCcw,
-  BookOpen,
+  SlidersHorizontal,
   HelpCircle,
-  AlertCircle,
-  AlertTriangle,
-  FileCheck2,
-  Shield,
-  BarChart3,
-  Grid2X2,
-  Compass,
-  Brain,
-  Wand2,
+  Clock,
   Layers,
+  Wand2,
+  AlertCircle,
+  FileCheck2,
+  Loader2,
+  AlertTriangle,
   History,
-  Award,
-  RefreshCw,
   X,
+  PlusCircle,
+  Zap,
+  CheckCircle2,
+  Edit3,
+  Calendar,
+  Compass,
+  ChevronRight,
 } from 'lucide-react';
 import {
-  DecisionAnalysis,
   DecisionCategory,
   ReversibilityLevel,
-  TimeHorizon,
+  DecisionAnalysis,
   ClarificationState,
   ClarifyingQuestion,
+  User,
 } from '../types';
 import { extractAlternativesFromQuestionClient } from '../utils/optionExtractor';
+
+const formatRelativeTime = (dateStr?: string): string => {
+  if (!dateStr) return 'Recently';
+  try {
+    const time = new Date(dateStr).getTime();
+    const now = Date.now();
+    const diffHours = (now - time) / (1000 * 60 * 60);
+    if (diffHours < 24) {
+      return 'Today';
+    } else if (diffHours < 48) {
+      return 'Yesterday';
+    } else if (diffHours < 24 * 7) {
+      const days = Math.floor(diffHours / 24);
+      return `${days} days ago`;
+    }
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return 'Recently';
+  }
+};
+
+export interface WorkspaceInitialData {
+  prompt?: string;
+  options?: string[];
+  priorities?: string[];
+  timeHorizon?: string;
+  category?: DecisionCategory;
+  reversibility?: ReversibilityLevel;
+  startStep?: 'step1' | 'step2' | 'step3' | 'step4' | 'review';
+}
 
 interface DecisionWorkspaceProps {
   onRunAnalysis: (
@@ -42,69 +75,74 @@ interface DecisionWorkspaceProps {
     options: string[],
     priorities: string[],
     clarifyingAnswers: Record<string, string>,
-    category: DecisionCategory,
-    reversibility: ReversibilityLevel,
-    timeHorizon: TimeHorizon,
-    clarificationState?: ClarificationState
+    category?: DecisionCategory,
+    reversibility?: ReversibilityLevel,
+    timeHorizon?: string,
+    clarificationState?: ClarificationState,
+    isQuickDecision?: boolean
   ) => Promise<void>;
   isAnalyzing: boolean;
-  loadingStep: number; // 0, 1, 2
+  loadingStep: number;
   analysisError?: string | null;
   onClearAnalysisError?: () => void;
-  onOpenTemplates?: () => void;
   onOpenHowItWorks?: () => void;
   onSelectSample?: (sampleId?: string) => void;
   savedDecisions?: DecisionAnalysis[];
   onSelectDecision?: (decision: DecisionAnalysis) => void;
-  onDeleteDecision?: (id: string) => void;
+  onDeleteDecision?: (id: string) => Promise<void>;
   onOpenHistory?: () => void;
-  initialPrompt?: string;
-  initialOptions?: string[];
-  initialPriorities?: string[];
-  initialCategory?: DecisionCategory;
-  initialReversibility?: ReversibilityLevel;
-  initialTimeHorizon?: TimeHorizon;
+  currentUser?: User | null;
+  initialData?: WorkspaceInitialData | null;
 }
 
-const DEFAULT_PRIORITIES = [
-  'Personal Enjoyment & Fun',
-  'Rest, Health & Wellbeing',
-  'Career Growth',
-  'Money & Income',
-  'Time Flexibility & Freedom',
-  'Long-term Stability & Peace of Mind',
+export type StepType = 'step1_question' | 'step2_factors' | 'step3_timing' | 'step4_options' | 'review';
+
+const STANDARD_FACTORS = [
+  'Money & Cost',
+  'Time & Freedom',
+  'Happiness & Fun',
+  'Career & Growth',
+  'Stability & Security',
+  'Family & Relationships',
+  'Personal Goals',
+  'Freedom & Flexibility',
+  'Convenience & Simplicity',
+  'Health & Wellbeing',
   'Learning & Skills',
-  'Family & Friends',
   'Low Risk & Safety',
 ];
 
-const CATEGORIES: DecisionCategory[] = [
-  'Lifestyle',
-  'Career',
-  'Job Offer',
-  'Education',
-  'Shopping',
-  'Finance',
-  'Relationships',
-  'Health',
-  'Personal',
-  'Business',
-  'Technology',
-  'Travel',
-  'Relocation',
-  'Startup',
-  'Project',
-  'General',
+const TIMING_OPTIONS = [
+  { id: 'Right now', label: 'Right now', desc: 'Need an immediate choice today or right this moment' },
+  { id: 'Today', label: 'Today', desc: 'Decision needed within 24 hours' },
+  { id: 'This week', label: 'This week', desc: 'Decision needed in the next few days' },
+  { id: 'This month', label: 'This month', desc: 'Planning over the next 2 to 4 weeks' },
+  { id: 'Long term', label: 'Long term', desc: 'Major horizon (1–5+ years of long-term impact)' },
+  { id: "I'm not sure", label: "I'm not sure", desc: 'Flexible timeline / exploring options' },
 ];
 
-const REVERSIBILITY_OPTIONS: { level: ReversibilityLevel; description: string }[] = [
-  { level: 'Easy to reverse', description: 'Very easy and cheap to undo (e.g. trial subscription or daily choice)' },
-  { level: 'Somewhat reversible', description: 'Takes some time or effort to undo (e.g. changing jobs or classes)' },
-  { level: 'Difficult to reverse', description: 'Hard or costly to undo (e.g. buying a house or car)' },
-  { level: 'Nearly irreversible', description: 'Almost impossible to undo (e.g. selling equity or permanent moves)' },
+const EXAMPLE_PROMPTS = [
+  {
+    title: 'Accept Job Offer vs Stay',
+    prompt: 'Should I accept a new high-growth job offer or stay at my current stable job?',
+    options: ['Accept New Job Offer', 'Stay at Current Job'],
+  },
+  {
+    title: 'MacBook vs Windows Laptop',
+    prompt: 'Should I buy a MacBook Pro or a high-end Windows laptop for software development?',
+    options: ['Apple MacBook Pro', 'Windows Workstation Laptop'],
+  },
+  {
+    title: 'Rent vs Buy a Home',
+    prompt: 'Should I continue renting an apartment or buy a home in my current city this year?',
+    options: ['Continue Renting', 'Buy a Home'],
+  },
+  {
+    title: 'React vs Vue.js',
+    prompt: 'Should I learn React or Vue for frontend web development in 2026?',
+    options: ['Learn React', 'Learn Vue.js'],
+  },
 ];
-
-const TIME_HORIZONS: TimeHorizon[] = ['Immediate', '3 months', '1 year', '3 years', '5+ years'];
 
 export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
   onRunAnalysis,
@@ -112,138 +150,72 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
   loadingStep,
   analysisError,
   onClearAnalysisError,
-  onOpenTemplates,
   onOpenHowItWorks,
   onSelectSample,
   savedDecisions = [],
   onSelectDecision,
   onDeleteDecision,
   onOpenHistory,
-  initialPrompt = '',
-  initialOptions = ['', ''],
-  initialPriorities = ['Personal Enjoyment & Fun', 'Rest, Health & Wellbeing', 'Time Flexibility & Freedom'],
-  initialCategory = 'Lifestyle',
-  initialReversibility = 'Somewhat reversible',
-  initialTimeHorizon = 'Immediate',
+  currentUser,
+  initialData,
 }) => {
-  const [prompt, setPrompt] = useState(initialPrompt);
-  const [options, setOptions] = useState<string[]>(
-    initialOptions.length >= 2 ? initialOptions : ['', '']
-  );
-  const [selectedPriorities, setSelectedPriorities] = useState<string[]>(initialPriorities);
-  const [category, setCategory] = useState<DecisionCategory>(initialCategory);
-  const [userCustomizedCategory, setUserCustomizedCategory] = useState(false);
-  const [reversibility, setReversibility] = useState<ReversibilityLevel>(initialReversibility);
-  const [timeHorizon, setTimeHorizon] = useState<TimeHorizon>(initialTimeHorizon);
+  // Navigation Step
+  const [currentStep, setCurrentStep] = useState<StepType>('step1_question');
 
-  // Enhance Prompt State
+  // Decision State
+  const [prompt, setPrompt] = useState('');
+  const [options, setOptions] = useState<string[]>(['', '']);
+  // RULE: Nothing is selected automatically for a new user!
+  const [selectedPriorities, setSelectedPriorities] = useState<string[]>([]);
+  const [customPrioritiesList, setCustomPrioritiesList] = useState<string[]>([]);
+  const [customPriorityInput, setCustomPriorityInput] = useState('');
+  const [showAddCustomPriority, setShowAddCustomPriority] = useState(false);
+  const [timeHorizon, setTimeHorizon] = useState<string>('This week');
+  const [category, setCategory] = useState<DecisionCategory>('General');
+  const [reversibility, setReversibility] = useState<ReversibilityLevel>('Somewhat reversible');
+
+  // AI Prompt Enhancement & Suggestion Cache
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancedResult, setEnhancedResult] = useState<{
     enhancedPrompt: string;
-    originalPrompt: string;
-    suggestedOptions?: string[];
     detectedLanguage?: string;
+    suggestedOptions?: string[];
+    suggestedFactors?: string[];
   } | null>(null);
   const [enhancedDraft, setEnhancedDraft] = useState('');
   const [enhanceError, setEnhanceError] = useState<string | null>(null);
   const [enhanceInputNotice, setEnhanceInputNotice] = useState<string | null>(null);
+  const [suggestedFactorsFromAI, setSuggestedFactorsFromAI] = useState<string[]>([]);
+  const enhanceCacheRef = useRef<Map<string, any>>(new Map());
 
-  // Auto-detect category and priorities from prompt if user hasn't explicitly picked one
+  // Error validation message
+  const [stepError, setStepError] = useState<string>('');
+
+  // Handle incoming initialData (e.g. from "Make This More Personal")
+  useEffect(() => {
+    if (initialData) {
+      if (initialData.prompt) setPrompt(initialData.prompt);
+      if (initialData.options && initialData.options.length >= 2) setOptions(initialData.options);
+      if (initialData.priorities) setSelectedPriorities(initialData.priorities);
+      if (initialData.timeHorizon) setTimeHorizon(initialData.timeHorizon);
+      if (initialData.category) setCategory(initialData.category);
+      if (initialData.reversibility) setReversibility(initialData.reversibility);
+
+      if (initialData.startStep === 'step2') setCurrentStep('step2_factors');
+      else if (initialData.startStep === 'step3') setCurrentStep('step3_timing');
+      else if (initialData.startStep === 'step4') setCurrentStep('step4_options');
+      else if (initialData.startStep === 'review') setCurrentStep('review');
+      else setCurrentStep('step1_question');
+    }
+  }, [initialData]);
+
+  const safeSavedDecisions = Array.isArray(savedDecisions) ? savedDecisions : [];
+
   const handlePromptChange = (val: string) => {
     setPrompt(val);
+    if (stepError) setStepError('');
     if (enhanceInputNotice) setEnhanceInputNotice(null);
-
-    if (!userCustomizedCategory) {
-      const lower = val.toLowerCase();
-      if (
-        lower.includes('friend') ||
-        lower.includes('fight') ||
-        lower.includes('argument') ||
-        lower.includes('call her') ||
-        lower.includes('call him') ||
-        lower.includes('text') ||
-        lower.includes('apologiz') ||
-        lower.includes('relationship') ||
-        lower.includes('breakup')
-      ) {
-        setCategory('Relationships');
-        setSelectedPriorities(['Family & Friends', 'Long-term Stability & Peace of Mind', 'Time Flexibility & Freedom']);
-      } else if (
-        lower.includes('buy') ||
-        lower.includes('phone') ||
-        lower.includes('laptop') ||
-        lower.includes('save money') ||
-        lower.includes('spend') ||
-        lower.includes('purchase') ||
-        lower.includes('car')
-      ) {
-        setCategory('Shopping');
-        setSelectedPriorities(['Money & Income', 'Long-term Stability & Peace of Mind', 'Low Risk & Safety']);
-      } else if (
-        lower.includes('stay home') ||
-        lower.includes('stay at home') ||
-        lower.includes('home order') ||
-        lower.includes('order food') ||
-        lower.includes('cook') ||
-        lower.includes('go out') ||
-        lower.includes('movie') ||
-        lower.includes('read a book') ||
-        lower.includes('weekend') ||
-        lower.includes('party') ||
-        lower.includes('relax')
-      ) {
-        setCategory('Lifestyle');
-        setSelectedPriorities(['Personal Enjoyment & Fun', 'Rest, Health & Wellbeing', 'Time Flexibility & Freedom']);
-      } else if (
-        lower.includes('learn python') ||
-        lower.includes('learn') ||
-        lower.includes('study') ||
-        lower.includes('course') ||
-        lower.includes('degree') ||
-        lower.includes('bootcamp')
-      ) {
-        setCategory('Education');
-        setSelectedPriorities(['Learning & Skills', 'Career Growth', 'Time Flexibility & Freedom']);
-      } else if (
-        lower.includes('job offer') ||
-        lower.includes('salary') ||
-        lower.includes('promotion') ||
-        lower.includes('career') ||
-        lower.includes('startup') ||
-        lower.includes('boss') ||
-        lower.includes('resign')
-      ) {
-        setCategory('Career');
-        setSelectedPriorities(['Career Growth', 'Money & Income', 'Time Flexibility & Freedom']);
-      }
-    }
   };
-
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
-  const [workspaceStep, setWorkspaceStep] = useState<'input' | 'clarify'>('input');
-  const [errorMessage, setErrorMessage] = useState('');
-
-  // AI Decision Clarification local state
-  const [clarification, setClarification] = useState<ClarificationState | null>(null);
-  const [clarifyingQuestions, setClarifyingQuestions] = useState<ClarifyingQuestion[]>([]);
-  const [clarifyingAnswers, setClarifyingAnswers] = useState<Record<string, string>>({});
-  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
-
-  // Interactive Trade-Off Simulator State
-  const [simWeights, setSimWeights] = useState({
-    growth: 40,
-    financial: 30,
-    balance: 20,
-    risk: 10,
-  });
-
-  // Cognitive Bias Audit State
-  const [auditedBiases, setAuditedBiases] = useState<Record<string, boolean>>({
-    sunkCost: false,
-    statusQuo: false,
-    overconfidence: false,
-    confirmation: false,
-  });
 
   const handleAddOption = () => {
     if (options.length < 5) {
@@ -261,6 +233,7 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
     const updated = [...options];
     updated[index] = value;
     setOptions(updated);
+    if (stepError) setStepError('');
   };
 
   const togglePriority = (priority: string) => {
@@ -271,13 +244,52 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
     }
   };
 
-  // Real Enhance Prompt Integration
+  const handleAddCustomPriority = (e: React.FormEvent) => {
+    e.preventDefault();
+    const clean = customPriorityInput.trim();
+    if (clean && !selectedPriorities.includes(clean)) {
+      setCustomPrioritiesList((prev) => [...prev, clean]);
+      setSelectedPriorities((prev) => [...prev, clean]);
+      setCustomPriorityInput('');
+      setShowAddCustomPriority(false);
+    }
+  };
+
+  const handleResetForm = () => {
+    setPrompt('');
+    setOptions(['', '']);
+    setSelectedPriorities([]);
+    setCustomPrioritiesList([]);
+    setSuggestedFactorsFromAI([]);
+    setTimeHorizon('This week');
+    setCategory('General');
+    setReversibility('Somewhat reversible');
+    setCurrentStep('step1_question');
+    setEnhancedResult(null);
+    setEnhanceError(null);
+    setStepError('');
+  };
+
+  // Fast lightweight "Make Question Clearer"
   const handleEnhancePrompt = async () => {
     if (isEnhancing) return;
 
-    if (!prompt.trim()) {
-      setEnhanceInputNotice('Please type your question or decision first so AI can make it clearer.');
+    const clean = prompt.trim();
+    if (!clean) {
+      setEnhanceInputNotice('Please write your dilemma or question first so we can make it clearer.');
       setTimeout(() => setEnhanceInputNotice(null), 4000);
+      return;
+    }
+
+    // Check client cache for instant response
+    const cacheKey = clean.toLowerCase();
+    if (enhanceCacheRef.current.has(cacheKey)) {
+      const cached = enhanceCacheRef.current.get(cacheKey);
+      setEnhancedResult(cached);
+      setEnhancedDraft(cached.enhancedPrompt);
+      if (cached.suggestedFactors) {
+        setSuggestedFactorsFromAI(cached.suggestedFactors);
+      }
       return;
     }
 
@@ -290,7 +302,7 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: prompt.trim(),
+          prompt: clean,
           category,
           reversibility,
           timeHorizon,
@@ -298,18 +310,22 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Could not enhance the question right now. You can try again.');
+        throw new Error('Could not enhance question right now. Your original question is completely safe.');
       }
 
       const data = await response.json();
       if (data.enhancedPrompt) {
+        enhanceCacheRef.current.set(cacheKey, data);
         setEnhancedResult(data);
         setEnhancedDraft(data.enhancedPrompt);
+        if (data.suggestedFactors && Array.isArray(data.suggestedFactors)) {
+          setSuggestedFactorsFromAI(data.suggestedFactors);
+        }
       } else {
-        throw new Error('No enhanced prompt returned.');
+        throw new Error('No enhanced text returned.');
       }
     } catch (err: any) {
-      setEnhanceError(err.message || 'Something went wrong. Your original question is completely safe.');
+      setEnhanceError(err.message || 'Something went wrong. Your original question is safe.');
     } finally {
       setIsEnhancing(false);
     }
@@ -319,16 +335,15 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
     if (!enhancedDraft.trim()) return;
     setPrompt(enhancedDraft.trim());
 
-    // If options are suggested and user currently has empty options, auto-fill them
-    if (
-      enhancedResult?.suggestedOptions &&
-      enhancedResult.suggestedOptions.length >= 2
-    ) {
+    if (enhancedResult?.suggestedOptions && enhancedResult.suggestedOptions.length >= 2) {
       const areCurrentEmpty = options.every((o) => !o.trim());
       if (areCurrentEmpty) {
         setOptions(enhancedResult.suggestedOptions.slice(0, 4));
-        setShowAdvancedOptions(true);
       }
+    }
+
+    if (enhancedResult?.suggestedFactors && enhancedResult.suggestedFactors.length > 0) {
+      setSuggestedFactorsFromAI(enhancedResult.suggestedFactors);
     }
 
     setEnhancedResult(null);
@@ -340,164 +355,157 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
     setEnhanceError(null);
   };
 
-  const handleProceedToClarification = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-
+  // Step 1 -> Quick Decision (Fast Path)
+  const handleGenerateQuickDecision = async () => {
     if (!prompt.trim()) {
-      setErrorMessage('Please tell us what decision you are trying to make.');
+      setStepError('Please enter what you are deciding first.');
       return;
     }
+    setStepError('');
 
-    const filteredOpts = options.map((o) => o.trim()).filter(Boolean);
-    setIsGeneratingQuestions(true);
-    setWorkspaceStep('clarify');
-
-    try {
-      const response = await fetch('/api/clarify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: prompt.trim(),
-          options: filteredOpts,
-          category,
-          reversibility,
-          timeHorizon,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setClarification(data.clarificationState || {
-          decisionSummary: prompt.trim(),
-          optionsUnderstood: data.options?.map((o: any) => o.title) || (filteredOpts.length >= 2 ? filteredOpts : extractAlternativesFromQuestionClient(prompt.trim())),
-          keyConstraints: [
-            `Time Horizon: ${timeHorizon}`,
-            `Reversibility: ${reversibility}`,
-            `Category: ${category}`,
-          ],
-          assumptionsIdentified: [
-            `Primary focus is finding the best choice over ${timeHorizon}`,
-            `Priorities reflect what matters most to you`,
-          ],
-          missingInfo: [],
-          confirmedByUser: false,
-        });
-        setClarifyingQuestions(data.clarifyingQuestions || []);
-        // Initialize default answers if provided
-        const initialAnswers: Record<string, string> = {};
-        (data.clarifyingQuestions || []).forEach((q: ClarifyingQuestion) => {
-          if (q.defaultValue) {
-            initialAnswers[q.id] = q.defaultValue;
-          }
-        });
-        setClarifyingAnswers(initialAnswers);
-      } else {
-        throw new Error('Fallback to local clarification');
-      }
-    } catch (err) {
-      const optionsUnderstood =
-        filteredOpts.length >= 2
-          ? filteredOpts
-          : extractAlternativesFromQuestionClient(prompt.trim());
-
-      const fallbackClarification: ClarificationState = {
-        decisionSummary: prompt.trim(),
-        optionsUnderstood,
-        keyConstraints: [
-          `Timeframe: ${timeHorizon}`,
-          `How easy to undo: ${reversibility}`,
-          `Category: ${category}`,
-        ],
-        assumptionsIdentified: [
-          `You want to pick the best path over ${timeHorizon}`,
-          `Your selected factors are most important`,
-        ],
-        missingInfo: [
-          'Specific budget or time limits',
-          'What happens in the worst-case scenario',
-        ],
-        confirmedByUser: false,
-      };
-
-      const fallbackQuestions: ClarifyingQuestion[] = [
-        {
-          id: 'q1',
-          question: `What matters most to you between "${optionsUnderstood[0] || 'Choice 1'}" and "${optionsUnderstood[1] || 'Choice 2'}"?`,
-          type: 'single_select',
-          suggestedAnswers: ['Long-term upside', 'Safety & peace of mind', 'Time freedom & flexibility', 'Personal happiness'],
-          whyItMatters: 'Helps us score your choices based on your true goal.',
-        },
-        {
-          id: 'q2',
-          question: 'How comfortable are you taking risks with this choice?',
-          type: 'single_select',
-          suggestedAnswers: ['Very comfortable (ready for a big leap)', 'Moderate (want some safety buffer)', 'Low (prefer the safe, proven path)'],
-          whyItMatters: 'Ensures we do not recommend something that feels too risky for you.',
-        },
-      ];
-
-      setClarification(fallbackClarification);
-      setClarifyingQuestions(fallbackQuestions);
-    } finally {
-      setIsGeneratingQuestions(false);
-    }
-  };
-
-  const handleConfirmAndRun = async () => {
-    if (!clarification) return;
-
-    const filteredOptions = options.map((o) => o.trim()).filter(Boolean);
+    // Extract options if empty
+    const cleanOpts = options.map((o) => o.trim()).filter(Boolean);
+    const resolvedOpts =
+      cleanOpts.length >= 2
+        ? cleanOpts
+        : extractAlternativesFromQuestionClient(prompt.trim());
 
     await onRunAnalysis(
       prompt.trim(),
-      filteredOptions,
+      resolvedOpts,
       selectedPriorities,
-      clarifyingAnswers,
+      {},
       category,
       reversibility,
       timeHorizon,
-      { ...clarification, confirmedByUser: true }
+      undefined,
+      true // isQuickDecision
+    );
+  };
+
+  // Step 1 -> Step 2
+  const handleProceedToStep2 = () => {
+    if (!prompt.trim()) {
+      setStepError('Please enter what you are deciding before continuing.');
+      return;
+    }
+    setStepError('');
+    setCurrentStep('step2_factors');
+  };
+
+  // Step 2 -> Step 3
+  const handleProceedToStep3 = () => {
+    setStepError('');
+    setCurrentStep('step3_timing');
+  };
+
+  // Step 3 -> Step 4
+  const handleProceedToStep4 = () => {
+    setStepError('');
+    // If options are empty, try auto-filling initial suggestions
+    if (options.every((o) => !o.trim())) {
+      const extracted = extractAlternativesFromQuestionClient(prompt.trim());
+      if (extracted.length >= 2) {
+        setOptions(extracted);
+      }
+    }
+    setCurrentStep('step4_options');
+  };
+
+  // Step 4 -> Review
+  const handleProceedToReview = () => {
+    const filledOptions = options.map((o) => o.trim()).filter(Boolean);
+    if (filledOptions.length < 2) {
+      setStepError('Please provide at least 2 options to compare (e.g. Option A and Option B).');
+      return;
+    }
+    setStepError('');
+    setCurrentStep('review');
+  };
+
+  // Full Guided Decision Run
+  const handleRunFullAnalysis = async () => {
+    if (!prompt.trim()) {
+      setCurrentStep('step1_question');
+      setStepError('Please enter your decision question.');
+      return;
+    }
+
+    const filledOptions = options.map((o) => o.trim()).filter(Boolean);
+    const resolvedOptions =
+      filledOptions.length >= 2
+        ? filledOptions
+        : extractAlternativesFromQuestionClient(prompt.trim());
+
+    await onRunAnalysis(
+      prompt.trim(),
+      resolvedOptions,
+      selectedPriorities,
+      {},
+      category,
+      reversibility,
+      timeHorizon,
+      undefined,
+      false
     );
   };
 
   const loadingSteps = [
-    'Reading your choices & what matters most to you...',
+    'Reading your dilemma & personal criteria...',
     'Comparing pros, cons, and scoring each option...',
-    'Checking for risks, blind spots, and preparing your recommendation...',
+    'Checking for blind spots and preparing your decision perspective...',
   ];
 
-  return (
-    <div id="workspace" className="w-full space-y-6">
-      {/* Sleek Top Studio Header Banner */}
-      <div className="skeuo-card text-stone-900 rounded-2xl p-5 sm:p-6 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-amber-100/35 blur-[90px] rounded-bl-full pointer-events-none" />
+  // Progress Bar Helper
+  const stepNumberMap: Record<StepType, number> = {
+    step1_question: 1,
+    step2_factors: 2,
+    step3_timing: 3,
+    step4_options: 4,
+    review: 5,
+  };
+  const currentStepNum = stepNumberMap[currentStep];
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+  return (
+    <div id="workspace" className="w-full space-y-6 sm:space-y-8 max-w-7xl 2xl:max-w-[1560px] mx-auto pb-12">
+      {/* 1. TOP WELCOME & DASHBOARD HEADER */}
+      <div className="skeuo-card text-stone-900 rounded-2xl p-6 sm:p-8 lg:p-10 relative overflow-hidden bg-gradient-to-br from-[#FAF7F2] to-[#F4EFE6] border border-[#E0D9CC] space-y-6">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-3xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full skeuo-well text-[11px] font-bold text-[#B88E3D]">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full skeuo-well text-[11px] font-bold text-[#B88E3D]">
               <Sparkles className="w-3.5 h-3.5 text-[#B88E3D]" />
-              <span>Tiebreaker Decision Workspace</span>
-              <span className="text-stone-400 font-mono">•</span>
-              <span className="text-[#B88E3D] font-mono">Gemini AI</span>
+              <span>
+                {currentUser?.name
+                  ? `Welcome back, ${currentUser.name.split(' ')[0]}`
+                  : 'Welcome to Tiebreaker'}
+              </span>
             </div>
-            <h1 className="font-serif italic text-2xl sm:text-3xl lg:text-4xl text-[#2C221E] font-normal tracking-tight">
-              Turn hard choices into <span className="not-italic font-serif text-[#B88E3D] font-bold">clear, confident decisions.</span>
+            <h1 className="font-serif italic text-2xl sm:text-3xl lg:text-4xl 2xl:text-5xl text-[#2C221E] font-bold tracking-tight">
+              What's on your <span className="not-italic font-serif text-[#B88E3D]">mind today?</span>
             </h1>
-            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-              Compare your options, see real trade-offs, spot hidden risks, and get an honest, unbiased recommendation.
+            <p className="text-xs sm:text-sm lg:text-base text-stone-600 leading-relaxed font-sans max-w-2xl">
+              Create a clear, structured decision in a few simple steps, or get a quick perspective instantly.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleResetForm}
+              className="flex items-center gap-2 px-5 py-3 rounded-xl skeuo-btn-primary font-bold text-xs uppercase tracking-wider text-[#D4A338] cursor-pointer shadow-sm hover:scale-[1.01] transition-transform"
+            >
+              <Plus className="w-4 h-4 stroke-[3]" />
+              <span>Start New Decision</span>
+            </button>
+
             {onSelectSample && (
               <button
                 type="button"
                 onClick={() => onSelectSample()}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl skeuo-btn-primary text-xs font-bold transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-4 py-3 rounded-xl skeuo-btn-secondary text-xs font-bold text-stone-800 hover:text-stone-900 cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5 text-[#D4A338]" />
-                <span className="text-[#D4A338]">See Examples</span>
+                <Sparkles className="w-3.5 h-3.5 text-[#B88E3D]" />
+                <span>Explore Examples</span>
               </button>
             )}
 
@@ -505,1370 +513,901 @@ export const DecisionWorkspace: React.FC<DecisionWorkspaceProps> = ({
               <button
                 type="button"
                 onClick={onOpenHowItWorks}
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl skeuo-btn-secondary text-xs font-bold text-stone-800 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-4 py-3 rounded-xl skeuo-btn-secondary text-xs font-bold text-stone-800 cursor-pointer"
               >
-                <HelpCircle className="w-3.5 h-3.5 text-[#B88E3D]" />
+                <HelpCircle className="w-3.5 h-3.5 text-stone-500" />
                 <span>How It Works</span>
               </button>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Main Studio Workspace Unified Surface */}
-      <div className="skeuo-card rounded-2xl overflow-hidden text-stone-900">
-        <div className="grid grid-cols-1 md:grid-cols-12 lg:grid-cols-12 items-stretch">
-          
-          {/* PANEL 1: DECISION SETUP & CONFIGURATION */}
-          <div className="order-2 md:order-1 md:col-span-4 lg:col-span-3 bg-gradient-to-b from-[#FAF7F2] to-[#F4EFE6] p-4 sm:p-5 lg:p-6 space-y-6 border-t md:border-t-0 md:border-r border-[#E0D9CC] min-w-0">
-            {/* Studio Navigation & Library */}
-            <div className="space-y-2 pb-4 border-b border-[#E0D9CC]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">
-                  Quick Actions
-                </span>
-                <span className="text-[10px] font-mono text-amber-900 bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300/80 font-bold shadow-2xs">
-                  AI Ready
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
+        {/* QUICK EXAMPLE PROMPT LAUNCHERS */}
+        {currentStep === 'step1_question' && !prompt && (
+          <div className="pt-4 border-t border-[#E3DCD0] space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+                <Compass className="w-3.5 h-3.5 text-[#B88E3D]" />
+                <span>Popular Dilemmas to Try:</span>
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {EXAMPLE_PROMPTS.map((ex, idx) => (
                 <button
+                  key={idx}
                   type="button"
                   onClick={() => {
-                    setPrompt('');
-                    setOptions(['', '']);
-                    setSelectedPriorities(['Personal Enjoyment & Fun', 'Rest, Health & Wellbeing', 'Time Flexibility & Freedom']);
-                    setCategory('Lifestyle');
-                    setReversibility('Somewhat reversible');
-                    setTimeHorizon('Immediate');
-                    setWorkspaceStep('input');
-                    setEnhancedResult(null);
-                    setEnhanceError(null);
+                    setPrompt(ex.prompt);
+                    setOptions(ex.options);
+                    if (stepError) setStepError('');
                   }}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl skeuo-btn-secondary text-xs font-bold text-stone-800 transition-all cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl skeuo-btn-secondary text-xs text-stone-800 hover:text-stone-950 font-medium cursor-pointer transition-colors"
                 >
-                  <Plus className="w-3.5 h-3.5 text-[#B88E3D]" />
-                  <span>New Decision</span>
+                  {ex.title}
                 </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
-                {onOpenHistory && (
-                  <button
-                    type="button"
-                    onClick={onOpenHistory}
-                    className="flex items-center justify-between px-3 py-2 rounded-xl skeuo-btn-secondary text-xs font-bold text-stone-800 transition-all cursor-pointer"
-                  >
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <History className="w-3.5 h-3.5 text-[#B88E3D]" />
-                      <span className="truncate">Saved</span>
-                    </div>
-                    {savedDecisions && savedDecisions.length > 0 && (
-                      <span className="text-[10px] font-mono font-bold skeuo-btn-primary text-[#D4A338] px-1.5 py-0.2 rounded-full ml-1">
-                        {savedDecisions.length}
-                      </span>
-                    )}
-                  </button>
-                )}
-              </div>
+      {/* 2. DECISION STUDIO CONTAINER & STEPPER */}
+      <div className="skeuo-card rounded-2xl p-6 sm:p-8 lg:p-10 space-y-8 bg-white border border-[#E0D9CC] shadow-sm">
+        {/* Step Progress Bar & Indicators */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-1 rounded-md skeuo-badge text-[11px] font-bold text-[#B88E3D]">
+                Step {currentStepNum} of 5
+              </span>
+              <span className="font-semibold text-stone-800 hidden sm:inline">
+                {currentStep === 'step1_question' && 'What are you deciding?'}
+                {currentStep === 'step2_factors' && 'What matters most to you?'}
+                {currentStep === 'step3_timing' && 'When does this decision matter?'}
+                {currentStep === 'step4_options' && 'What are your options?'}
+                {currentStep === 'review' && 'Review Your Decision'}
+              </span>
             </div>
 
-            {/* Decision Configuration */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-[#B88E3D]" />
-                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2C221E]">
-                    Settings & Context
-                  </span>
-                </div>
-              </div>
-
-              {/* Category */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-stone-800">
-                  Category
-                </label>
-                <select
-                  value={category}
-                  onChange={(e) => {
-                    setCategory(e.target.value as DecisionCategory);
-                    setUserCustomizedCategory(true);
-                  }}
-                  className="w-full px-3 py-2 text-xs rounded-lg skeuo-input text-stone-900 cursor-pointer font-semibold"
-                  disabled={isAnalyzing}
-                >
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat} value={cat} className="bg-white text-stone-900">
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Reversibility */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-stone-800 flex items-center gap-1.5">
-                  <RotateCcw className="w-3.5 h-3.5 text-[#B88E3D]" />
-                  <span>How easy is this to undo?</span>
-                </label>
-                <select
-                  value={reversibility}
-                  onChange={(e) => setReversibility(e.target.value as ReversibilityLevel)}
-                  className="w-full px-3 py-2 text-xs rounded-lg skeuo-input text-stone-900 cursor-pointer font-semibold"
-                  disabled={isAnalyzing}
-                >
-                  {REVERSIBILITY_OPTIONS.map((r) => (
-                    <option key={r.level} value={r.level} className="bg-white text-stone-900">
-                      {r.level}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[11px] text-stone-500 leading-tight italic pt-0.5">
-                  {REVERSIBILITY_OPTIONS.find((r) => r.level === reversibility)?.description}
-                </p>
-              </div>
-
-              {/* Time Horizon Selector */}
-              <div className="space-y-2 pt-1 border-t border-[#E0D9CC]">
-                <label className="block text-xs font-bold text-stone-800 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-[#B88E3D]" />
-                  <span>How far ahead are you looking?</span>
-                </label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {TIME_HORIZONS.map((th) => {
-                    const isSel = timeHorizon === th;
-                    return (
-                      <button
-                        key={th}
-                        type="button"
-                        onClick={() => setTimeHorizon(th)}
-                        className={`px-2 py-1.5 rounded-md text-[11px] font-medium text-center transition-all cursor-pointer ${
-                          isSel
-                            ? 'skeuo-btn-primary font-bold text-white'
-                            : 'skeuo-btn-secondary text-stone-700'
-                        }`}
-                      >
-                        {th}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* What Matters Most */}
-              <div className="space-y-2.5 pt-2 border-t border-[#E0D9CC]">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-stone-800 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-[#B88E3D]" />
-                    <span>What matters most to you?</span>
-                  </label>
-                  <span className="text-[10px] text-[#B88E3D] font-mono font-bold">
-                    {selectedPriorities.length} chosen
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {DEFAULT_PRIORITIES.map((priority) => {
-                    const isSelected = selectedPriorities.includes(priority);
-                    return (
-                      <button
-                        key={priority}
-                        type="button"
-                        onClick={() => togglePriority(priority)}
-                        disabled={isAnalyzing}
-                        className={`px-2.5 py-1 rounded-full text-[11px] transition-all flex items-center gap-1 cursor-pointer ${
-                          isSelected
-                            ? 'skeuo-btn-primary text-white font-bold'
-                            : 'skeuo-btn-secondary text-stone-700'
-                        }`}
-                      >
-                        {isSelected && <Check className="w-3 h-3 text-[#D4A338] stroke-[3]" />}
-                        <span>{priority}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+            {/* Quick Step Jump Tabs */}
+            <div className="flex items-center gap-1 text-[11px] font-medium text-stone-500">
+              <button
+                type="button"
+                onClick={() => setCurrentStep('step1_question')}
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  currentStep === 'step1_question' ? 'skeuo-btn-primary text-[#D4A338] font-bold' : 'hover:text-stone-900'
+                }`}
+              >
+                1. Question
+              </button>
+              <span className="text-stone-300">›</span>
+              <button
+                type="button"
+                onClick={() => prompt.trim() && setCurrentStep('step2_factors')}
+                disabled={!prompt.trim()}
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  currentStep === 'step2_factors'
+                    ? 'skeuo-btn-primary text-[#D4A338] font-bold'
+                    : prompt.trim()
+                    ? 'hover:text-stone-900'
+                    : 'opacity-40 cursor-not-allowed'
+                }`}
+              >
+                2. Factors
+              </button>
+              <span className="text-stone-300">›</span>
+              <button
+                type="button"
+                onClick={() => prompt.trim() && setCurrentStep('step3_timing')}
+                disabled={!prompt.trim()}
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  currentStep === 'step3_timing'
+                    ? 'skeuo-btn-primary text-[#D4A338] font-bold'
+                    : prompt.trim()
+                    ? 'hover:text-stone-900'
+                    : 'opacity-40 cursor-not-allowed'
+                }`}
+              >
+                3. Timing
+              </button>
+              <span className="text-stone-300">›</span>
+              <button
+                type="button"
+                onClick={() => prompt.trim() && setCurrentStep('step4_options')}
+                disabled={!prompt.trim()}
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  currentStep === 'step4_options'
+                    ? 'skeuo-btn-primary text-[#D4A338] font-bold'
+                    : prompt.trim()
+                    ? 'hover:text-stone-900'
+                    : 'opacity-40 cursor-not-allowed'
+                }`}
+              >
+                4. Options
+              </button>
+              <span className="text-stone-300">›</span>
+              <button
+                type="button"
+                onClick={() => prompt.trim() && setCurrentStep('review')}
+                disabled={!prompt.trim()}
+                className={`px-2.5 py-1 rounded-lg transition-colors cursor-pointer ${
+                  currentStep === 'review'
+                    ? 'skeuo-btn-primary text-[#D4A338] font-bold'
+                    : prompt.trim()
+                    ? 'hover:text-stone-900'
+                    : 'opacity-40 cursor-not-allowed'
+                }`}
+              >
+                5. Review
+              </button>
             </div>
           </div>
 
-          {/* PANEL 2: CENTRAL PRIMARY WORKSPACE */}
-          <div className="order-1 md:order-2 md:col-span-8 lg:col-span-6 bg-white p-4 sm:p-6 lg:p-7 space-y-6 min-w-0 flex flex-col justify-between">
-            <div className="space-y-5">
-              {/* Step Indicator Bar */}
-              <div className="flex items-center justify-between pb-3.5 border-b border-[#E0D9CC] text-xs font-mono">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0 ${
-                      workspaceStep === 'input'
-                        ? 'skeuo-btn-primary text-[#D4A338] font-extrabold'
-                        : 'skeuo-well text-stone-500'
-                    }`}
-                  >
-                    1
-                  </span>
-                  <span className={`text-xs ${workspaceStep === 'input' ? 'font-bold text-stone-900' : 'text-stone-500'}`}>
-                    1. Your Question
-                  </span>
+          <div className="w-full bg-[#E5DFC8] h-1.5 rounded-full overflow-hidden">
+            <div
+              className="bg-[#B88E3D] h-full transition-all duration-300"
+              style={{ width: `${(currentStepNum / 5) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Global Step Validation Error */}
+        {stepError && (
+          <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300/90 text-xs text-stone-900 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+            <span>{stepError}</span>
+          </div>
+        )}
+
+        {/* Loading Spinner & Active Analysis Display */}
+        {isAnalyzing ? (
+          <div className="p-8 sm:p-12 rounded-2xl skeuo-well text-center space-y-6">
+            <div className="flex flex-col items-center justify-center gap-3">
+              <Loader2 className="w-8 h-8 text-[#B88E3D] animate-spin" />
+              <h3 className="font-serif italic text-xl sm:text-2xl font-bold text-[#2C221E]">
+                Thinking through your decision...
+              </h3>
+              <p className="text-xs sm:text-sm text-stone-600 font-sans max-w-md">
+                {loadingSteps[loadingStep] || loadingSteps[0]}
+              </p>
+            </div>
+            <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden max-w-md mx-auto">
+              <div
+                className="bg-[#B88E3D] h-full transition-all duration-700"
+                style={{ width: `${((loadingStep + 1) / 3) * 100}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          /* ACTIVE STEP CONTENT */
+          <div>
+            {/* ============================================================ */}
+            {/* STEP 1: WHAT ARE YOU DECIDING? */}
+            {/* ============================================================ */}
+            {currentStep === 'step1_question' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="space-y-2">
+                  <h2 className="font-serif italic text-2xl sm:text-3xl font-bold text-[#2C221E]">
+                    Step 1 — What are you deciding?
+                  </h2>
+                  <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-sans">
+                    Enter the core question or dilemma you want help with. Be as specific or natural as you like.
+                  </p>
                 </div>
 
-                <div className="h-0.5 flex-1 mx-4 bg-[#E0D9CC]" />
-
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`w-6 h-6 rounded-full flex items-center justify-center font-bold shrink-0 ${
-                      workspaceStep === 'clarify'
-                        ? 'skeuo-btn-primary text-[#D4A338] font-extrabold'
-                        : 'skeuo-well text-stone-500'
-                    }`}
-                  >
-                    2
-                  </span>
-                  <span className={`text-xs ${workspaceStep === 'clarify' ? 'font-bold text-stone-900' : 'text-stone-500'}`}>
-                    2. Quick Check
-                  </span>
-                </div>
-              </div>
-
-              {/* STEP 1: INPUT FORM */}
-              {workspaceStep === 'input' && (
-                <form onSubmit={handleProceedToClarification} className="space-y-5 animate-fadeIn">
-                  {/* Header & Enhance Button */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#B88E3D] mb-0.5 block">
-                        Step 1
-                      </span>
-                      <h2 className="text-xl sm:text-2xl font-serif italic text-[#2C221E] font-bold">
-                        Tell us what decision you're trying to make
-                      </h2>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleEnhancePrompt}
-                      disabled={isEnhancing || isAnalyzing}
-                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl skeuo-btn-amber text-xs font-bold text-amber-950 transition-colors cursor-pointer shrink-0 disabled:opacity-50 self-start sm:self-auto"
-                      title="AI will make your question clearer while keeping your language"
-                    >
-                      {isEnhancing ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B88E3D]" />
-                          <span>Improving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Wand2 className="w-3.5 h-3.5 text-[#B88E3D]" />
-                          <span>Enhance Question</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Empty Input Friendly Notice */}
-                  {enhanceInputNotice && (
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between gap-2 animate-fadeIn">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                        <span>{enhanceInputNotice}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setEnhanceInputNotice(null)}
-                        className="text-amber-700 hover:text-amber-900 p-0.5"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Dilemma Textarea */}
-                  <div className="space-y-2">
+                {/* Question Input Textarea */}
+                <div className="space-y-3">
+                  <div className="relative">
                     <textarea
-                      rows={5}
+                      id="decision-question-input"
+                      rows={4}
                       value={prompt}
                       onChange={(e) => handlePromptChange(e.target.value)}
-                      placeholder="e.g. Should I go out with friends or stay home and rest? / Should I learn React or Python first? / Should I cook dinner or order food? (You can type in English, Urdu, or Roman Urdu)"
-                      className="w-full px-4 py-3.5 rounded-xl skeuo-input text-stone-900 placeholder:text-stone-400 text-sm sm:text-base resize-y leading-relaxed font-sans"
-                      disabled={isAnalyzing}
+                      placeholder='e.g., "Should I accept the new job offer at a startup or stay at my current stable company?"'
+                      className="w-full p-4 sm:p-5 rounded-2xl text-sm sm:text-base text-stone-900 placeholder:text-stone-400 bg-[#FAF8F5] border border-[#E0D9CC] focus:outline-none focus:border-[#B88E3D] focus:ring-2 focus:ring-[#B88E3D]/20 transition-all font-sans leading-relaxed resize-y"
                     />
-                    {errorMessage && (
-                      <p className="text-xs text-rose-600 mt-1 flex items-center gap-1 font-medium">
-                        ⚠️ {errorMessage}
-                      </p>
-                    )}
                   </div>
 
-                  {/* Enhance Prompt Result / Review Card */}
-                  {enhancedResult && (
-                    <div className="p-4 rounded-xl skeuo-card border-2 border-amber-300 bg-amber-50/60 space-y-3 animate-fadeIn">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-[#B88E3D]" />
-                          <span className="text-xs font-bold text-amber-950">
-                            Clearer Version of Your Question
-                          </span>
-                        </div>
-                        {enhancedResult.detectedLanguage && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-200/80 text-amber-900 border border-amber-300">
-                            {enhancedResult.detectedLanguage}
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="text-[11px] text-stone-600">
-                        You can edit this improved question or use it right away:
-                      </p>
-
-                      <textarea
-                        rows={3}
-                        value={enhancedDraft}
-                        onChange={(e) => setEnhancedDraft(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-lg skeuo-input text-stone-900 font-sans leading-relaxed"
-                      />
-
-                      {/* Suggested options if returned */}
-                      {enhancedResult.suggestedOptions && enhancedResult.suggestedOptions.length >= 2 && (
-                        <div className="text-[11px] text-stone-600 flex flex-wrap items-center gap-1.5">
-                          <span className="font-semibold text-stone-700">Identified choices:</span>
-                          {enhancedResult.suggestedOptions.map((opt, i) => (
-                            <span key={i} className="px-2 py-0.5 rounded bg-white border border-amber-200 text-stone-800 font-medium">
-                              {opt}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Action buttons */}
-                      <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={handleDiscardEnhancedPrompt}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-200/40 cursor-pointer"
-                        >
-                          Keep Original
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleAcceptEnhancedPrompt}
-                          className="px-4 py-1.5 rounded-lg skeuo-btn-primary text-xs font-bold text-white flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5 text-[#D4A338]" />
-                          <span>Use This Question</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Enhance Error Notice with Retry */}
-                  {enhanceError && (
-                    <div className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 text-stone-900 flex items-center justify-between gap-3 animate-fadeIn">
-                      <div className="flex items-center gap-2 text-xs">
-                        <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
-                        <span>{enhanceError}</span>
-                      </div>
+                  {/* Make Question Clearer Action */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={handleEnhancePrompt}
-                        className="px-3 py-1 text-xs font-bold skeuo-btn-secondary rounded-md cursor-pointer shrink-0"
+                        disabled={isEnhancing}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl skeuo-btn-secondary text-xs font-bold text-stone-800 hover:text-stone-950 transition-all cursor-pointer disabled:opacity-50"
+                        title="Refine your question into a clear, structured dilemma"
                       >
-                        Retry
+                        {isEnhancing ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#B88E3D]" />
+                            <span>Making clearer...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="w-3.5 h-3.5 text-[#B88E3D]" />
+                            <span>Make Question Clearer</span>
+                          </>
+                        )}
+                      </button>
+
+                      {enhanceInputNotice && (
+                        <span className="text-xs text-amber-800 font-medium animate-fadeIn">
+                          {enhanceInputNotice}
+                        </span>
+                      )}
+                    </div>
+
+                    <span className="text-[11px] text-stone-400 font-mono">
+                      {prompt.trim().length > 0 ? `${prompt.trim().length} characters` : 'Enter question above'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Enhanced Prompt Preview Card */}
+                {enhancedResult && (
+                  <div className="p-5 rounded-2xl skeuo-well border border-[#D4A338]/40 space-y-4 animate-fadeIn">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs font-bold text-[#B88E3D]">
+                        <Sparkles className="w-4 h-4 text-[#B88E3D]" />
+                        <span>Refined Question Suggestion</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-100/80 text-amber-900 font-semibold">
+                        Optimized for clarity
+                      </span>
+                    </div>
+
+                    <textarea
+                      rows={3}
+                      value={enhancedDraft}
+                      onChange={(e) => setEnhancedDraft(e.target.value)}
+                      className="w-full p-3.5 rounded-xl text-sm font-sans text-stone-900 bg-white border border-[#E0D9CC] focus:outline-none focus:border-[#B88E3D]"
+                    />
+
+                    <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleDiscardEnhancedPrompt}
+                        className="px-3.5 py-1.5 rounded-xl skeuo-btn-secondary text-xs font-semibold text-stone-700 cursor-pointer"
+                      >
+                        Keep Original
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAcceptEnhancedPrompt}
+                        className="px-4 py-1.5 rounded-xl skeuo-btn-primary text-xs font-bold text-[#D4A338] cursor-pointer shadow-xs"
+                      >
+                        Use Refined Question
                       </button>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  {/* Custom Options Toggle */}
-                  <div className="pt-2 flex items-center justify-between border-t border-[#E0D9CC]">
-                    <button
-                      type="button"
-                      onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-                      className="inline-flex items-center gap-1.5 text-xs text-[#B88E3D] hover:text-[#9A732D] font-bold transition-colors cursor-pointer"
-                    >
-                      <SlidersHorizontal className="w-3.5 h-3.5" />
-                      <span>{showAdvancedOptions ? 'Hide Choices' : 'Write Choices Manually (Optional)'}</span>
-                    </button>
-                    <span className="text-[11px] text-stone-500">AI finds your choices automatically if left empty</span>
+                {/* Suggested Factors Quick Preview Chips (Suggestions only, not pre-selected) */}
+                {suggestedFactorsFromAI.length > 0 && (
+                  <div className="p-4 rounded-xl skeuo-well space-y-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-[#B88E3D]" />
+                      <span>Suggested factors for your question (tap to select for Step 2):</span>
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggestedFactorsFromAI.map((fac, idx) => {
+                        const isSelected = selectedPriorities.includes(fac);
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => togglePriority(fac)}
+                            className={`px-3 py-1 rounded-lg text-xs font-medium cursor-pointer transition-all ${
+                              isSelected
+                                ? 'skeuo-btn-primary text-white font-bold'
+                                : 'skeuo-card text-stone-800 hover:border-[#B88E3D]'
+                            }`}
+                          >
+                            {isSelected ? '✓ ' : '+ '}
+                            {fac}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 1 ACTION BUTTONS (Quick Decision + Continue to Guided Flow) */}
+                <div className="pt-6 border-t border-[#E0D9CC] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                  {/* Quick Decision Button */}
+                  <button
+                    type="button"
+                    onClick={handleGenerateQuickDecision}
+                    className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 hover:from-amber-400 hover:to-amber-500 font-extrabold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all cursor-pointer"
+                    title="Generate a fast perspective without going through every step"
+                  >
+                    <Zap className="w-4 h-4 fill-stone-950" />
+                    <span>Generate Quick Decision</span>
+                  </button>
+
+                  {/* Guided Flow Next Step */}
+                  <button
+                    type="button"
+                    onClick={handleProceedToStep2}
+                    className="flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl skeuo-btn-primary text-[#D4A338] font-bold text-xs uppercase tracking-widest cursor-pointer shadow-md hover:scale-[1.01] transition-transform"
+                  >
+                    <span>Continue to Step 2</span>
+                    <ArrowRight className="w-4 h-4 stroke-[3]" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* STEP 2: WHAT MATTERS MOST TO YOU? */}
+            {/* ============================================================ */}
+            {currentStep === 'step2_factors' && (
+              <div className="space-y-6 animate-fadeIn">
+                {/* Step Top Back Navigation */}
+                <div className="flex items-center justify-between pb-2 border-b border-[#EDE7DB]">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('step1_question')}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg skeuo-btn-secondary text-xs font-bold text-stone-700 hover:text-stone-900 cursor-pointer min-h-[40px]"
+                    aria-label="Back to Question"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 text-[#B88E3D]" />
+                    <span>Back to Question (Step 1)</span>
+                  </button>
+                  <span className="text-[11px] font-mono text-stone-500 font-bold">Step 2 of 5</span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-serif italic text-2xl sm:text-3xl font-bold text-[#2C221E]">
+                      Step 2 — What matters most to you?
+                    </h2>
+                    <span className="text-xs font-mono text-stone-500 font-semibold">
+                      {selectedPriorities.length}{' '}
+                      {selectedPriorities.length === 1 ? 'factor' : 'factors'} chosen
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-sans">
+                    Choose the factors that are most important for this specific decision. Tiebreaker will weight and evaluate your options against what you choose.
+                  </p>
+                </div>
+
+                {/* Factors Chips Grid */}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                    {STANDARD_FACTORS.map((factor) => {
+                      const isSelected = selectedPriorities.includes(factor);
+                      return (
+                        <button
+                          key={factor}
+                          type="button"
+                          onClick={() => togglePriority(factor)}
+                          className={`p-3.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between cursor-pointer transition-all ${
+                            isSelected
+                              ? 'skeuo-btn-primary text-white font-bold shadow-sm'
+                              : 'skeuo-btn-secondary text-stone-800 hover:border-[#B88E3D]'
+                          }`}
+                        >
+                          <span>{factor}</span>
+                          {isSelected && <Check className="w-4 h-4 text-[#D4A338] shrink-0" />}
+                        </button>
+                      );
+                    })}
+
+                    {/* Render Any Custom Added Factors */}
+                    {customPrioritiesList.map((custom) => {
+                      const isSelected = selectedPriorities.includes(custom);
+                      return (
+                        <button
+                          key={custom}
+                          type="button"
+                          onClick={() => togglePriority(custom)}
+                          className={`p-3.5 rounded-xl text-left text-xs font-semibold flex items-center justify-between cursor-pointer transition-all ${
+                            isSelected
+                              ? 'skeuo-btn-primary text-white font-bold shadow-sm'
+                              : 'skeuo-btn-secondary text-stone-800 hover:border-[#B88E3D]'
+                          }`}
+                        >
+                          <span>{custom}</span>
+                          {isSelected && <Check className="w-4 h-4 text-[#D4A338] shrink-0" />}
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  {showAdvancedOptions && (
-                    <div className="p-4 rounded-xl skeuo-well space-y-3 animate-fadeIn">
-                      <div className="grid gap-2.5 sm:grid-cols-2">
-                        {options.map((opt, index) => (
-                          <div
-                            key={index}
-                            className="p-2.5 rounded-lg skeuo-card space-y-1"
-                          >
-                            <div className="flex items-center justify-between text-[11px] text-stone-500 font-medium">
-                              <span>Choice {index + 1}</span>
-                              {options.length > 2 && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveOption(index)}
-                                  className="text-stone-400 hover:text-rose-600 transition-colors p-0.5 cursor-pointer"
-                                  disabled={isAnalyzing}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                            <input
-                              type="text"
-                              value={opt}
-                              onChange={(e) => handleOptionChange(index, e.target.value)}
-                              placeholder={`Choice ${index + 1}`}
-                              className="w-full px-2.5 py-1 text-xs rounded-md skeuo-input text-stone-900"
-                              disabled={isAnalyzing}
-                            />
-                          </div>
-                        ))}
-                      </div>
-
-                      {options.length < 5 && (
+                  {/* Add Custom Factor Form */}
+                  <div className="pt-2">
+                    {showAddCustomPriority ? (
+                      <form onSubmit={handleAddCustomPriority} className="flex items-center gap-2 max-w-md">
+                        <input
+                          type="text"
+                          value={customPriorityInput}
+                          onChange={(e) => setCustomPriorityInput(e.target.value)}
+                          placeholder="e.g. Work-Life Balance, Brand Prestige..."
+                          className="flex-1 px-3.5 py-2 text-xs rounded-xl skeuo-card text-stone-900 focus:outline-none focus:border-[#B88E3D]"
+                          autoFocus
+                        />
+                        <button
+                          type="submit"
+                          className="px-4 py-2 rounded-xl skeuo-btn-primary text-xs font-bold text-[#D4A338] cursor-pointer"
+                        >
+                          Add
+                        </button>
                         <button
                           type="button"
-                          onClick={handleAddOption}
-                          className="inline-flex items-center gap-1 text-xs text-[#B88E3D] hover:text-[#9A732D] font-bold uppercase text-[10px] tracking-wider transition-colors cursor-pointer"
-                          disabled={isAnalyzing}
+                          onClick={() => setShowAddCustomPriority(false)}
+                          className="p-2 rounded-xl skeuo-btn-secondary text-xs text-stone-600 cursor-pointer"
                         >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Add Another Choice</span>
+                          <X className="w-4 h-4" />
+                        </button>
+                      </form>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setShowAddCustomPriority(true)}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl skeuo-btn-secondary text-xs font-semibold text-stone-700 hover:text-stone-950 cursor-pointer"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5 text-[#B88E3D]" />
+                        <span>Add custom factor</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* STEP 2 ACTIONS */}
+                <div className="pt-6 border-t border-[#E0D9CC] flex items-center justify-between gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('step1_question')}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl skeuo-btn-secondary text-xs font-semibold text-stone-700 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to Question</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleProceedToStep3}
+                    className="flex items-center gap-2 px-8 py-3.5 rounded-xl skeuo-btn-primary text-[#D4A338] font-bold text-xs uppercase tracking-widest cursor-pointer shadow-md"
+                  >
+                    <span>Continue to Step 3</span>
+                    <ArrowRight className="w-4 h-4 stroke-[3]" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* STEP 3: WHEN DOES THIS DECISION MATTER? */}
+            {/* ============================================================ */}
+            {currentStep === 'step3_timing' && (
+              <div className="space-y-6 animate-fadeIn">
+                {/* Step Top Back Navigation */}
+                <div className="flex items-center justify-between pb-2 border-b border-[#EDE7DB]">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('step2_factors')}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg skeuo-btn-secondary text-xs font-bold text-stone-700 hover:text-stone-900 cursor-pointer min-h-[40px]"
+                    aria-label="Back to Factors"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 text-[#B88E3D]" />
+                    <span>Back to Factors (Step 2)</span>
+                  </button>
+                  <span className="text-[11px] font-mono text-stone-500 font-bold">Step 3 of 5</span>
+                </div>
+
+                <div className="space-y-2">
+                  <h2 className="font-serif italic text-2xl sm:text-3xl font-bold text-[#2C221E]">
+                    Step 3 — When does this decision matter?
+                  </h2>
+                  <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-sans">
+                    Select the timeline for this decision so Tiebreaker can appropriately weigh short-term trade-offs versus long-term impact.
+                  </p>
+                </div>
+
+                {/* Timing Options Grid */}
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {TIMING_OPTIONS.map((t) => {
+                    const isSelected = timeHorizon === t.id;
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => setTimeHorizon(t.id)}
+                        className={`p-5 rounded-2xl cursor-pointer transition-all space-y-1.5 ${
+                          isSelected
+                            ? 'skeuo-btn-primary text-white font-bold shadow-md border-[#D4A338]'
+                            : 'skeuo-card hover:border-[#B88E3D]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`text-sm font-bold ${isSelected ? 'text-[#D4A338]' : 'text-stone-900'}`}>
+                            {t.label}
+                          </span>
+                          {isSelected && <CheckCircle2 className="w-4 h-4 text-[#D4A338]" />}
+                        </div>
+                        <p className={`text-xs leading-relaxed ${isSelected ? 'text-stone-300' : 'text-stone-500'}`}>
+                          {t.desc}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* STEP 3 ACTIONS */}
+                <div className="pt-6 border-t border-[#E0D9CC] flex items-center justify-between gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('step2_factors')}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl skeuo-btn-secondary text-xs font-semibold text-stone-700 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to Factors</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleProceedToStep4}
+                    className="flex items-center gap-2 px-8 py-3.5 rounded-xl skeuo-btn-primary text-[#D4A338] font-bold text-xs uppercase tracking-widest cursor-pointer shadow-md"
+                  >
+                    <span>Continue to Step 4</span>
+                    <ArrowRight className="w-4 h-4 stroke-[3]" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* STEP 4: WHAT ARE YOUR OPTIONS? */}
+            {/* ============================================================ */}
+            {currentStep === 'step4_options' && (
+              <div className="space-y-6 animate-fadeIn">
+                {/* Step Top Back Navigation */}
+                <div className="flex items-center justify-between pb-2 border-b border-[#EDE7DB]">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('step3_timing')}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg skeuo-btn-secondary text-xs font-bold text-stone-700 hover:text-stone-900 cursor-pointer min-h-[40px]"
+                    aria-label="Back to Timing"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 text-[#B88E3D]" />
+                    <span>Back to Timing (Step 3)</span>
+                  </button>
+                  <span className="text-[11px] font-mono text-stone-500 font-bold">Step 4 of 5</span>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-serif italic text-2xl sm:text-3xl font-bold text-[#2C221E]">
+                      Step 4 — What are your options?
+                    </h2>
+                    <span className="text-xs font-mono text-stone-500 font-semibold">
+                      {options.length} options (2 min, 5 max)
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-sans">
+                    Enter the distinct choices you want to compare against each other.
+                  </p>
+                </div>
+
+                {/* Option Inputs */}
+                <div className="space-y-3 max-w-3xl">
+                  {options.map((option, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <div className="w-7 h-7 rounded-lg skeuo-badge flex items-center justify-center font-mono font-bold text-xs text-[#B88E3D] shrink-0">
+                        {String.fromCharCode(65 + idx)}
+                      </div>
+                      <input
+                        type="text"
+                        value={option}
+                        onChange={(e) => handleOptionChange(idx, e.target.value)}
+                        placeholder={`Option ${idx + 1} (e.g., ${
+                          idx === 0 ? 'Accept the job offer' : idx === 1 ? 'Stay at current company' : 'Start my own business'
+                        })`}
+                        className="flex-1 p-3.5 rounded-xl text-sm font-sans text-stone-900 bg-[#FAF8F5] border border-[#E0D9CC] focus:outline-none focus:border-[#B88E3D]"
+                      />
+                      {options.length > 2 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveOption(idx)}
+                          className="p-2.5 rounded-xl skeuo-btn-secondary text-stone-400 hover:text-rose-600 transition-colors cursor-pointer"
+                          title="Remove option"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       )}
                     </div>
-                  )}
+                  ))}
 
-                  {/* Submit CTA */}
-                  <div className="pt-2">
+                  {options.length < 5 && (
                     <button
-                      type="submit"
-                      className="w-full flex items-center justify-center gap-2.5 px-8 py-3.5 text-xs font-extrabold uppercase tracking-widest skeuo-btn-primary group cursor-pointer"
+                      type="button"
+                      onClick={handleAddOption}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl skeuo-btn-secondary text-xs font-bold text-stone-800 hover:text-stone-950 transition-all cursor-pointer mt-2"
                     >
-                      <span className="text-[#D4A338]">CONTINUE TO QUICK CHECK</span>
-                      <ArrowRight className="w-4 h-4 text-[#D4A338] stroke-[3] group-hover:translate-x-1 transition-transform" />
+                      <Plus className="w-3.5 h-3.5 text-[#B88E3D]" />
+                      <span>Add Option {String.fromCharCode(65 + options.length)}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* STEP 4 ACTIONS */}
+                <div className="pt-6 border-t border-[#E0D9CC] flex items-center justify-between gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('step3_timing')}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl skeuo-btn-secondary text-xs font-semibold text-stone-700 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back to Timing</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleProceedToReview}
+                    className="flex items-center gap-2 px-8 py-3.5 rounded-xl skeuo-btn-primary text-[#D4A338] font-bold text-xs uppercase tracking-widest cursor-pointer shadow-md"
+                  >
+                    <span>Review Decision</span>
+                    <ArrowRight className="w-4 h-4 stroke-[3]" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* STEP 5: REVIEW & GENERATE DECISION */}
+            {/* ============================================================ */}
+            {currentStep === 'review' && (
+              <div className="space-y-6 animate-fadeIn">
+                {/* Step Top Back Navigation */}
+                <div className="flex items-center justify-between pb-2 border-b border-[#EDE7DB]">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('step4_options')}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg skeuo-btn-secondary text-xs font-bold text-stone-700 hover:text-stone-900 cursor-pointer min-h-[40px]"
+                    aria-label="Back to Options"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5 text-[#B88E3D]" />
+                    <span>Back to Options (Step 4)</span>
+                  </button>
+                  <span className="text-[11px] font-mono text-stone-500 font-bold">Step 5 of 5 (Final)</span>
+                </div>
+
+                <div className="space-y-2">
+                  <h2 className="font-serif italic text-2xl sm:text-3xl font-bold text-[#2C221E]">
+                    Review Your Decision
+                  </h2>
+                  <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-sans">
+                    Here is what Tiebreaker will analyze. You can edit any step before getting your result.
+                  </p>
+                </div>
+
+                {/* Review Cards Grid */}
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Question Review Card */}
+                  <div className="p-5 rounded-2xl skeuo-card space-y-2.5 relative">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#B88E3D]">
+                        1. What You Are Deciding
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep('step1_question')}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#B88E3D] hover:underline cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
+                    </div>
+                    <p className="font-serif italic text-sm sm:text-base font-bold text-[#2C221E] leading-relaxed">
+                      "{prompt.trim()}"
+                    </p>
+                  </div>
+
+                  {/* Options Review Card */}
+                  <div className="p-5 rounded-2xl skeuo-card space-y-2.5 relative">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#B88E3D]">
+                        2. Options to Compare ({options.filter((o) => o.trim()).length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep('step4_options')}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#B88E3D] hover:underline cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
+                    </div>
+                    <ul className="space-y-1.5 text-xs text-stone-800">
+                      {options
+                        .filter((o) => o.trim())
+                        .map((opt, idx) => (
+                          <li key={idx} className="flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-md skeuo-badge flex items-center justify-center font-mono font-bold text-[10px] text-[#B88E3D]">
+                              {String.fromCharCode(65 + idx)}
+                            </span>
+                            <span className="font-semibold text-stone-900">{opt}</span>
+                          </li>
+                        ))}
+                    </ul>
+                  </div>
+
+                  {/* Factors Review Card */}
+                  <div className="p-5 rounded-2xl skeuo-card space-y-2.5 relative">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#B88E3D]">
+                        3. What Matters Most ({selectedPriorities.length})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep('step2_factors')}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#B88E3D] hover:underline cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
+                    </div>
+                    {selectedPriorities.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedPriorities.map((p, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2.5 py-1 rounded-lg skeuo-well text-[11px] font-medium text-stone-800"
+                          >
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-stone-500 italic">
+                        No specific factors chosen — balanced evaluation across standard criteria.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Timing Review Card */}
+                  <div className="p-5 rounded-2xl skeuo-card space-y-2.5 relative">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#B88E3D]">
+                        4. Timeline
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep('step3_timing')}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#B88E3D] hover:underline cursor-pointer"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl skeuo-well text-xs font-bold text-stone-800">
+                      <Clock className="w-3.5 h-3.5 text-[#B88E3D]" />
+                      <span>{timeHorizon}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Analysis Error Message */}
+                {analysisError && !isAnalyzing && (
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-stone-900 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-xs">
+                      <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+                      <span>{analysisError}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRunFullAnalysis}
+                      className="px-3 py-1 text-xs font-bold skeuo-btn-primary rounded-lg cursor-pointer"
+                    >
+                      Try Again
                     </button>
                   </div>
-                </form>
-              )}
+                )}
 
-              {/* STEP 2: QUICK CLARIFICATION CHECK */}
-              {workspaceStep === 'clarify' && (
-                <div className="space-y-6 animate-fadeIn">
-                  {/* Loading State when AI is preparing questions */}
-                  {isGeneratingQuestions ? (
-                    <div className="p-8 rounded-xl skeuo-well text-center space-y-4">
-                      <Loader2 className="w-8 h-8 text-[#B88E3D] animate-spin mx-auto" />
-                      <div className="space-y-1">
-                        <h4 className="font-serif italic text-base font-bold text-[#2C221E]">
-                          Checking your question and choices...
-                        </h4>
-                        <p className="text-xs text-stone-500 max-w-sm mx-auto">
-                          Finding the key trade-offs for "{prompt.slice(0, 45)}..."
-                        </p>
-                      </div>
-                    </div>
-                  ) : clarification ? (
-                    <div className="space-y-6">
-                      {/* Summary Header */}
-                      <div className="p-5 rounded-xl skeuo-well space-y-4">
-                        <div className="flex items-center gap-3 border-b border-[#E0D9CC] pb-3">
-                          <div className="w-8 h-8 rounded-lg skeuo-btn-primary text-[#D4A338] flex items-center justify-center font-bold shrink-0">
-                            <FileCheck2 className="w-4 h-4 text-[#D4A338]" />
-                          </div>
-                          <div>
-                            <h3 className="font-serif italic text-lg text-[#2C221E] font-bold">
-                              Summary of Your Choices
-                            </h3>
-                            <p className="text-xs text-stone-500">
-                              Answer the quick questions below to sharpen your results, or skip right away.
-                            </p>
-                          </div>
-                        </div>
+                {/* SUBMIT BUTTONS */}
+                <div className="pt-6 border-t border-[#E0D9CC] flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep('step4_options')}
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl skeuo-btn-secondary text-xs font-semibold text-stone-700 cursor-pointer"
+                  >
+                    ← Edit Options
+                  </button>
 
-                        {/* Options Understood */}
-                        <div className="space-y-2">
-                          <span className="text-[10px] font-bold text-stone-900 uppercase tracking-wider block">
-                            Choices Understood ({clarification.optionsUnderstood.length})
-                          </span>
-                          <div className="grid gap-2 sm:grid-cols-2">
-                            {clarification.optionsUnderstood.map((optTitle, i) => (
-                              <div
-                                key={i}
-                                className="p-3 rounded-lg skeuo-card text-xs font-medium text-stone-800 flex items-center justify-between"
-                              >
-                                <span>
-                                  <strong className="text-[#B88E3D]">Choice {i + 1}:</strong> {optTitle}
-                                </span>
-                                <Check className="w-3.5 h-3.5 text-[#B88E3D]" />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Key Parameters */}
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          <span className="px-2.5 py-1 rounded-md skeuo-badge text-[11px] text-stone-700 font-medium">
-                            📁 <strong>Category:</strong> {category}
-                          </span>
-                          <span className="px-2.5 py-1 rounded-md skeuo-badge text-[11px] text-stone-700 font-medium">
-                            ↺ <strong>Undo:</strong> {reversibility}
-                          </span>
-                          <span className="px-2.5 py-1 rounded-md skeuo-badge text-[11px] text-stone-700 font-medium">
-                            ⏱ <strong>Timeframe:</strong> {timeHorizon}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Interactive Clarifying Questions Section */}
-                      {clarifyingQuestions.length > 0 && (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <HelpCircle className="w-4 h-4 text-[#B88E3D]" />
-                              <span className="text-xs font-bold uppercase tracking-wider text-[#2C221E]">
-                                Quick Helpful Questions ({clarifyingQuestions.length})
-                              </span>
-                            </div>
-                            <span className="text-[10px] font-mono text-stone-400">
-                              Optional
-                            </span>
-                          </div>
-
-                          <div className="space-y-4">
-                            {clarifyingQuestions.map((q, idx) => {
-                              const currentVal = clarifyingAnswers[q.id] || '';
-                              const selectedMulti = currentVal ? currentVal.split(', ').filter(Boolean) : [];
-
-                              return (
-                                <div
-                                  key={q.id || idx}
-                                  className="p-4 sm:p-5 rounded-xl skeuo-card space-y-3"
-                                >
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="space-y-1">
-                                      <div className="flex items-center gap-2">
-                                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold skeuo-well text-[#B88E3D]">
-                                          Q{idx + 1}
-                                        </span>
-                                        <h4 className="text-xs sm:text-sm font-bold text-stone-900">
-                                          {q.question}
-                                        </h4>
-                                      </div>
-                                      {q.whyItMatters && (
-                                        <p className="text-[11px] text-stone-500 italic pl-8">
-                                          💡 {q.whyItMatters}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {/* Render Input Based on Question Type */}
-                                  <div className="pl-0 sm:pl-8 space-y-2 pt-1">
-                                    {/* Type: single_select */}
-                                    {(!q.type || q.type === 'single_select') && q.suggestedAnswers && q.suggestedAnswers.length > 0 && (
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        {q.suggestedAnswers.map((ans, aIdx) => {
-                                          const isSelected = currentVal === ans;
-                                          return (
-                                            <button
-                                              key={aIdx}
-                                              type="button"
-                                              onClick={() =>
-                                                setClarifyingAnswers((prev) => ({
-                                                  ...prev,
-                                                  [q.id]: isSelected ? '' : ans,
-                                                }))
-                                              }
-                                              className={`flex items-center justify-between p-3 rounded-lg text-xs font-medium transition-all text-left cursor-pointer ${
-                                                isSelected
-                                                  ? 'skeuo-btn-primary text-white font-semibold'
-                                                  : 'skeuo-btn-secondary text-stone-800'
-                                              }`}
-                                            >
-                                              <span className={isSelected ? 'text-[#D4A338]' : ''}>{ans}</span>
-                                              {isSelected && <Check className="w-4 h-4 text-[#D4A338] shrink-0" />}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-
-                                    {/* Type: multi_select */}
-                                    {q.type === 'multi_select' && q.suggestedAnswers && (
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        {q.suggestedAnswers.map((ans, aIdx) => {
-                                          const isSelected = selectedMulti.includes(ans);
-                                          return (
-                                            <button
-                                              key={aIdx}
-                                              type="button"
-                                              onClick={() => {
-                                                const next = isSelected
-                                                  ? selectedMulti.filter((item) => item !== ans)
-                                                  : [...selectedMulti, ans];
-                                                setClarifyingAnswers((prev) => ({
-                                                  ...prev,
-                                                  [q.id]: next.join(', '),
-                                                }));
-                                              }}
-                                              className={`flex items-center justify-between p-3 rounded-lg text-xs font-medium transition-all text-left cursor-pointer ${
-                                                isSelected
-                                                  ? 'skeuo-btn-primary text-white font-semibold'
-                                                  : 'skeuo-btn-secondary text-stone-800'
-                                              }`}
-                                            >
-                                              <span className={isSelected ? 'text-[#D4A338]' : ''}>{ans}</span>
-                                              <div
-                                                className={`w-4 h-4 rounded flex items-center justify-center border text-[10px] ${
-                                                  isSelected
-                                                    ? 'bg-[#B88E3D] border-[#B88E3D] text-white'
-                                                    : 'border-stone-300 bg-white'
-                                                }`}
-                                              >
-                                                {isSelected && '✓'}
-                                              </div>
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-
-                                    {/* Type: boolean_yes_no */}
-                                    {q.type === 'boolean_yes_no' && (
-                                      <div className="flex items-center gap-3">
-                                        {['Yes', 'No'].map((opt) => {
-                                          const isSelected = currentVal.toLowerCase() === opt.toLowerCase();
-                                          return (
-                                            <button
-                                              key={opt}
-                                              type="button"
-                                              onClick={() =>
-                                                setClarifyingAnswers((prev) => ({
-                                                  ...prev,
-                                                  [q.id]: opt,
-                                                }))
-                                              }
-                                              className={`px-5 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                                isSelected
-                                                  ? 'skeuo-btn-primary text-[#D4A338]'
-                                                  : 'skeuo-btn-secondary text-stone-800'
-                                              }`}
-                                            >
-                                              {opt}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-
-                                    {/* Type: numeric */}
-                                    {q.type === 'numeric' && (
-                                      <div className="flex items-center gap-2 max-w-xs">
-                                        <input
-                                          type="number"
-                                          min={q.validation?.min ?? 0}
-                                          max={q.validation?.max ?? 1000000}
-                                          step={q.validation?.step ?? 1}
-                                          placeholder={q.placeholder || 'e.g. 20'}
-                                          value={currentVal}
-                                          onChange={(e) =>
-                                            setClarifyingAnswers((prev) => ({
-                                              ...prev,
-                                              [q.id]: e.target.value,
-                                            }))
-                                          }
-                                          className="w-full px-3.5 py-2 rounded-lg skeuo-input text-xs font-bold text-stone-900"
-                                        />
-                                        {q.unit && (
-                                          <span className="text-xs font-semibold text-stone-600 shrink-0">
-                                            {q.unit}
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
-
-                                    {/* Type: currency */}
-                                    {q.type === 'currency' && (
-                                      <div className="relative max-w-xs">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-400">
-                                          $
-                                        </span>
-                                        <input
-                                          type="text"
-                                          placeholder={q.placeholder || 'e.g. 5,000 / month'}
-                                          value={currentVal}
-                                          onChange={(e) =>
-                                            setClarifyingAnswers((prev) => ({
-                                              ...prev,
-                                              [q.id]: e.target.value,
-                                            }))
-                                          }
-                                          className="w-full pl-8 pr-3.5 py-2 rounded-lg skeuo-input text-xs font-bold text-stone-900"
-                                        />
-                                      </div>
-                                    )}
-
-                                    {/* Type: text / short_text / long_text */}
-                                    {(q.type === 'short_text' || q.type === 'long_text') && (
-                                      <input
-                                        type="text"
-                                        placeholder={q.placeholder || 'Type your specific detail here...'}
-                                        value={currentVal}
-                                        onChange={(e) =>
-                                          setClarifyingAnswers((prev) => ({
-                                            ...prev,
-                                            [q.id]: e.target.value,
-                                          }))
-                                        }
-                                        className="w-full px-3.5 py-2 rounded-lg skeuo-input text-xs font-medium text-stone-900"
-                                      />
-                                    )}
-
-                                    {/* Custom answer option for single_select */}
-                                    {(!q.type || q.type === 'single_select') && (
-                                      <div className="pt-1">
-                                        <input
-                                          type="text"
-                                          placeholder="Or enter your own answer..."
-                                          value={
-                                            q.suggestedAnswers?.includes(currentVal)
-                                              ? ''
-                                              : currentVal
-                                          }
-                                          onChange={(e) =>
-                                            setClarifyingAnswers((prev) => ({
-                                              ...prev,
-                                              [q.id]: e.target.value,
-                                            }))
-                                          }
-                                          className="w-full px-3 py-1.5 rounded-lg skeuo-input text-[11px] text-stone-800 placeholder-stone-400"
-                                        />
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Error Alert with Try Again */}
-                      {analysisError && !isAnalyzing && (
-                        <div className="p-4 rounded-xl bg-amber-50/90 border border-amber-300 text-stone-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-fadeIn shadow-xs">
-                          <div className="flex items-start gap-2.5">
-                            <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                            <div>
-                              <p className="text-xs font-bold text-amber-900">Notice</p>
-                              <p className="text-xs text-amber-800">{analysisError}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                            {onClearAnalysisError && (
-                              <button
-                                type="button"
-                                onClick={onClearAnalysisError}
-                                className="px-3 py-1.5 text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer"
-                              >
-                                Dismiss
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={handleConfirmAndRun}
-                              className="px-4 py-1.5 text-xs font-bold skeuo-btn-primary rounded-lg cursor-pointer"
-                            >
-                              Try Again
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Loading State or Submit Button */}
-                      {isAnalyzing ? (
-                        <div className="p-6 rounded-xl skeuo-well text-center space-y-4">
-                          <div className="flex items-center justify-center gap-3">
-                            <Loader2 className="w-5 h-5 text-[#B88E3D] animate-spin" />
-                            <span className="font-serif italic text-base font-medium text-[#2C221E]">
-                              {loadingSteps[loadingStep] || loadingSteps[0]}
-                            </span>
-                          </div>
-
-                          <div className="w-full bg-stone-200/80 h-2 rounded-full overflow-hidden max-w-md mx-auto shadow-inner">
-                            <div
-                              className="bg-[#B88E3D] h-full transition-all duration-700 ease-out"
-                              style={{ width: `${((loadingStep + 1) / 3) * 100}%` }}
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                          <button
-                            type="button"
-                            onClick={() => setWorkspaceStep('input')}
-                            className="w-full sm:w-auto px-4 py-2.5 rounded-lg skeuo-btn-secondary text-xs font-semibold text-stone-700 hover:text-stone-900 transition-colors cursor-pointer"
-                          >
-                            ← Edit Question
-                          </button>
-
-                          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto">
-                            <button
-                              type="button"
-                              onClick={handleConfirmAndRun}
-                              className="w-full sm:w-auto px-4 py-2.5 rounded-lg skeuo-btn-secondary text-xs font-bold text-stone-800 hover:text-[#B88E3D] transition-colors cursor-pointer"
-                            >
-                              Skip Questions & Analyze
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={handleConfirmAndRun}
-                              className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3.5 text-xs font-bold uppercase tracking-widest skeuo-btn-primary rounded-xl transition-all group cursor-pointer"
-                            >
-                              <Sparkles className="w-4 h-4 text-[#D4A338]" />
-                              <span className="text-[#D4A338]">GET MY DECISION RESULT</span>
-                              <ArrowRight className="w-4 h-4 text-[#D4A338] stroke-[3] group-hover:translate-x-1 transition-transform" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
+                  <button
+                    type="button"
+                    onClick={handleRunFullAnalysis}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-9 py-4 text-xs font-extrabold uppercase tracking-widest skeuo-btn-primary rounded-xl cursor-pointer shadow-lg hover:scale-[1.01] transition-transform"
+                  >
+                    <Sparkles className="w-4 h-4 text-[#D4A338]" />
+                    <span className="text-[#D4A338]">Get My Decision Result</span>
+                    <ArrowRight className="w-4 h-4 text-[#D4A338] stroke-[3]" />
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-
-          {/* PANEL 3: AI INTELLIGENCE SUITE */}
-          <div className="order-3 md:col-span-12 lg:col-span-3 bg-gradient-to-b from-[#FAF7F2] to-[#F4EFE6] p-4 sm:p-5 lg:p-6 space-y-5 rounded-b-2xl md:rounded-b-none md:rounded-r-2xl border-t lg:border-t-0 lg:border-l border-[#E0D9CC] min-w-0">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E0D9CC]">
-              <div className="flex items-center gap-2">
-                <Brain className="w-4 h-4 text-[#B88E3D]" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2C221E]">
-                  Sample Dilemmas
-                </span>
-              </div>
-              <span className="text-[10px] font-mono text-amber-900 bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300/80 font-bold shadow-2xs">
-                Click to try
-              </span>
-            </div>
-
-            {/* Quick Starter Scenarios */}
-            <div className="space-y-2.5">
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPrompt('Should I accept a $1,200/month remote software engineer offer now, or spend 6 months upskilling in AI agents for higher-paying international roles?');
-                    setCategory('Career');
-                    setReversibility('Somewhat reversible');
-                    setTimeHorizon('1 year');
-                    setOptions(['Take $1,200/mo Remote Engineer Job', 'Dedicate 6 Months to Intensive Upskilling']);
-                    setSelectedPriorities(['Career Growth', 'Money & Income', 'Learning & Skills']);
-                  }}
-                  className="w-full p-2.5 sm:p-3 rounded-xl skeuo-card text-left transition-all space-y-1 cursor-pointer group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-stone-900 group-hover:text-[#B88E3D]">
-                      Job Offer vs. Upskilling
-                    </span>
-                    <span className="text-[10px] text-[#B88E3D] font-mono font-bold">Career</span>
-                  </div>
-                  <p className="text-[11px] text-stone-600 line-clamp-2 leading-relaxed">
-                    Immediate income today vs 6 months of skill building for higher future earnings.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPrompt('Should I buy a suburban home with a down payment or stay in my rented apartment and invest the savings into stocks?');
-                    setCategory('Finance');
-                    setReversibility('Difficult to reverse');
-                    setTimeHorizon('5+ years');
-                    setOptions(['Buy Suburban Home', 'Rent Apartment & Invest Savings']);
-                    setSelectedPriorities(['Money & Income', 'Long-term Stability & Peace of Mind', 'Time Flexibility & Freedom']);
-                  }}
-                  className="w-full p-2.5 sm:p-3 rounded-xl skeuo-card text-left transition-all space-y-1 cursor-pointer group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-stone-900 group-hover:text-[#B88E3D]">
-                      Buy Home vs Rent & Invest
-                    </span>
-                    <span className="text-[10px] text-[#B88E3D] font-mono font-bold">Finance</span>
-                  </div>
-                  <p className="text-[11px] text-stone-600 line-clamp-2 leading-relaxed">
-                    Home ownership stability vs flexible stock investing.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPrompt('Mujhe weekend par doston ke sath out of station jana chahiye ya ghar par reh kar apna project complete karna chahiye?');
-                    setCategory('Lifestyle');
-                    setReversibility('Easy to reverse');
-                    setTimeHorizon('Immediate');
-                    setOptions(['Doston ke sath trip par jana', 'Ghar reh kar project khatam karna']);
-                    setSelectedPriorities(['Personal Enjoyment & Fun', 'Career Growth', 'Rest, Health & Wellbeing']);
-                  }}
-                  className="w-full p-2.5 sm:p-3 rounded-xl skeuo-card text-left transition-all space-y-1 cursor-pointer group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-stone-900 group-hover:text-[#B88E3D]">
-                      Friends Trip vs Project (Roman Urdu)
-                    </span>
-                    <span className="text-[10px] text-[#B88E3D] font-mono font-bold">Lifestyle</span>
-                  </div>
-                  <p className="text-[11px] text-stone-600 line-clamp-2 leading-relaxed">
-                    Social fun with friends vs finishing your work on time.
-                  </p>
-                </button>
-              </div>
-            </div>
-
-            {/* What you'll get */}
-            <div className="space-y-2.5 pt-2.5 border-t border-[#E0D9CC]">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500 block">
-                What Tiebreaker Gives You
-              </span>
-              <div className="space-y-2 text-xs text-stone-600">
-                <div className="flex items-center gap-2.5 p-2 rounded-lg skeuo-card">
-                  <BarChart3 className="w-4 h-4 text-[#B88E3D] shrink-0" />
-                  <div className="min-w-0">
-                    <span className="font-semibold text-stone-900 block text-[11px]">Score Comparison</span>
-                    <span className="text-[10px] text-stone-500">Based on what you value most</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 p-2 rounded-lg skeuo-card">
-                  <Grid2X2 className="w-4 h-4 text-[#B88E3D] shrink-0" />
-                  <div className="min-w-0">
-                    <span className="font-semibold text-stone-900 block text-[11px]">Pros & Cons Analysis</span>
-                    <span className="text-[10px] text-stone-500">Clear strengths and weaknesses</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 p-2 rounded-lg skeuo-card">
-                  <Shield className="w-4 h-4 text-[#B88E3D] shrink-0" />
-                  <div className="min-w-0">
-                    <span className="font-semibold text-stone-900 block text-[11px]">Risk & Safety Plan</span>
-                    <span className="text-[10px] text-stone-500">Solutions for what could go wrong</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 p-2 rounded-lg skeuo-card">
-                  <Brain className="w-4 h-4 text-[#B88E3D] shrink-0" />
-                  <div className="min-w-0">
-                    <span className="font-semibold text-stone-900 block text-[11px]">Blind Spot Check</span>
-                    <span className="text-[10px] text-stone-500">Avoid common mental traps</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
+        )}
       </div>
 
-      {/* LOWER DASHBOARD: LIVE SCORE SIMULATOR + THINKING TRAPS CHECK */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* LEFT COLUMN: LIVE SCORE SIMULATOR */}
-        <div className="lg:col-span-7 skeuo-card p-5 space-y-5 text-stone-900 rounded-2xl">
-          <div className="flex items-center justify-between border-b border-[#E0D9CC] pb-3.5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl skeuo-btn-primary text-[#D4A338] flex items-center justify-center shrink-0">
-                <SlidersHorizontal className="w-4 h-4 text-[#D4A338]" />
-              </div>
-              <div>
-                <h3 className="font-serif italic text-lg text-[#2C221E] font-bold">
-                  Live Score Simulator
-                </h3>
-                <p className="text-xs text-stone-500">
-                  Move the sliders below to see how changing what you care about changes which choice wins.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* SIMULATED OPTION SCORE CARDS */}
-          {(() => {
-            const scoreA = (
-              (simWeights.growth * 8.5 +
-                simWeights.financial * 8.0 +
-                simWeights.balance * 5.5 +
-                simWeights.risk * 6.0) /
-              100
-            ).toFixed(1);
-            const scoreB = (
-              (simWeights.growth * 5.0 +
-                simWeights.financial * 6.5 +
-                simWeights.balance * 9.0 +
-                simWeights.risk * 8.5) /
-              100
-            ).toFixed(1);
-            const isOptALeader = parseFloat(scoreA) >= parseFloat(scoreB);
-            const optATitle = options[0]?.trim() || 'Choice 1 (e.g. Big Growth / Big Leap)';
-            const optBTitle = options[1]?.trim() || 'Choice 2 (e.g. Safe & Balanced)';
-
-            return (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {/* OPTION A CARD */}
-                  <div
-                    className={`p-4 rounded-xl transition-all space-y-2.5 ${
-                      isOptALeader
-                        ? 'skeuo-card border-[#B88E3D]/60 text-stone-900 bg-[#FAF7F2]'
-                        : 'skeuo-card text-stone-700 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
-                          isOptALeader ? 'text-[#B88E3D]' : 'text-stone-500'
-                        }`}
-                      >
-                        {isOptALeader ? '🏆 Current Leader' : 'Choice 1'}
-                      </span>
-                      <span
-                        className={`text-lg font-bold font-mono ${
-                          isOptALeader ? 'text-[#B88E3D]' : 'text-stone-800'
-                        }`}
-                      >
-                        {scoreA} <span className="text-xs font-normal opacity-70">/ 10</span>
-                      </span>
-                    </div>
-                    <h4 className="font-serif italic text-sm font-bold truncate text-[#2C221E]">
-                      {optATitle}
-                    </h4>
-                    <div className="w-full bg-stone-200/80 rounded-full h-2 overflow-hidden shadow-inner">
-                      <div
-                        className={`h-full transition-all duration-300 ${
-                          isOptALeader ? 'bg-[#B88E3D]' : 'bg-stone-400'
-                        }`}
-                        style={{ width: `${parseFloat(scoreA) * 10}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* OPTION B CARD */}
-                  <div
-                    className={`p-4 rounded-xl transition-all space-y-2.5 ${
-                      !isOptALeader
-                        ? 'skeuo-card border-[#B88E3D]/60 text-stone-900 bg-[#FAF7F2]'
-                        : 'skeuo-card text-stone-700 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
-                          !isOptALeader ? 'text-[#B88E3D]' : 'text-stone-500'
-                        }`}
-                      >
-                        {!isOptALeader ? '🏆 Current Leader' : 'Choice 2'}
-                      </span>
-                      <span
-                        className={`text-lg font-bold font-mono ${
-                          !isOptALeader ? 'text-[#B88E3D]' : 'text-stone-800'
-                        }`}
-                      >
-                        {scoreB} <span className="text-xs font-normal opacity-70">/ 10</span>
-                      </span>
-                    </div>
-                    <h4 className="font-serif italic text-sm font-bold truncate text-[#2C221E]">
-                      {optBTitle}
-                    </h4>
-                    <div className="w-full bg-stone-200/80 rounded-full h-2 overflow-hidden shadow-inner">
-                      <div
-                        className={`h-full transition-all duration-300 ${
-                          !isOptALeader ? 'bg-[#B88E3D]' : 'bg-stone-400'
-                        }`}
-                        style={{ width: `${parseFloat(scoreB) * 10}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* PRIORITY SLIDERS WORKBENCH */}
-                <div className="p-4 rounded-xl skeuo-well space-y-3.5">
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-stone-600 block">
-                    Change What Matters Most to You (% Weight)
-                  </span>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    {/* Slider 1: Growth */}
-                    <div className="space-y-1.5 skeuo-card p-3 rounded-lg">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-stone-800">Growth & Learning</span>
-                        <span className="font-mono font-bold text-[#B88E3D]">{simWeights.growth}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={simWeights.growth}
-                        onChange={(e) =>
-                          setSimWeights({ ...simWeights, growth: parseInt(e.target.value) })
-                        }
-                        className="w-full accent-[#B88E3D] cursor-pointer"
-                      />
-                    </div>
-
-                    {/* Slider 2: Financial */}
-                    <div className="space-y-1.5 skeuo-card p-3 rounded-lg">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-stone-800">Money & Savings</span>
-                        <span className="font-mono font-bold text-[#B88E3D]">{simWeights.financial}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={simWeights.financial}
-                        onChange={(e) =>
-                          setSimWeights({ ...simWeights, financial: parseInt(e.target.value) })
-                        }
-                        className="w-full accent-[#B88E3D] cursor-pointer"
-                      />
-                    </div>
-
-                    {/* Slider 3: Work-Life Balance */}
-                    <div className="space-y-1.5 skeuo-card p-3 rounded-lg">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-stone-800">Peace of Mind & Health</span>
-                        <span className="font-mono font-bold text-[#B88E3D]">{simWeights.balance}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={simWeights.balance}
-                        onChange={(e) =>
-                          setSimWeights({ ...simWeights, balance: parseInt(e.target.value) })
-                        }
-                        className="w-full accent-[#B88E3D] cursor-pointer"
-                      />
-                    </div>
-
-                    {/* Slider 4: Risk */}
-                    <div className="space-y-1.5 skeuo-card p-3 rounded-lg">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-stone-800">Safety & Low Risk</span>
-                        <span className="font-mono font-bold text-[#B88E3D]">{simWeights.risk}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={simWeights.risk}
-                        onChange={(e) =>
-                          setSimWeights({ ...simWeights, risk: parseInt(e.target.value) })
-                        }
-                        className="w-full accent-[#B88E3D] cursor-pointer"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* RIGHT COLUMN: BLIND SPOT & THINKING TRAPS CHECK */}
-        <div className="lg:col-span-5 skeuo-card p-5 space-y-4 text-stone-900 rounded-2xl">
-          <div className="flex items-center justify-between border-b border-[#E0D9CC] pb-3">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#B88E3D] block">
-                Clear Thinking
-              </span>
-              <h3 className="font-serif italic text-lg text-[#2C221E] font-bold">
-                Thinking Traps Check
+      {/* 3. RECENT DECISIONS (Compact, clean, secondary) */}
+      {safeSavedDecisions.length > 0 && (
+        <div className="space-y-3 pt-2 max-w-4xl">
+          <div className="flex items-center justify-between border-b border-[#E8E2D5] pb-2">
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4 text-[#B88E3D]" />
+              <h3 className="font-serif italic text-base sm:text-lg font-bold text-[#2C221E]">
+                Recent Decisions
               </h3>
             </div>
-            {(() => {
-              const auditedCount = Object.values(auditedBiases).filter(Boolean).length;
-              const pct = Math.round((auditedCount / 4) * 100);
-              return (
-                <span className="px-2.5 py-1 text-[10px] font-mono font-bold bg-amber-100/90 text-amber-950 rounded-full border border-amber-300/80 shadow-2xs">
-                  {pct}% Checked
-                </span>
-              );
-            })()}
-          </div>
 
-          <p className="text-xs text-stone-600 leading-relaxed">
-            Avoid common mental traps before making your choice. Click to check off each one you have considered.
-          </p>
-
-          <div className="space-y-2.5">
-            {/* Bias 1: Sunk Cost */}
-            <div
-              onClick={() =>
-                setAuditedBiases({ ...auditedBiases, sunkCost: !auditedBiases.sunkCost })
-              }
-              className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
-                auditedBiases.sunkCost
-                  ? 'bg-emerald-50/90 border-emerald-300 text-emerald-900 shadow-2xs'
-                  : 'skeuo-card hover:border-[#B88E3D]'
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${
-                  auditedBiases.sunkCost ? 'bg-emerald-600 text-white shadow-2xs' : 'skeuo-well text-transparent'
-                }`}
-              >
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-              </div>
-              <div className="space-y-0.5 min-w-0">
-                <h4 className="font-bold text-xs text-stone-900 flex items-center gap-1.5">
-                  <span>The "Past Cost" Trap</span>
-                  {auditedBiases.sunkCost && (
-                    <span className="text-[9px] font-mono uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.2 rounded font-bold">
-                      Checked
-                    </span>
-                  )}
-                </h4>
-                <p className="text-[11px] text-stone-600 leading-snug">
-                  Am I only sticking with this choice because of time or money I already spent?
-                </p>
-              </div>
-            </div>
-
-            {/* Bias 2: Status Quo */}
-            <div
-              onClick={() =>
-                setAuditedBiases({ ...auditedBiases, statusQuo: !auditedBiases.statusQuo })
-              }
-              className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
-                auditedBiases.statusQuo
-                  ? 'bg-emerald-50/90 border-emerald-300 text-emerald-900 shadow-2xs'
-                  : 'skeuo-card hover:border-[#B88E3D]'
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${
-                  auditedBiases.statusQuo ? 'bg-emerald-600 text-white shadow-2xs' : 'skeuo-well text-transparent'
-                }`}
-              >
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-              </div>
-              <div className="space-y-0.5 min-w-0">
-                <h4 className="font-bold text-xs text-stone-900 flex items-center gap-1.5">
-                  <span>The "Fear of Change" Trap</span>
-                  {auditedBiases.statusQuo && (
-                    <span className="text-[9px] font-mono uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.2 rounded font-bold">
-                      Checked
-                    </span>
-                  )}
-                </h4>
-                <p className="text-[11px] text-stone-600 leading-snug">
-                  Am I staying put just to avoid temporary discomfort or uncertainty?
-                </p>
-              </div>
-            </div>
-
-            {/* Bias 3: Overconfidence */}
-            <div
-              onClick={() =>
-                setAuditedBiases({ ...auditedBiases, overconfidence: !auditedBiases.overconfidence })
-              }
-              className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
-                auditedBiases.overconfidence
-                  ? 'bg-emerald-50/90 border-emerald-300 text-emerald-900 shadow-2xs'
-                  : 'skeuo-card hover:border-[#B88E3D]'
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${
-                  auditedBiases.overconfidence ? 'bg-emerald-600 text-white shadow-2xs' : 'skeuo-well text-transparent'
-                }`}
-              >
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-              </div>
-              <div className="space-y-0.5 min-w-0">
-                <h4 className="font-bold text-xs text-stone-900 flex items-center gap-1.5">
-                  <span>The "Too Optimistic" Trap</span>
-                  {auditedBiases.overconfidence && (
-                    <span className="text-[9px] font-mono uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.2 rounded font-bold">
-                      Checked
-                    </span>
-                  )}
-                </h4>
-                <p className="text-[11px] text-stone-600 leading-snug">
-                  Have I added realistic extra time and budget in case things take longer?
-                </p>
-              </div>
-            </div>
-
-            {/* Bias 4: Confirmation Bias */}
-            <div
-              onClick={() =>
-                setAuditedBiases({ ...auditedBiases, confirmation: !auditedBiases.confirmation })
-              }
-              className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-3 ${
-                auditedBiases.confirmation
-                  ? 'bg-emerald-50/90 border-emerald-300 text-emerald-900 shadow-2xs'
-                  : 'skeuo-card hover:border-[#B88E3D]'
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${
-                  auditedBiases.confirmation ? 'bg-emerald-600 text-white shadow-2xs' : 'skeuo-well text-transparent'
-                }`}
-              >
-                <Check className="w-3.5 h-3.5 stroke-[3]" />
-              </div>
-              <div className="space-y-0.5 min-w-0">
-                <h4 className="font-bold text-xs text-stone-900 flex items-center gap-1.5">
-                  <span>The "Only Seeing What I Want" Trap</span>
-                  {auditedBiases.confirmation && (
-                    <span className="text-[9px] font-mono uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.2 rounded font-bold">
-                      Checked
-                    </span>
-                  )}
-                </h4>
-                <p className="text-[11px] text-stone-600 leading-snug">
-                  Have I actively looked for arguments against my favorite option?
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* LOWER LINKS */}
-          <div className="pt-2 border-t border-[#E0D9CC] flex items-center justify-between text-xs">
             {onOpenHistory && (
               <button
                 type="button"
                 onClick={onOpenHistory}
-                className="inline-flex items-center gap-1 text-stone-800 font-bold hover:text-[#B88E3D] transition-colors cursor-pointer"
+                className="text-xs font-bold text-[#B88E3D] hover:text-[#9A742E] hover:underline flex items-center gap-1 cursor-pointer transition-colors"
               >
-                <History className="w-3.5 h-3.5 text-[#B88E3D]" />
-                <span>Saved Decisions ({savedDecisions.length})</span>
-              </button>
-            )}
-
-            {onSelectSample && (
-              <button
-                type="button"
-                onClick={() => onSelectSample()}
-                className="inline-flex items-center gap-1 text-stone-800 font-bold hover:text-[#B88E3D] transition-colors cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#B88E3D]" />
-                <span>Examples</span>
-              </button>
-            )}
-
-            {onOpenHowItWorks && (
-              <button
-                type="button"
-                onClick={onOpenHowItWorks}
-                className="inline-flex items-center gap-1 text-stone-800 font-bold hover:text-[#B88E3D] transition-colors cursor-pointer"
-              >
-                <HelpCircle className="w-3.5 h-3.5 text-[#B88E3D]" />
-                <span>How It Works</span>
+                <span>View All History</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
+
+          <div className="divide-y divide-[#EDE7DB] rounded-xl bg-white border border-[#E0D9CC] overflow-hidden shadow-2xs">
+            {safeSavedDecisions.slice(0, 4).map((dec) => {
+              const timeAgo = formatRelativeTime(dec.updatedAt || dec.createdAt);
+              return (
+                <div
+                  key={dec.id}
+                  onClick={() => onSelectDecision && onSelectDecision(dec)}
+                  className="p-3.5 sm:p-4 flex items-center justify-between gap-4 hover:bg-[#FAF7F2] transition-colors cursor-pointer group"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <h4 className="font-serif italic text-sm sm:text-base font-bold text-[#2C221E] group-hover:text-[#B88E3D] transition-colors truncate">
+                      {dec.title}
+                    </h4>
+                    <div className="flex items-center gap-2 text-[11px] text-stone-500 font-sans">
+                      <span className="font-medium text-stone-600">{timeAgo}</span>
+                      {dec.category && (
+                        <>
+                          <span>•</span>
+                          <span>{dec.category}</span>
+                        </>
+                      )}
+                      {dec.options && (
+                        <>
+                          <span>•</span>
+                          <span>{dec.options.length} options</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs font-bold text-[#B88E3D] opacity-0 group-hover:opacity-100 transition-opacity hidden sm:inline">
+                      View
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-[#B88E3D] transition-colors" />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {onOpenHistory && safeSavedDecisions.length > 4 && (
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={onOpenHistory}
+                className="text-xs font-semibold text-stone-600 hover:text-stone-900 hover:underline cursor-pointer"
+              >
+                + {safeSavedDecisions.length - 4} more decisions in History
+              </button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 };

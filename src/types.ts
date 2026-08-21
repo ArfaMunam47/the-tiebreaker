@@ -5,11 +5,20 @@ export type ReversibilityLevel =
   | 'Nearly irreversible';
 
 export type TimeHorizon =
+  | 'Right now'
+  | 'Today'
+  | 'This week'
+  | 'This month'
+  | 'Long term'
+  | "I'm not sure"
   | 'Immediate'
   | '3 months'
   | '1 year'
+  | '1–2 years'
   | '3 years'
-  | '5+ years';
+  | '5+ years'
+  | 'Not sure'
+  | string;
 
 export type DecisionCategory =
   | 'Lifestyle'
@@ -281,6 +290,8 @@ export interface DecisionAnalysis {
   createdAt: string;
   updatedAt: string;
   status: 'draft' | 'clarifying' | 'analyzed' | 'decided';
+  isQuickDecision?: boolean;
+  quickDecisionNote?: string;
   selectedOptionId?: string;
   isFavorite?: boolean;
   customNotes?: string;
@@ -290,7 +301,10 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  bio?: string;
+  avatar?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface AuthResponse {

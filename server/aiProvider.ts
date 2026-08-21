@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, Type, ThinkingLevel } from '@google/genai';
 import { extractAlternativesFromQuestion, ExtractedOption } from './optionExtractor.js';
 import {
   DecisionAnalysis,
@@ -20,6 +20,7 @@ export interface AnalysisInput {
   reversibility?: ReversibilityLevel;
   timeHorizon?: TimeHorizon;
   clarificationState?: ClarificationState;
+  isQuickDecision?: boolean;
 }
 
 // -------------------------------------------------------------
@@ -41,43 +42,51 @@ function getGeminiClient(): GoogleGenAI | null {
 }
 
 // -------------------------------------------------------------
-// Resilient Multi-Model Invocation with Exponential Backoff
+// Resilient High-Speed Multi-Model Invocation (< 4s per attempt)
 // -------------------------------------------------------------
-const CANDIDATE_MODELS = ['gemini-3.7-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
+const CANDIDATE_MODELS = ['gemini-flash-latest', 'gemini-3.1-flash-lite', 'gemini-3.7-flash'];
 
 export async function generateContentWithRetryAndFallback(
   ai: GoogleGenAI,
   params: {
     contents: any;
     config?: any;
+    timeoutMs?: number;
   }
 ) {
-  for (const model of CANDIDATE_MODELS) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: params.contents,
-          config: params.config,
-        });
-        if (response && response.text) {
-          return response;
-        }
-      } catch (err: any) {
-        const errMsg = (err?.message || String(err)).toLowerCase();
-        const isTemporary =
-          errMsg.includes('503') ||
-          errMsg.includes('unavailable') ||
-          errMsg.includes('429') ||
-          errMsg.includes('high demand') ||
-          errMsg.includes('resource_exhausted');
+  const timeoutMs = params.timeoutMs || 4200;
 
-        if (isTemporary && attempt === 0) {
-          await new Promise((resolve) => setTimeout(resolve, 400));
-          continue;
-        }
-        break;
+  for (const model of CANDIDATE_MODELS) {
+    try {
+      const mergedConfig = {
+        ...params.config,
+        ...(model === 'gemini-3.7-flash'
+          ? {
+              thinkingConfig: params.config?.thinkingConfig || {
+                thinkingLevel: ThinkingLevel.LOW,
+              },
+            }
+          : {}),
+      };
+
+      // Race generation with timeout to guarantee ultra-fast response
+      const callPromise = ai.models.generateContent({
+        model,
+        contents: params.contents,
+        config: mergedConfig,
+      });
+
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), timeoutMs)
+      );
+
+      const response: any = await Promise.race([callPromise, timeoutPromise]);
+      if (response && response.text) {
+        return response;
       }
+    } catch (err: any) {
+      // Gracefully advance to next high-speed candidate model
+      continue;
     }
   }
   return null;
@@ -433,6 +442,7 @@ Time Horizon: ${timeHorizon || 'Immediate'}`;
 
       const response = await generateContentWithRetryAndFallback(ai, {
         contents: userContent,
+        timeoutMs: 3500,
         config: {
           systemInstruction: systemPrompt,
           responseMimeType: 'application/json',
@@ -936,6 +946,7 @@ Time Horizon: ${input.timeHorizon || 'Immediate'}`;
 
       const response = await generateContentWithRetryAndFallback(ai, {
         contents: userContent,
+        timeoutMs: 4000,
         config: {
           systemInstruction: systemPrompt,
           responseMimeType: 'application/json',
@@ -2381,6 +2392,10 @@ export function generateDeterministicDecisionAnalysis(
       ...recommendation,
       domain,
     },
+    isQuickDecision: Boolean(input.isQuickDecision),
+    quickDecisionNote: input.isQuickDecision
+      ? 'This is a quick perspective based primarily on your question. For a more personalized result, add your options and what matters most to you.'
+      : undefined,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     status: 'analyzed' as const,
@@ -2395,8 +2410,11 @@ export interface EnhancePromptResult {
   originalPrompt: string;
   detectedLanguage: 'english' | 'roman_urdu' | 'urdu' | 'mixed' | 'other';
   suggestedOptions?: string[];
+  suggestedFactors?: string[];
   tips?: string;
 }
+
+const promptEnhanceCache = new Map<string, EnhancePromptResult>();
 
 export async function enhancePromptWithAI(
   userPrompt: string,
@@ -2409,6 +2427,11 @@ export async function enhancePromptWithAI(
   const cleanPrompt = userPrompt?.trim() || '';
   if (!cleanPrompt) {
     throw new Error('Please enter a question or decision first.');
+  }
+
+  const cacheKey = cleanPrompt.toLowerCase();
+  if (promptEnhanceCache.has(cacheKey)) {
+    return promptEnhanceCache.get(cacheKey)!;
   }
 
   // Detect language
@@ -2450,11 +2473,13 @@ CRITICAL RULES:
    - Do NOT turn product purchases into job dilemmas.
 4. PRESERVE MEANING: Keep the user's exact dilemma, just make it structured and easy to compare.
 5. SUGGESTED OPTIONS: Extract 2 to 3 distinct choices (e.g. ["React", "Vue"], ["AI Automation", "Machine Learning", "Take a Rest", "Keep Working"]).
+6. SUGGESTED FACTORS: Suggest 3 to 5 core factors that matter most for this decision (e.g. ["Money", "Time", "Growth", "Happiness", "Stability"]).
 
 Respond with a valid JSON object matching this schema:
 {
   "enhancedPrompt": "The clear, refined, easy-to-understand question in the user's language/style",
   "suggestedOptions": ["Option A", "Option B"],
+  "suggestedFactors": ["Factor 1", "Factor 2", "Factor 3"],
   "tips": "One short simple tip for making this decision"
 }`;
 
@@ -2465,6 +2490,7 @@ Respond with a valid JSON object matching this schema:
 Context hints (if applicable):
 Category: ${context?.category || 'Automatic'}
 Timeframe: ${context?.timeHorizon || 'Flexible'}`,
+        timeoutMs: 3000,
         config: {
           systemInstruction,
           responseMimeType: 'application/json',
@@ -2475,15 +2501,20 @@ Timeframe: ${context?.timeHorizon || 'Flexible'}`,
       if (response && response.text) {
         const parsed = JSON.parse(response.text.trim());
         if (parsed.enhancedPrompt && typeof parsed.enhancedPrompt === 'string') {
-          return {
+          const result: EnhancePromptResult = {
             enhancedPrompt: parsed.enhancedPrompt.trim(),
             originalPrompt: cleanPrompt,
             detectedLanguage,
             suggestedOptions: Array.isArray(parsed.suggestedOptions)
               ? parsed.suggestedOptions.filter((s: any) => typeof s === 'string' && s.trim())
               : undefined,
+            suggestedFactors: Array.isArray(parsed.suggestedFactors)
+              ? parsed.suggestedFactors.filter((f: any) => typeof f === 'string' && f.trim())
+              : undefined,
             tips: parsed.tips || undefined,
           };
+          promptEnhanceCache.set(cacheKey, result);
+          return result;
         }
       }
     } catch (err) {
@@ -2494,6 +2525,7 @@ Timeframe: ${context?.timeHorizon || 'Flexible'}`,
   // Deterministic multilingual fallback if AI is offline
   let fallbackEnhanced = cleanPrompt;
   let fallbackOptions: string[] = [];
+  let fallbackFactors: string[] = ['Money', 'Time', 'Happiness', 'Growth'];
 
   // Handle Roman Urdu cases
   if (detectedLanguage === 'roman_urdu' || detectedLanguage === 'mixed') {
@@ -2549,10 +2581,13 @@ Timeframe: ${context?.timeHorizon || 'Flexible'}`,
     }
   }
 
-  return {
+  const fallbackResult: EnhancePromptResult = {
     enhancedPrompt: fallbackEnhanced,
     originalPrompt: cleanPrompt,
     detectedLanguage,
     suggestedOptions: fallbackOptions.length >= 2 ? fallbackOptions : undefined,
+    suggestedFactors: fallbackFactors.length > 0 ? fallbackFactors : undefined,
   };
+  promptEnhanceCache.set(cacheKey, fallbackResult);
+  return fallbackResult;
 }

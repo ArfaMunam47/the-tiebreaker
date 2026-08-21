@@ -16,12 +16,14 @@ interface ExportReportModalProps {
   isOpen: boolean;
   onClose: () => void;
   decision: DecisionAnalysis;
+  onSave?: () => Promise<void> | void;
 }
 
 export const ExportReportModal: React.FC<ExportReportModalProps> = ({
   isOpen,
   onClose,
   decision,
+  onSave,
 }) => {
   const [copiedMemo, setCopiedMemo] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
@@ -34,13 +36,20 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
     decision.options.find((o) => o.id === decision.recommendation?.recommendedOptionId) ||
     decision.options[0];
 
-  const handleDownloadPdfDirect = () => {
+  const handleDownloadPdfDirect = async () => {
     setErrorMessage(null);
     setIsGeneratingPdf(true);
     try {
+      if (onSave) {
+        try {
+          await onSave();
+        } catch (saveErr) {
+          console.warn('Auto-save error during export modal:', saveErr);
+        }
+      }
       const success = generateAndDownloadDecisionPdf(decision);
       if (success) {
-        setDownloadSuccess('Complete Decision PDF downloaded successfully!');
+        setDownloadSuccess('Decision saved to library & PDF downloaded successfully!');
         setTimeout(() => setDownloadSuccess(null), 3000);
       } else {
         setErrorMessage('Could not generate PDF. Please try again or copy the text summary.');

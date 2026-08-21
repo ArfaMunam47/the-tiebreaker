@@ -9,13 +9,12 @@
 
   body {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: #F4F0E8;
+    background-color: #FAF8F5;
     background-image: 
-      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(255, 255, 255, 0.7), transparent 70%),
-      radial-gradient(circle at 100% 100%, rgba(220, 210, 195, 0.25), transparent 40%),
-      linear-gradient(180deg, #F6F3EC 0%, #EEE9DF 100%);
+      radial-gradient(ellipse 70% 40% at 50% 0%, rgba(255, 255, 255, 0.8), transparent 70%),
+      linear-gradient(180deg, #FAF8F5 0%, #F5F1EA 100%);
     background-attachment: fixed;
-    color: #241C18;
+    color: #141413;
     margin: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -23,16 +22,16 @@
     min-height: 100vh;
   }
 
-  h1, h2, h3, .font-serif {
+  h1, h2, h3, h4, .font-serif {
     font-family: 'Newsreader', Georgia, Cambria, "Times New Roman", Times, serif;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.02em;
   }
 
   /* Accessible high-precision focus ring */
   *:focus-visible {
-    outline: 2px solid #C49235;
+    outline: 2px solid #141413;
     outline-offset: 2px;
-    box-shadow: 0 0 0 4px rgba(196, 146, 53, 0.25);
+    box-shadow: 0 0 0 3px rgba(196, 146, 53, 0.25);
   }
 }
 
@@ -52,262 +51,251 @@
     height: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.03);
-    border-radius: 9999px;
+    background: #F3EFE8;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #D3CCC0;
-    border-radius: 9999px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    background: #D5CEBF;
+    border-radius: 4px;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #B88E3D;
+    background: #141413;
   }
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #D3CCC0 transparent;
+    scrollbar-color: #D5CEBF #F3EFE8;
   }
 
   /* =========================================================
-     MODERN SKEUOMORPHIC DEPTH SYSTEM TOKENS
+     PREMIUM EDITORIAL + NEO-BRUTALIST DESIGN SYSTEM
      ========================================================= */
 
-  /* LEVEL 2: Raised Surfaces (Cards, Containers, Decks) */
-  .skeuo-card {
-    background: linear-gradient(180deg, #FFFFFF 0%, #FAF7F2 100%);
-    border: 1px solid #E1DBD0;
-    border-bottom: 1.5px solid #D1C9BC;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.02),
-      0 1px 3px rgba(44, 34, 30, 0.04),
-      0 4px 12px rgba(44, 34, 30, 0.03),
-      0 8px 24px rgba(44, 34, 30, 0.02);
+  /* Editorial Flat & Tactile Cards */
+  .editorial-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E4DFD5;
+    box-shadow: 0 1px 2px rgba(20, 20, 19, 0.04);
   }
 
+  .editorial-card-elevated {
+    background-color: #FFFFFF;
+    border: 1px solid #141413;
+    box-shadow: 3px 3px 0px #141413;
+  }
+
+  .editorial-card-interactive {
+    background-color: #FFFFFF;
+    border: 1px solid #E4DFD5;
+    transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .editorial-card-interactive:hover {
+    border-color: #141413;
+    transform: translateY(-2px);
+    box-shadow: 3px 3px 0px #141413;
+  }
+  .editorial-card-interactive:active {
+    transform: translateY(0px);
+    box-shadow: 1px 1px 0px #141413;
+  }
+
+  /* Editorial Recessed Well / Container */
+  .editorial-well {
+    background-color: #F4EFE6;
+    border: 1px solid #E0D9CC;
+  }
+
+  /* Editorial Inputs */
+  .editorial-input {
+    background-color: #FFFFFF;
+    border: 1px solid #D5CEBF;
+    color: #141413;
+    transition: all 0.15s ease;
+  }
+  .editorial-input:focus {
+    background-color: #FFFFFF;
+    border-color: #141413;
+    box-shadow: 2px 2px 0px #141413;
+  }
+
+  /* Editorial Neo-Brutalist Buttons */
+  .editorial-btn-primary {
+    background-color: #141413;
+    color: #FAF8F5;
+    border: 1px solid #141413;
+    box-shadow: 2px 2px 0px rgba(20, 20, 19, 0.2);
+    transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .editorial-btn-primary:hover {
+    background-color: #282724;
+    transform: translateY(-1px);
+    box-shadow: 3px 3px 0px #141413;
+  }
+  .editorial-btn-primary:active {
+    transform: translateY(1px);
+    box-shadow: 0px 0px 0px #141413;
+  }
+
+  .editorial-btn-secondary {
+    background-color: #FFFFFF;
+    color: #141413;
+    border: 1px solid #D5CEBF;
+    box-shadow: 1px 1px 0px rgba(20, 20, 19, 0.05);
+    transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .editorial-btn-secondary:hover {
+    background-color: #F8F5EE;
+    border-color: #141413;
+    color: #141413;
+    box-shadow: 2px 2px 0px #141413;
+    transform: translateY(-1px);
+  }
+  .editorial-btn-secondary:active {
+    transform: translateY(1px);
+    box-shadow: 0px 0px 0px #141413;
+  }
+
+  .editorial-btn-accent {
+    background-color: #C49235;
+    color: #FFFFFF;
+    border: 1px solid #141413;
+    box-shadow: 2px 2px 0px #141413;
+    transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .editorial-btn-accent:hover {
+    background-color: #AF7F26;
+    transform: translateY(-1px);
+    box-shadow: 3px 3px 0px #141413;
+  }
+  .editorial-btn-accent:active {
+    transform: translateY(1px);
+    box-shadow: 0px 0px 0px #141413;
+  }
+
+  /* Editorial Badges & Tags */
+  .editorial-tag {
+    background-color: #F4EFE6;
+    border: 1px solid #D5CEBF;
+    color: #2C2A29;
+  }
+
+  .editorial-tag-active {
+    background-color: #141413;
+    border: 1px solid #141413;
+    color: #FAF8F5;
+  }
+
+  /* Modal Shell */
+  .editorial-modal-shell {
+    background-color: #FFFFFF;
+    border: 1.5px solid #141413;
+    box-shadow: 6px 6px 0px #141413;
+  }
+
+  /* Header Deck */
+  .editorial-header {
+    background-color: rgba(250, 248, 245, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #E4DFD5;
+  }
+
+  /* Backward Compatibility Aliases */
+  .skeuo-card {
+    background-color: #FFFFFF;
+    border: 1px solid #E4DFD5;
+  }
   .skeuo-card-interactive {
-    background: linear-gradient(180deg, #FFFFFF 0%, #FAF7F2 100%);
-    border: 1px solid #E1DBD0;
-    border-bottom: 1.5px solid #D1C9BC;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      0 1px 3px rgba(44, 34, 30, 0.05),
-      0 4px 12px rgba(44, 34, 30, 0.04);
+    background-color: #FFFFFF;
+    border: 1px solid #E4DFD5;
     transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .skeuo-card-interactive:hover {
+    border-color: #141413;
     transform: translateY(-1.5px);
-    border-color: #D4CBBF;
-    border-bottom-color: #BEB4A5;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 1),
-      0 3px 6px rgba(44, 34, 30, 0.06),
-      0 8px 20px rgba(44, 34, 30, 0.05);
+    box-shadow: 2px 2px 0px #141413;
   }
-  .skeuo-card-interactive:active {
-    transform: translateY(0.5px);
-    box-shadow: 
-      inset 0 1px 2px rgba(44, 34, 30, 0.06),
-      0 1px 2px rgba(44, 34, 30, 0.04);
-  }
-
-  /* LEVEL 4: Recessed Inset Surfaces (Inputs, Search, Wells, Trays) */
   .skeuo-well {
-    background: #F3EFE7;
-    border: 1px solid #D8D1C4;
-    border-top-color: #C7BFB0;
-    box-shadow: 
-      inset 0 2px 4px rgba(44, 34, 30, 0.07),
-      inset 0 1px 2px rgba(44, 34, 30, 0.05),
-      0 1px 0 rgba(255, 255, 255, 0.9);
+    background-color: #F4EFE6;
+    border: 1px solid #E0D9CC;
   }
-
   .skeuo-input {
-    background: #F8F5EE;
-    border: 1px solid #D5CEC1;
-    border-top-color: #C0B7A6;
-    box-shadow: 
-      inset 0 2px 4px rgba(44, 34, 30, 0.06),
-      inset 0 1px 2px rgba(44, 34, 30, 0.04),
-      0 1px 0 rgba(255, 255, 255, 0.85);
+    background-color: #FFFFFF;
+    border: 1px solid #D5CEBF;
+    color: #141413;
     transition: all 0.15s ease;
   }
   .skeuo-input:focus {
-    background: #FFFFFF;
-    border-color: #B88E3D;
-    border-top-color: #A47B2E;
-    box-shadow: 
-      inset 0 1px 2px rgba(44, 34, 30, 0.04),
-      0 0 0 3px rgba(184, 142, 61, 0.18),
-      0 1px 0 rgba(255, 255, 255, 0.95);
+    border-color: #141413;
+    box-shadow: 2px 2px 0px #141413;
   }
-
-  /* LEVEL 3: Interactive Tactile Buttons */
   .skeuo-btn-primary {
-    background: linear-gradient(180deg, #3C302A 0%, #251C18 100%);
-    border: 1px solid #1D1512;
-    border-bottom: 2px solid #0F0B09;
-    color: #FFFFFF;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.3),
-      0 2px 4px rgba(37, 28, 24, 0.25),
-      0 4px 10px rgba(37, 28, 24, 0.15);
+    background-color: #141413;
+    color: #FAF8F5;
+    border: 1px solid #141413;
     transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .skeuo-btn-primary:hover {
-    background: linear-gradient(180deg, #4A3C34 0%, #2C211B 100%);
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 0.28),
-      0 3px 6px rgba(37, 28, 24, 0.3),
-      0 6px 14px rgba(37, 28, 24, 0.18);
-    transform: translateY(-0.5px);
+    background-color: #282724;
+    transform: translateY(-1px);
+    box-shadow: 2px 2px 0px #141413;
   }
-  .skeuo-btn-primary:active {
-    transform: translateY(1.5px);
-    background: linear-gradient(180deg, #201713 0%, #2A201A 100%);
-    border-bottom-width: 1px;
-    box-shadow: 
-      inset 0 2px 4px rgba(0, 0, 0, 0.5),
-      0 1px 1px rgba(0, 0, 0, 0.1);
-  }
-
   .skeuo-btn-secondary {
-    background: linear-gradient(180deg, #FFFFFF 0%, #F5F1E8 100%);
-    border: 1px solid #D6CFBF;
-    border-bottom: 1.5px solid #C2B9A6;
-    color: #2D2420;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      0 1px 2px rgba(44, 34, 30, 0.05),
-      0 2px 5px rgba(44, 34, 30, 0.03);
+    background-color: #FFFFFF;
+    color: #141413;
+    border: 1px solid #D5CEBF;
     transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .skeuo-btn-secondary:hover {
-    background: linear-gradient(180deg, #FFFFFF 0%, #EDE7DC 100%);
-    border-color: #C9C1B0;
-    border-bottom-color: #B4AA96;
-    color: #1A1411;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 1),
-      0 2px 4px rgba(44, 34, 30, 0.08),
-      0 4px 10px rgba(44, 34, 30, 0.04);
-    transform: translateY(-0.5px);
+    background-color: #F8F5EE;
+    border-color: #141413;
+    box-shadow: 2px 2px 0px #141413;
+    transform: translateY(-1px);
   }
-  .skeuo-btn-secondary:active {
-    transform: translateY(1px);
-    background: #ECE6DA;
-    box-shadow: 
-      inset 0 2px 3px rgba(44, 34, 30, 0.1),
-      0 0 1px rgba(44, 34, 30, 0.05);
-  }
-
   .skeuo-btn-amber {
-    background: linear-gradient(180deg, #FFF9EB 0%, #F7E7C4 100%);
-    border: 1px solid #D8BC79;
-    border-bottom: 2px solid #BA9B53;
-    color: #6C4C09;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      0 1px 3px rgba(184, 142, 61, 0.2),
-      0 3px 8px rgba(184, 142, 61, 0.1);
-    transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+    background-color: #FDF8EE;
+    border: 1px solid #E4C882;
+    color: #8C6212;
   }
   .skeuo-btn-amber:hover {
-    background: linear-gradient(180deg, #FFFDF6 0%, #F3DEB0 100%);
-    border-color: #C9A95E;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 1),
-      0 2px 5px rgba(184, 142, 61, 0.25),
-      0 5px 12px rgba(184, 142, 61, 0.15);
-    transform: translateY(-0.5px);
+    background-color: #F7ECD2;
+    border-color: #141413;
   }
-  .skeuo-btn-amber:active {
-    transform: translateY(1px);
-    background: #EED49C;
-    box-shadow: 
-      inset 0 2px 4px rgba(146, 107, 30, 0.25),
-      0 1px 1px rgba(146, 107, 30, 0.1);
-  }
-
-  /* LEVEL 3: Physical Enamel Badges & Indicator Plates */
   .skeuo-pill {
-    background: linear-gradient(180deg, #FFFFFF 0%, #F2ECE1 100%);
-    border: 1px solid #D6CFBF;
-    border-bottom: 1.5px solid #C4BAA5;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
-      0 1px 2px rgba(44, 34, 30, 0.05);
+    background-color: #FFFFFF;
+    border: 1px solid #D5CEBF;
   }
-
   .skeuo-pill-active {
-    background: linear-gradient(180deg, #382C26 0%, #221A16 100%);
-    border: 1px solid #1A1310;
-    border-bottom: 1.5px solid #0D0907;
-    color: #FFFFFF;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 0.25),
-      0 2px 4px rgba(34, 26, 22, 0.25);
+    background-color: #141413;
+    border: 1px solid #141413;
+    color: #FAF8F5;
   }
-
-  /* Physical Hardware Inset Trench / Segmented Control Well */
   .skeuo-segmented-well {
-    background: #EAE4D8;
-    border: 1px solid #CCC3B2;
-    border-top-color: #B5AB99;
-    box-shadow: 
-      inset 0 2px 4px rgba(44, 34, 30, 0.1),
-      0 1px 0 rgba(255, 255, 255, 0.9);
+    background-color: #EDE8DE;
+    border: 1px solid #D8D2C5;
   }
-
-  /* Heavy Glass/Physical Modal Container */
   .skeuo-modal-shell {
-    background: linear-gradient(180deg, #FFFFFF 0%, #FAF7F2 100%);
-    border: 1px solid #DFD8CB;
-    border-bottom: 2px solid #C8BFB0;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 1),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.4),
-      0 4px 10px rgba(44, 34, 30, 0.08),
-      0 12px 32px rgba(44, 34, 30, 0.12),
-      0 24px 60px rgba(44, 34, 30, 0.15);
+    background-color: #FFFFFF;
+    border: 1.5px solid #141413;
+    box-shadow: 6px 6px 0px #141413;
   }
-
-  /* Header physical deck banner */
   .skeuo-header-deck {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 247, 242, 0.95) 100%);
-    border-bottom: 1px solid #E0D9CC;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 1),
-      0 2px 6px rgba(44, 34, 30, 0.04),
-      0 6px 16px rgba(44, 34, 30, 0.02);
+    background-color: rgba(250, 248, 245, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #E4DFD5;
   }
-
-  /* Physical Chat Bubbles */
   .skeuo-bubble-ai {
-    background: linear-gradient(180deg, #FFFFFF 0%, #FAF6EE 100%);
-    border: 1px solid #DDD6C8;
-    border-bottom: 1.5px solid #C7BEAE;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      0 2px 6px rgba(44, 34, 30, 0.05);
+    background-color: #FFFFFF;
+    border: 1px solid #E0D9CC;
   }
-
   .skeuo-bubble-user {
-    background: linear-gradient(180deg, #3A2E28 0%, #251B17 100%);
-    border: 1px solid #1C1411;
-    border-bottom: 1.5px solid #0E0907;
-    color: #F8F5EE;
-    box-shadow: 
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      0 2px 6px rgba(37, 27, 23, 0.25);
+    background-color: #141413;
+    border: 1px solid #141413;
+    color: #FAF8F5;
   }
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -315,23 +303,17 @@
   }
 }
 
-@keyframes pulseGlow {
-  0%, 100% {
-    opacity: 0.7;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.02);
-  }
-}
-
 .animate-fadeIn {
-  animation: fadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.animate-pulseGlow {
-  animation: pulseGlow 3s ease-in-out infinite;
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 

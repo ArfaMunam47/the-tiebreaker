@@ -3,7 +3,6 @@ import { DecisionAnalysis, User, AuthResponse } from './types';
 import { SAMPLE_DECISIONS } from './data/sampleDecisions';
 import {
   apiGetMe,
-  apiLoginDemo,
   apiLogout,
   apiGetDecisions,
   apiSaveDecision,
@@ -13,14 +12,17 @@ import {
 } from './utils/api';
 import {
   exportDecisionsJSON,
-  importDecisionsJSON,
 } from './utils/storage';
 import { Header } from './components/Header';
-import { DecisionWorkspace } from './components/DecisionWorkspace';
+import { DecisionWorkspace, WorkspaceInitialData } from './components/DecisionWorkspace';
 import { ResultsDashboard, TabType } from './components/ResultsDashboard';
 import { DecisionHistory } from './components/DecisionHistory';
+import { DecisionHistoryView } from './components/DecisionHistoryView';
 import { HowItWorksModal } from './components/HowItWorksModal';
+import { AboutTiebreakerView } from './components/AboutTiebreakerView';
+import { SettingsModal } from './components/SettingsModal';
 import { AuthModal } from './components/AuthModal';
+import { UserProfileModal } from './components/UserProfileModal';
 import { Footer } from './components/Footer';
 import { Sidebar } from './components/Sidebar';
 import { Sparkles, ArrowRight, X } from 'lucide-react';
@@ -28,8 +30,14 @@ import { Sparkles, ArrowRight, X } from 'lucide-react';
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [showAboutPage, setShowAboutPage] = useState(false);
+  const [showHistoryPage, setShowHistoryPage] = useState(false);
+
   const [savedDecisions, setSavedDecisions] = useState<DecisionAnalysis[]>([]);
   const [currentDecision, setCurrentDecision] = useState<DecisionAnalysis | null>(null);
+  const [workspaceInitialData, setWorkspaceInitialData] = useState<WorkspaceInitialData | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
@@ -47,6 +55,8 @@ export default function App() {
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [showSamplePicker, setShowSamplePicker] = useState(false);
 
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(() => Boolean(getStoredToken()));
+
   // Initialize Authentication and User Decision Library on Mount
   useEffect(() => {
     const initAuth = async () => {
@@ -54,17 +64,12 @@ export default function App() {
       if (token) {
         try {
           const { user } = await apiGetMe();
-          // Wipe any stale demo token or legacy Alex session so user starts in fresh Guest mode
-          if (!user || user.id?.startsWith('demo_') || user.name?.toLowerCase().includes('alex')) {
-            apiLogout();
-            setCurrentUser(null);
-            setSavedDecisions([]);
+          if (user && user.id) {
+            setCurrentUser(user);
+            const decisions = await apiGetDecisions();
+            setSavedDecisions(decisions);
             return;
           }
-          setCurrentUser(user);
-          const decisions = await apiGetDecisions();
-          setSavedDecisions(decisions);
-          return;
         } catch (err) {
           console.warn('Existing session invalid or expired:', err);
           apiLogout();
@@ -76,7 +81,9 @@ export default function App() {
       setSavedDecisions([]);
     };
 
-    initAuth();
+    initAuth().finally(() => {
+      setIsAuthLoading(false);
+    });
   }, []);
 
   // Reload user decisions library
@@ -94,8 +101,13 @@ export default function App() {
     setCurrentUser(auth.user);
     // Reset active decision to ensure clean isolation
     setCurrentDecision(null);
+    setShowAboutPage(false);
     const decisions = await apiGetDecisions();
     setSavedDecisions(decisions);
+  };
+
+  const handleProfileUpdated = (updatedUser: User) => {
+    setCurrentUser(updatedUser);
   };
 
   const handleLogout = () => {
@@ -114,26 +126,32 @@ export default function App() {
     category?: any,
     reversibility?: any,
     timeHorizon?: any,
-    clarificationState?: any
+    clarificationState?: any,
+    isQuickDecision?: boolean
   ) => {
     // 1. Cancel previous in-flight analysis request if any
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
+
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
-
     const requestId = ++currentRequestIdRef.current;
 
     setIsAnalyzing(true);
     setLoadingStep(0);
     setAnalysisError(null);
+    setShowAboutPage(false);
 
-    const stepTimer1 = setTimeout(() => setLoadingStep(1), 1200);
-    const stepTimer2 = setTimeout(() => setLoadingStep(2), 2400);
+    const stepTimer1 = setTimeout(() => {
+      if (requestId === currentRequestIdRef.current) setLoadingStep(1);
+    }, 1800);
+    const stepTimer2 = setTimeout(() => {
+      if (requestId === currentRequestIdRef.current) setLoadingStep(2);
+    }, 3800);
 
     try {
-      const analysisResult = await apiAnalyzeDecision(
+      const result = await apiAnalyzeDecision(
         {
           prompt,
           options,
@@ -143,38 +161,36 @@ export default function App() {
           reversibility,
           timeHorizon,
           clarificationState,
+          isQuickDecision,
         },
         abortController.signal
       );
 
-      // Check if this is still the active request
+      // Check if this request is still the active one
       if (requestId !== currentRequestIdRef.current) {
-        console.warn('Discarding stale analysis response');
         return;
       }
 
-      // Save to database library
-      try {
-        await apiSaveDecision(analysisResult);
-      } catch (err) {
-        console.warn('Note: Auto-save to server:', err);
-      }
-
-      await refreshUserDecisions();
-      setCurrentDecision(analysisResult);
+      setCurrentDecision(result);
       setActiveTab('overview');
-      setAnalysisError(null);
 
+      // Refresh persistent library to include newly created decision
+      await refreshUserDecisions();
+
+      // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.log('Analysis request aborted by user');
+    } catch (err: any) {
+      if (err.name === 'AbortError' || abortController.signal.aborted) {
+        console.log('Analysis request aborted by user or superseded');
         return;
       }
-
-      console.error('Analysis failed:', error);
-      setAnalysisError(error.message || 'Failed to complete analysis. Please try again.');
-      await refreshUserDecisions();
+      if (requestId !== currentRequestIdRef.current) {
+        return;
+      }
+      console.error('Decision analysis failed:', err);
+      setAnalysisError(
+        err.message || 'Analysis could not be generated. Please try again with a clearer prompt.'
+      );
     } finally {
       clearTimeout(stepTimer1);
       clearTimeout(stepTimer2);
@@ -186,7 +202,12 @@ export default function App() {
 
   const handleSelectDecision = (decision: DecisionAnalysis) => {
     setCurrentDecision(decision);
+    setShowAboutPage(false);
+    setShowHistoryPage(false);
     setActiveTab('overview');
+    try {
+      window.history.pushState({ view: 'decision', id: decision.id }, '', '');
+    } catch {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -195,12 +216,104 @@ export default function App() {
       abortControllerRef.current.abort();
     }
     setCurrentDecision(null);
+    setWorkspaceInitialData(null);
+    setShowAboutPage(false);
+    setShowHistoryPage(false);
+    try {
+      window.history.pushState({ view: 'home' }, '', '');
+    } catch {}
     setTimeout(() => {
       const workspaceEl = document.getElementById('workspace');
       if (workspaceEl) {
         workspaceEl.scrollIntoView({ behavior: 'smooth' });
       }
     }, 100);
+  };
+
+  const handleMakeMorePersonal = (decision: DecisionAnalysis) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    // Prefill data and start directly at Step 2: What matters most to you?
+    setWorkspaceInitialData({
+      prompt: decision.originalPrompt || decision.title,
+      options: decision.options && decision.options.length >= 2 ? decision.options.map((o) => o.title) : undefined,
+      priorities: decision.userPriorities || [],
+      timeHorizon: decision.timeHorizon || 'This week',
+      category: decision.category,
+      reversibility: decision.reversibility,
+      startStep: 'step2',
+    });
+    setCurrentDecision(null);
+    setShowAboutPage(false);
+    setShowHistoryPage(false);
+    setTimeout(() => {
+      const workspaceEl = document.getElementById('workspace');
+      if (workspaceEl) {
+        workspaceEl.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
+  // Browser navigation popstate support
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const state = event.state;
+      if (!state || state.view === 'home') {
+        setShowAboutPage(false);
+        setShowHistoryPage(false);
+        setCurrentDecision(null);
+      } else if (state.view === 'about') {
+        setShowAboutPage(true);
+        setShowHistoryPage(false);
+        setCurrentDecision(null);
+      } else if (state.view === 'history') {
+        setShowAboutPage(false);
+        setShowHistoryPage(true);
+        setCurrentDecision(null);
+      } else if (state.view === 'decision' && state.id) {
+        const found =
+          savedDecisions.find((d) => d.id === state.id) ||
+          SAMPLE_DECISIONS.find((d) => d.id === state.id);
+        if (found) {
+          setCurrentDecision(found);
+          setShowAboutPage(false);
+          setShowHistoryPage(false);
+        }
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [savedDecisions]);
+
+  const handleOpenHistoryPage = () => {
+    setShowHistoryPage(true);
+    setShowAboutPage(false);
+    setCurrentDecision(null);
+    try {
+      window.history.pushState({ view: 'history' }, '', '');
+    } catch {}
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenAboutPage = () => {
+    setShowAboutPage(true);
+    setShowHistoryPage(false);
+    setCurrentDecision(null);
+    try {
+      window.history.pushState({ view: 'about' }, '', '');
+    } catch {}
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBackToHome = () => {
+    setShowAboutPage(false);
+    setShowHistoryPage(false);
+    setCurrentDecision(null);
+    try {
+      window.history.pushState({ view: 'home' }, '', '');
+    } catch {}
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleUpdateDecision = async (updated: DecisionAnalysis) => {
@@ -271,6 +384,7 @@ export default function App() {
       const found = SAMPLE_DECISIONS.find((s) => s.id === sampleId);
       if (found) {
         setCurrentDecision(found);
+        setShowAboutPage(false);
         setShowSamplePicker(false);
         setActiveTab('overview');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -286,8 +400,16 @@ export default function App() {
       <Header
         currentUser={currentUser}
         onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
+        onOpenAboutPage={() => {
+          setShowAboutPage(true);
+          setShowHistoryPage(false);
+          setCurrentDecision(null);
+        }}
+        onLogout={handleLogout}
         onNewDecision={handleNewDecision}
-        onOpenHistory={() => setShowHistory(true)}
+        onOpenHistory={handleOpenHistoryPage}
         onOpenHowItWorks={() => setShowHowItWorks(true)}
         onSelectSample={() => handleSelectSample()}
         savedCount={savedDecisions.length}
@@ -306,12 +428,23 @@ export default function App() {
           onSelectTab={(tab) => setActiveTab(tab)}
           onSelectDecision={handleSelectDecision}
           onNewDecision={handleNewDecision}
-          onOpenHistory={() => setShowHistory(true)}
+          onOpenHistory={() => {
+            handleOpenHistoryPage();
+            setIsMobileSidebarOpen(false);
+          }}
           onOpenHowItWorks={() => setShowHowItWorks(true)}
-          onSelectSample={() => handleSelectSample()}
+          onOpenAboutPage={() => {
+            setShowAboutPage(true);
+            setShowHistoryPage(false);
+            setCurrentDecision(null);
+            setIsMobileSidebarOpen(false);
+          }}
+          onOpenProfile={() => setIsProfileModalOpen(true)}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
+          onOpenAuth={() => setIsAuthModalOpen(true)}
+          onLogout={handleLogout}
+          currentUser={currentUser}
           savedCount={savedDecisions.length}
-          onExport={handleExport}
-          onImport={handleImport}
           isOpenMobile={isMobileSidebarOpen}
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
@@ -319,7 +452,29 @@ export default function App() {
 
       {/* MAIN CONTENT AREA */}
       <div className="w-full max-w-[1880px] mx-auto px-3 sm:px-5 lg:px-7 xl:px-8 py-4 sm:py-6 flex-1">
-        {currentDecision ? (
+        {showAboutPage ? (
+          /* DEDICATED "WHAT IS TIEBREAKER?" VIEW */
+          <main className="w-full min-w-0">
+            <AboutTiebreakerView
+              onStartDecision={handleNewDecision}
+              onSelectSample={() => handleSelectSample()}
+              onClose={handleBackToHome}
+              onBack={handleBackToHome}
+            />
+          </main>
+        ) : showHistoryPage ? (
+          /* DEDICATED FULL-PAGE "YOUR DECISIONS" HISTORY VIEW */
+          <main className="w-full min-w-0">
+            <DecisionHistoryView
+              decisions={savedDecisions}
+              onSelectDecision={handleSelectDecision}
+              onDeleteDecision={handleDeleteDecision}
+              onNewDecision={handleNewDecision}
+              onSelectSample={() => handleSelectSample()}
+              onBack={handleBackToHome}
+            />
+          </main>
+        ) : currentDecision ? (
           /* RESULTS DASHBOARD VIEW WITH DEDICATED DESKTOP SIDEBAR */
           <div className="grid grid-cols-1 lg:grid-cols-[290px_1fr] xl:grid-cols-[320px_1fr] 2xl:grid-cols-[340px_1fr] gap-6 xl:gap-8 items-start w-full">
             {/* Desktop Navigation Sidebar for Active Decision */}
@@ -331,12 +486,15 @@ export default function App() {
                 onSelectTab={(tab) => setActiveTab(tab)}
                 onSelectDecision={handleSelectDecision}
                 onNewDecision={handleNewDecision}
-                onOpenHistory={() => setShowHistory(true)}
+                onOpenHistory={handleOpenHistoryPage}
                 onOpenHowItWorks={() => setShowHowItWorks(true)}
-                onSelectSample={() => handleSelectSample()}
+                onOpenAboutPage={handleOpenAboutPage}
+                onOpenProfile={() => setIsProfileModalOpen(true)}
+                onOpenSettings={() => setIsSettingsModalOpen(true)}
+                onOpenAuth={() => setIsAuthModalOpen(true)}
+                onLogout={handleLogout}
+                currentUser={currentUser}
                 savedCount={savedDecisions.length}
-                onExport={handleExport}
-                onImport={handleImport}
               />
             </aside>
 
@@ -352,7 +510,10 @@ export default function App() {
                   }
                 }}
                 onNewDecision={handleNewDecision}
+                onMakeMorePersonal={handleMakeMorePersonal}
                 initialTab={activeTab}
+                onBack={handleBackToHome}
+                backLabel="Back to Decision Studio"
               />
             </main>
           </div>
@@ -370,7 +531,9 @@ export default function App() {
               savedDecisions={savedDecisions}
               onSelectDecision={handleSelectDecision}
               onDeleteDecision={handleDeleteDecision}
-              onOpenHistory={() => setShowHistory(true)}
+              onOpenHistory={handleOpenHistoryPage}
+              currentUser={currentUser}
+              initialData={workspaceInitialData}
             />
           </main>
         )}
@@ -379,13 +542,35 @@ export default function App() {
       {/* FOOTER */}
       <Footer />
 
-      {/* AUTHENTICATION & MULTI-USER PROFILE MODAL */}
+      {/* AUTHENTICATION MODAL */}
       <AuthModal
         currentUser={currentUser}
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onAuthSuccess={handleAuthSuccess}
         onLogout={handleLogout}
+      />
+
+      {/* USER PROFILE MANAGEMENT MODAL */}
+      <UserProfileModal
+        currentUser={currentUser}
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        onProfileUpdated={handleProfileUpdated}
+        onLogout={handleLogout}
+        savedDecisions={savedDecisions}
+      />
+
+      {/* SETTINGS MODAL */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        currentUser={currentUser}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
+        onLogout={handleLogout}
+        onExport={handleExport}
+        onImport={handleImport}
+        savedCount={savedDecisions.length}
       />
 
       {/* DECISION HISTORY DRAWER */}
@@ -404,6 +589,7 @@ export default function App() {
         <HowItWorksModal
           onClose={() => setShowHowItWorks(false)}
           onStart={() => {
+            setShowHowItWorks(false);
             handleNewDecision();
           }}
         />
@@ -420,7 +606,7 @@ export default function App() {
                 </div>
                 <div>
                   <h3 className="font-serif italic text-lg sm:text-xl font-bold text-[#2C221E]">
-                    Select a Pre-Built Sample Analysis
+                    Select an Example Dilemma
                   </h3>
                   <p className="text-[11px] text-stone-500 font-medium">Load fully structured decision models to explore</p>
                 </div>
